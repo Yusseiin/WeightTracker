@@ -1,0 +1,27 @@
+{
+  "userId": "admin",
+  "unit": "kg",
+  "waterUnit": "ml",
+  "targetWeight": null,
+  "chartColor": "primary",
+  "dateFormat": {
+    "locale": "it",
+    "tableFormat": {
+      "dateFormat": "EEE.dd/MM",
+      "timeFormat": "HH:mm",
+      "showWeekday": false
+    },
+    "tooltipFormat": {
+      "dateFormat": "dd/MM/yyyy",
+      "timeFormat": "HH:mm",
+      "showWeekday": true
+    },
+    "axisFormat": {
+      "dateFormat": "dd/MM",
+      "timeFormat": "none",
+      "showWeekday": false
+    }
+  },
+  "createdAt": "2026-01-08T16:55:51.500Z",
+  "updatedAt": "2026-01-08T16:55:51.501Z"
+}

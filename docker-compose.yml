@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  weighttracker:
+    image: yusseiin/weighttracker:v0.0.1
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_VERSION: "v0.0.1"
+    container_name: weighttracker
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3213}:3000"
+    environment:
+      NODE_ENV: production
+      # These paths are INSIDE the container - don't change these
+      CONFIG_PATH: /config
+    volumes:
+      # Map your host paths to container paths
+      # For Unraid: /mnt/user/downloads:/downloads
+      - ${CONFIG_PATH:-/mnt/user/appdata/weighttracker}:/config

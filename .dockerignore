@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+.gitignore
+.claude
+Dockerfile
+docker-compose.yml
+*.log
+.env
+.env.local
+next.config.js.map
+testpath
+appdata
