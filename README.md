@@ -9,10 +9,10 @@
 </p>
 
 <p align="center">
-  <a href="https://hub.docker.com/r/yusseiin/weighttracker"><img src="https://img.shields.io/docker/pulls/yusseiin/weighttracker?logo=docker&logoColor=white" alt="Docker Pulls"></a>
-  <a href="https://github.com/yusseiin/weighttracker/blob/main/LICENSE"><img src="https://img.shields.io/github/license/yusseiin/weighttracker?color=5D6D7E" alt="License"></a>
-  <a href="https://github.com/yusseiin/weighttracker/stargazers"><img src="https://img.shields.io/github/stars/yusseiin/weighttracker?color=E67E22" alt="Stars"></a>
-  <a href="https://github.com/yusseiin/weighttracker/commits/main"><img src="https://img.shields.io/github/last-commit/yusseiin/weighttracker?color=5D6D7E" alt="Last Commit"></a>
+  <a href="https://hub.docker.com/r/yusseiin/weighttracker"><img src="https://img.shields.io/docker/pulls/yusseiin/weighttracker?style=flat-square&logo=docker&logoColor=white" alt="Docker Pulls"></a>
+  <a href="https://github.com/yusseiin/weighttracker/blob/main/LICENSE"><img src="https://img.shields.io/github/license/yusseiin/weighttracker?style=flat-square&color=5D6D7E" alt="License"></a>
+  <a href="https://github.com/yusseiin/weighttracker/stargazers"><img src="https://img.shields.io/github/stars/yusseiin/weighttracker?style=flat-square&color=E67E22" alt="Stars"></a>
+  <a href="https://github.com/yusseiin/weighttracker/commits/main"><img src="https://img.shields.io/github/last-commit/yusseiin/weighttracker?style=flat-square&color=5D6D7E" alt="Last Commit"></a>
   <br>
   <img src="https://img.shields.io/badge/Next.js-000000?logo=nextdotjs&logoColor=white" alt="Next.js">
   <img src="https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=black" alt="React">
