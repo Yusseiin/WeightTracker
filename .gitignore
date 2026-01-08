@@ -9,10 +9,13 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-
+/.claude
+readme.local
+UnMove.xml
 # testing
 /coverage
-
+/testpath
+/appdata
 # next.js
 /.next/
 /out/
