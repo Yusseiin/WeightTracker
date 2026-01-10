@@ -33,21 +33,66 @@
 
 ## Features
 
+### Core Tracking
+
 - **Weight Tracking**: Log your daily weight with activity type and sleep quality
-- **Water Consumption**: Track daily water intake with quick-add buttons (Cup 200ml, 0.5L, 1L)
-- **Progress Chart**: Visualize weight trends with interactive line chart and time filters (1M, 3M, 6M, All)
-- **Activity Logging**: Track activity type (Rest, Weights, Cardio) with each entry
-- **Sleep Quality**: Record sleep quality (Good, Fair, Poor) alongside weight
-- **History Table**: Compact table view of all entries with water consumption and click-to-edit functionality
-- **Customizable Chart**: Choose from 5 chart colors (Default, Blue, Green, Orange, Purple)
-- **Customizable Date Format**: Choose date format, time format (24h/12h), and locale (English, Italian, German, French, Spanish)
+- **Water Consumption**: Track daily water intake with quick-add buttons (Cup 200ml/8oz, 0.5L/17oz, 1L/34oz), custom amount input, and reset functionality
+- **Activity Logging**: Track activity type with each entry - includes 3 default activities (Rest, Weights, Cardio)
+- **Sleep Quality**: Record sleep quality (Good, Fair, Poor) with color indicators alongside weight
+- **Today Recap**: Quick summary card showing today's weight and water at a glance
+
+### Custom Activities
+
+- **Activity Manager**: Create, edit, delete, and reorder up to 12 custom activities
+- **Icon Picker**: Choose from 50+ Lucide icons organized by category with search functionality
+- **Color Customization**: Select from multiple Tailwind color options for each activity
+- **Usage Protection**: Cannot delete activities that are being used by existing entries
+- **Reordering**: Move activities up/down to customize the order they appear
+
+### Data Visualization
+
+- **Progress Chart**: Interactive line chart with Recharts showing weight trends
+- **Time Filters**: View data for All time, 1 Month, 3 Months, or 6 Months
+- **Chart Statistics**: Display average, min, and max weight in the selected period
+- **Target Weight Line**: Optional reference line showing your goal weight
+- **Customizable Colors**: Choose from 5 chart colors (Primary, Blue, Green, Orange, Purple)
+
+### History & Entries
+
+- **History Table**: Compact table view of all entries with weight, activity icon, sleep indicator, water, and weight difference
+- **Click-to-Edit**: Tap any entry in the history to edit or delete it
+- **Water Entry Editing**: Edit water entries directly from the history table
+- **Weight Difference**: Automatic calculation showing change from previous entry
+
+### Customization
+
+- **Date Format Options**: 9 preset formats (EU, US, ISO, etc.) plus custom pattern support
+- **Time Format**: Choose 24h (HH:mm), 12h (hh:mm a), or hide time
+- **Locale Support**: English, Italian, German, French, Spanish
+- **Weekday Display**: Optional weekday in date formatting
+- **Separate Formatters**: Different date formats for table, chart tooltip, and chart axis
+- **Unit Preferences**: Weight (kg/lb) and water (ml/oz) unit selection
+
+### User Management
+
 - **Multi-user Support**: Each user has their own data stored separately
 - **User Roles**: Admin and regular user roles with different permissions
 - **Admin Features**: Create, edit, and delete users from the settings popup
 - **Password Management**: Users can change their own password
+- **Nickname Management**: Users can change their display nickname
+
+### UI/UX
+
 - **Mobile-First Design**: Responsive UI with bottom drawer on mobile, dialog on desktop
+- **Floating Action Buttons**: Quick access to add weight (bottom right) and water (bottom left) on mobile
 - **Dark Mode**: Automatic theme switching based on system preference
+- **Toast Notifications**: Success and error feedback using Sonner
+- **Changelog Dialog**: View version history and release notes with color-coded changes
+
+### Data Storage
+
 - **Offline-Ready Data**: JSON file storage for easy backup and portability
+- **Docker Ready**: Configurable data path for container deployments
 
 ## Tech Stack
 
@@ -224,11 +269,14 @@ nextjserision/
 │   │   │   ├── login/          # Login endpoint
 │   │   │   ├── logout/         # Logout endpoint
 │   │   │   ├── me/             # Get current user
-│   │   │   └── change-password/ # Change password
+│   │   │   ├── change-password/ # Change password
+│   │   │   └── change-nickname/ # Change nickname
 │   │   ├── entries/            # Weight entries CRUD
 │   │   ├── settings/           # User settings
-│   │   └── users/              # User management (admin only)
+│   │   ├── users/              # User management (admin only)
+│   │   └── water/              # Water tracking
 │   ├── login/                  # Login page
+│   ├── settings/               # Settings page
 │   ├── layout.tsx              # Root layout
 │   └── page.tsx                # Main dashboard
 ├── /config/                    # Data storage (Docker volume mount)
@@ -241,20 +289,32 @@ nextjserision/
 │   ├── weight-chart.tsx        # Chart component
 │   ├── weight-tracker.tsx      # Main tracker with tabs
 │   ├── entries-table.tsx       # History table view
-│   ├── add-entry-dialog.tsx    # Add entry form
+│   ├── today-recap.tsx         # Today's weight and water summary
+│   ├── add-entry-dialog.tsx    # Add entry form (drawer/dialog)
 │   ├── edit-entry-dialog.tsx   # Edit/delete entry
+│   ├── add-water-dialog.tsx    # Add water form (drawer/dialog)
+│   ├── settings-page.tsx       # Full settings page
 │   ├── settings-popup.tsx      # Settings popup in header
+│   ├── activity-manager.tsx    # Custom activity CRUD
+│   ├── icon-picker.tsx         # Icon selection with search
+│   ├── dynamic-icon.tsx        # Render Lucide icon by name
+│   ├── changelog-dialog.tsx    # Version history display
 │   ├── change-password-dialog.tsx  # Password change form
 │   └── user-management-dialog.tsx  # Admin user management
 ├── hooks/
 │   ├── use-mobile.ts           # Mobile detection
-│   └── use-weight-entries.ts   # Data management hook
+│   ├── use-weight-entries.ts   # Weight data management hook
+│   └── use-water.ts            # Water data management hook
 ├── lib/
 │   ├── auth.ts                 # Authentication utilities
 │   ├── data.ts                 # Data storage utilities
+│   ├── water.ts                # Water storage utilities
+│   ├── icons.ts                # Curated icon list with categories
+│   ├── date-utils.ts           # Date formatting utilities
+│   ├── water-utils.ts          # Water unit conversion utilities
 │   ├── types.ts                # TypeScript types
 │   └── utils.ts                # Utility functions
-└── proxy.ts                    # Route protection
+└── middleware.ts               # Route protection
 ```
 
 ## API Endpoints
@@ -267,6 +327,7 @@ nextjserision/
 | POST | `/api/auth/logout` | Clear session |
 | GET | `/api/auth/me` | Get current user |
 | POST | `/api/auth/change-password` | Change password |
+| POST | `/api/auth/change-nickname` | Change display nickname |
 
 ### Entries
 
@@ -288,7 +349,7 @@ nextjserision/
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/water` | Get today's water (or ?date=YYYY-MM-DD) |
+| GET | `/api/water` | Get today's water (or ?date=YYYY-MM-DD or ?all=true for all entries) |
 | POST | `/api/water` | Add water to today's total |
 | PATCH | `/api/water` | Set water amount for specific date |
 | DELETE | `/api/water` | Reset today's water to 0 |
@@ -323,7 +384,7 @@ nextjserision/
   id: string;
   author: string;
   weight: number;
-  training: 0 | 1 | 2;        // 0=Rest, 1=Weights, 2=Cardio
+  training: string;           // Activity ID (e.g., 'rest', 'weights', 'cardio', or custom ID)
   sleep: 0 | 1 | 2;           // 0=Good, 1=Fair, 2=Poor
   timestamp: string;          // ISO 8601
 }
@@ -341,6 +402,17 @@ nextjserision/
 }
 ```
 
+### Custom Activity
+
+```typescript
+{
+  id: string;                 // Unique identifier (e.g., 'rest', 'weights', 'swimming')
+  label: string;              // Display name (e.g., 'Swimming')
+  icon: string;               // Lucide icon name (e.g., 'Waves')
+  color: string;              // Tailwind color class (e.g., 'text-cyan-500')
+}
+```
+
 ### User Settings
 
 ```typescript
@@ -350,6 +422,7 @@ nextjserision/
   waterUnit: 'ml' | 'oz';
   targetWeight: number | null;
   chartColor: 'primary' | 'blue' | 'green' | 'orange' | 'purple';
+  activities: CustomActivity[];  // User's custom activities (max 12)
   dateFormat: {
     dateFormat: string;       // 'dd/MM/yyyy', 'MM/dd/yyyy', etc.
     customDateFormat?: string; // For custom patterns
@@ -362,12 +435,48 @@ nextjserision/
 }
 ```
 
+### Default Activities
+
+New users start with these 3 default activities:
+
+| ID | Label | Icon | Color |
+|----|-------|------|-------|
+| `rest` | Rest | Sofa | `text-muted-foreground` |
+| `weights` | Weights | Dumbbell | `text-blue-500` |
+| `cardio` | Cardio | Activity | `text-green-500` |
+
+### Available Icon Categories
+
+The icon picker includes 50+ icons organized by category:
+
+| Category | Icons |
+|----------|-------|
+| Fitness | Dumbbell, Activity, Bike, Timer, Trophy, Target, Flame, Zap |
+| Sports | Waves, Mountain, Footprints, PersonStanding |
+| Rest | Sofa, Moon, Coffee, Bed, Armchair |
+| Health | Heart, HeartPulse, Pill, Stethoscope, Apple, Salad |
+| General | Star, Circle, Square, Plus, Check, X |
+
+### Activity Color Options
+
+| Color Class | Description |
+|-------------|-------------|
+| `text-muted-foreground` | Muted gray (default) |
+| `text-blue-500` | Blue |
+| `text-green-500` | Green |
+| `text-red-500` | Red |
+| `text-orange-500` | Orange |
+| `text-purple-500` | Purple |
+| `text-cyan-500` | Cyan |
+| `text-pink-500` | Pink |
+| `text-yellow-500` | Yellow |
+
 ### Chart Color Options
 
 | Value | Description |
 |-------|-------------|
 | `primary` | Default theme color (adapts to light/dark mode) |
-| `blue` | Blue (#0066FF) |
+| `blue` | Blue (#0066FF) - Default for new users |
 | `green` | Green (#22C55E) |
 | `orange` | Orange (#F97316) |
 | `purple` | Purple (#A855F7) |
