@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { WeightEntry, UserSettings, DEFAULT_USER_ID, DateFormatSettings } from './types';
+import { WeightEntry, UserSettings, DEFAULT_USER_ID, DateFormatSettings, DEFAULT_ACTIVITIES } from './types';
 import { DEFAULT_DATE_FORMAT } from './date-utils';
 
 // Config directory - configurable via env for Docker/Unraid
@@ -83,7 +83,17 @@ export async function getEntries(userId: string = DEFAULT_USER_ID): Promise<Weig
 
   try {
     const data = await fs.readFile(filePath, 'utf-8');
-    const entries: WeightEntry[] = JSON.parse(data);
+    let entries: WeightEntry[] = JSON.parse(data);
+
+    // Migrate old numeric training values to new string IDs
+    const originalData = JSON.stringify(entries);
+    entries = migrateEntryTraining(entries);
+
+    // If migration changed data, save it back
+    if (JSON.stringify(entries) !== originalData) {
+      await fs.writeFile(filePath, JSON.stringify(entries, null, 2), 'utf-8');
+    }
+
     // Sort by timestamp descending (newest first)
     return entries.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   } catch {
@@ -162,11 +172,33 @@ const defaultSettings = (userId: string): UserSettings => ({
   unit: 'kg',
   waterUnit: 'ml',
   targetWeight: null,
-  chartColor: 'primary',
+  chartColor: 'blue',
   dateFormat: DEFAULT_DATE_FORMAT,
+  activities: DEFAULT_ACTIVITIES,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString()
 });
+
+// Migration map for old numeric training values to new activity IDs
+const TRAINING_MIGRATION_MAP: Record<number, string> = {
+  0: 'rest',
+  1: 'weights',
+  2: 'cardio',
+};
+
+// Migrate entries with old numeric training values to new string IDs
+function migrateEntryTraining(entries: WeightEntry[]): WeightEntry[] {
+  return entries.map(entry => {
+    // Check if training is a number (old format)
+    if (typeof entry.training === 'number') {
+      return {
+        ...entry,
+        training: TRAINING_MIGRATION_MAP[entry.training as number] || 'rest',
+      };
+    }
+    return entry;
+  });
+}
 
 export async function getSettings(userId: string = DEFAULT_USER_ID): Promise<UserSettings> {
   await ensureDataDirs();
@@ -176,18 +208,34 @@ export async function getSettings(userId: string = DEFAULT_USER_ID): Promise<Use
   try {
     const data = await fs.readFile(filePath, 'utf-8');
     const settings = JSON.parse(data);
+    let needsSave = false;
+
     // Add chartColor if missing (backward compatibility)
     if (!settings.chartColor) {
       settings.chartColor = 'primary';
+      needsSave = true;
     }
     // Add waterUnit if missing (backward compatibility)
     if (!settings.waterUnit) {
       settings.waterUnit = 'ml';
+      needsSave = true;
     }
     // Add dateFormat if missing (backward compatibility)
     if (!settings.dateFormat) {
       settings.dateFormat = DEFAULT_DATE_FORMAT;
+      needsSave = true;
     }
+    // Add activities if missing (backward compatibility)
+    if (!settings.activities || !Array.isArray(settings.activities) || settings.activities.length === 0) {
+      settings.activities = DEFAULT_ACTIVITIES;
+      needsSave = true;
+    }
+
+    // Persist fixes to file
+    if (needsSave) {
+      await fs.writeFile(filePath, JSON.stringify(settings, null, 2), 'utf-8');
+    }
+
     return settings;
   } catch {
     // File doesn't exist, create with defaults

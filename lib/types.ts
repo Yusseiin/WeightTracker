@@ -3,10 +3,28 @@ export interface WeightEntry {
   id: string;
   author: string;           // For future multi-user support
   weight: number;
-  training: 0 | 1 | 2;      // 0=rest, 1=weights, 2=cardio
+  training: string;         // Activity ID (e.g., 'rest', 'weights', 'cardio', or custom IDs)
   sleep: 0 | 1 | 2;         // 0=good (green), 1=fair (orange), 2=poor (red)
   timestamp: string;        // ISO 8601 format
 }
+
+// Custom activity configuration
+export interface CustomActivity {
+  id: string;               // Unique identifier (e.g., 'rest', 'weights', 'act_abc123')
+  label: string;            // User-defined name (e.g., 'Swimming')
+  icon: string;             // Lucide icon name (e.g., 'Waves')
+  color: string;            // Tailwind color class (e.g., 'text-cyan-500')
+}
+
+// Maximum number of activities per user
+export const MAX_ACTIVITIES = 12;
+
+// Default activities for new users
+export const DEFAULT_ACTIVITIES: CustomActivity[] = [
+  { id: 'rest', label: 'Rest', icon: 'Sofa', color: 'text-muted-foreground' },
+  { id: 'weights', label: 'Weights', icon: 'Dumbbell', color: 'text-blue-500' },
+  { id: 'cardio', label: 'Cardio', icon: 'Activity', color: 'text-green-500' },
+];
 
 // Chart color options
 export type ChartColor = 'primary' | 'blue' | 'green' | 'orange' | 'purple';
@@ -56,6 +74,7 @@ export interface UserSettings {
   targetWeight: number | null;
   chartColor: ChartColor;
   dateFormat: DateFormatSettings;
+  activities: CustomActivity[];   // User's custom activities (max 10)
   createdAt: string;
   updatedAt: string;
 }
@@ -87,7 +106,7 @@ export const SLEEP_QUALITY = {
 // Form data for creating/editing entries
 export interface EntryFormData {
   weight: number;
-  training: 0 | 1 | 2;
+  training: string;         // Activity ID
   sleep: 0 | 1 | 2;
   timestamp: string;
 }

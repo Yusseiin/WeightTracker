@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { Droplets, GlassWater, RotateCcw, Pencil } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Dialog,
   DialogContent,
@@ -24,7 +23,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { WATER_AMOUNTS, WATER_AMOUNTS_OZ, type WaterEntry, type WaterUnit, ML_PER_OZ } from '@/lib/types';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { WATER_AMOUNTS, type WaterEntry, type WaterUnit } from '@/lib/types';
 import { formatWaterAmount, ozToMl } from '@/lib/water-utils';
 
 interface AddWaterDialogProps {
@@ -60,8 +61,6 @@ export function AddWaterDialog({
     return parseInt(selectedAmount) || 0;
   };
 
-  // Get the amounts based on unit
-  const amounts = waterUnit === 'oz' ? WATER_AMOUNTS_OZ : WATER_AMOUNTS;
   const unitLabel = waterUnit === 'oz' ? 'oz' : 'ml';
 
   const handleAdd = async () => {
@@ -202,40 +201,43 @@ export function AddWaterDialog({
     </div>
   );
 
-  // Render Drawer on mobile
+  const TriggerButton = (
+    <Button
+      size="lg"
+      variant="outline"
+      className="fixed bottom-6 left-6 rounded-full shadow-lg h-14 w-14 z-50 border-primary/50"
+    >
+      <Droplets className="h-6 w-6 text-primary" />
+      <span className="sr-only">Add water</span>
+    </Button>
+  );
+
+  // Use Drawer on mobile, Dialog on desktop
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={setOpen} handleOnly>
+      <Drawer open={open} onOpenChange={setOpen}>
         <DrawerTrigger asChild>
-          <Button
-            size="lg"
-            variant="outline"
-            className="fixed bottom-6 left-6 rounded-full shadow-lg h-14 w-14 z-50 border-primary/50"
-          >
-            <Droplets className="h-6 w-6 text-primary" />
-            <span className="sr-only">Add water</span>
-          </Button>
+          {TriggerButton}
         </DrawerTrigger>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle className="flex items-center gap-2">
+            <DrawerTitle className="flex items-center gap-2 justify-center">
               <Droplets className="h-5 w-5 text-primary" />
               Add Water
             </DrawerTitle>
           </DrawerHeader>
-          <div className="px-4 pb-4 overflow-y-auto touch-pan-y">
+          <ScrollArea className="flex-1 px-4 max-h-[60vh]">
             <FormContent />
-          </div>
-          <DrawerFooter>
+          </ScrollArea>
+          <DrawerFooter className="pt-4">
             <Button
               onClick={handleAdd}
               disabled={isSubmitting || isLoading || !canAdd}
-              className="w-full"
             >
               {isSubmitting ? 'Adding...' : 'Add Water'}
             </Button>
             <DrawerClose asChild>
-              <Button variant="outline" className="w-full">Cancel</Button>
+              <Button variant="outline">Cancel</Button>
             </DrawerClose>
           </DrawerFooter>
         </DrawerContent>
@@ -243,34 +245,29 @@ export function AddWaterDialog({
     );
   }
 
-  // Render Dialog on desktop
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          size="lg"
-          variant="outline"
-          className="fixed bottom-6 left-6 rounded-full shadow-lg h-14 w-14 z-50 border-primary/50"
-        >
-          <Droplets className="h-6 w-6 text-primary" />
-          <span className="sr-only">Add water</span>
-        </Button>
+        {TriggerButton}
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Droplets className="h-5 w-5 text-primary" />
             Add Water
           </DialogTitle>
         </DialogHeader>
-        <FormContent />
-        <DialogFooter>
+        <ScrollArea className="flex-1 -mx-6 px-6">
+          <FormContent />
+        </ScrollArea>
+        <DialogFooter className="flex-col gap-2 sm:flex-row mt-4">
           <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline" className="w-full sm:w-auto">Cancel</Button>
           </DialogClose>
           <Button
             onClick={handleAdd}
             disabled={isSubmitting || isLoading || !canAdd}
+            className="w-full sm:w-auto"
           >
             {isSubmitting ? 'Adding...' : 'Add Water'}
           </Button>

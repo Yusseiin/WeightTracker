@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (![0, 1, 2].includes(training)) {
+    if (typeof training !== 'string' || training.trim() === '') {
       return NextResponse.json(
         { success: false, error: 'Invalid training value' },
         { status: 400 }

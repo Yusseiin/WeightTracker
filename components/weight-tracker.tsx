@@ -12,6 +12,9 @@ import { useWeightEntries } from '@/hooks/use-weight-entries';
 import { useWater } from '@/hooks/use-water';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { WeightEntry, UserSettings, SessionUser, WaterEntry } from '@/lib/types';
+import { ChangelogDialog } from './changelog-dialog';
+import { Button } from './ui/button';
+import { Info } from 'lucide-react';
 
 interface WeightTrackerProps {
   initialEntries: WeightEntry[];
@@ -41,6 +44,8 @@ export function WeightTracker({ initialEntries, initialSettings, initialWater, i
 
   const [selectedEntry, setSelectedEntry] = useState<WeightEntry | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('chart');
+  const [changelogOpen, setChangelogOpen] = useState(false);
 
   const handleRowClick = (entry: WeightEntry) => {
     setSelectedEntry(entry);
@@ -60,25 +65,37 @@ export function WeightTracker({ initialEntries, initialSettings, initialWater, i
               </span>
             )}
           </div>
-          {session && <SettingsButton />}
+          {session && <div><Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setChangelogOpen(true)}
+            title="Changelog"
+            className="cursor-pointer"
+          >
+            <Info className="h-5 w-5" />
+          </Button>
+          <SettingsButton /> </div>}
+          
         </div>
       </header>
 
       {/* Main content */}
       <main className="container px-4 py-1 pb-18 space-y-1 max-w-3xl mx-auto flex-1 overflow-hidden flex flex-col">
-        {/* Today's Recap */}
-        <TodayRecap
-          entries={entries}
-          todayWater={todayWater}
-          unit={settings.unit}
-          waterUnit={settings.waterUnit || 'ml'}
-        />
-
-        <Tabs defaultValue="chart" className="w-full flex-1 flex flex-col overflow-hidden mt-1">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 flex flex-col overflow-hidden">
           <TabsList className="w-full grid grid-cols-2 shrink-0">
             <TabsTrigger value="chart">Chart</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
           </TabsList>
+
+          {/* Today's Recap - only show on chart view */}
+          {activeTab === 'chart' && (
+            <TodayRecap
+              entries={entries}
+              todayWater={todayWater}
+              unit={settings.unit}
+              waterUnit={settings.waterUnit || 'ml'}
+            />
+          )}
 
           <TabsContent value="chart" className="mt-0 flex-1 overflow-hidden">
             {/* Weight Chart */}
@@ -100,6 +117,7 @@ export function WeightTracker({ initialEntries, initialSettings, initialWater, i
               onRowClick={handleRowClick}
               waterEntries={waterEntries}
               dateFormat={settings.dateFormat}
+              activities={settings.activities}
             />
           </TabsContent>
         </Tabs>
@@ -116,12 +134,14 @@ export function WeightTracker({ initialEntries, initialSettings, initialWater, i
         waterUnit={settings.waterUnit || 'ml'}
         waterEntries={waterEntries}
         onUpdateWater={updateWater}
+        activities={settings.activities}
       />
 
       {/* Add Entry Dialog/Drawer */}
       <AddEntryDialog
         onSubmit={addEntry}
         unit={settings.unit}
+        activities={settings.activities}
       />
 
       {/* Add Water Dialog/Drawer */}
@@ -132,6 +152,7 @@ export function WeightTracker({ initialEntries, initialSettings, initialWater, i
         isLoading={isWaterLoading}
         waterUnit={settings.waterUnit || 'ml'}
       />
+      <ChangelogDialog open={changelogOpen} onOpenChange={setChangelogOpen} />
     </>
   );
 }

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSettings, updateSettings } from '@/lib/data';
 import { getSession } from '@/lib/auth';
-import { ApiResponse, UserSettings, DateFormatSettings, SingleDateFormat } from '@/lib/types';
+import { ApiResponse, UserSettings, DateFormatSettings, SingleDateFormat, CustomActivity, MAX_ACTIVITIES } from '@/lib/types';
+import { ALL_ACTIVITY_ICONS } from '@/lib/icons';
 
 // Validation constants
 const VALID_DATE_FORMATS = ['dd/MM/yyyy', 'MM/dd/yyyy', 'yyyy-MM-dd', 'dd MMM yyyy', 'EEE dd/MM', 'EEE.dd/MM', 'dd/MM', 'MMM dd', 'custom'];
@@ -30,6 +31,34 @@ function isValidDateFormatSettings(settings: unknown): settings is DateFormatSet
   if (!isValidSingleDateFormat(s.tableFormat)) return false;
   if (!isValidSingleDateFormat(s.tooltipFormat)) return false;
   if (!isValidSingleDateFormat(s.axisFormat)) return false;
+
+  return true;
+}
+
+// Validate a single activity
+function isValidActivity(activity: unknown): activity is CustomActivity {
+  if (!activity || typeof activity !== 'object') return false;
+  const a = activity as Record<string, unknown>;
+
+  if (typeof a.id !== 'string' || a.id.trim() === '') return false;
+  if (typeof a.label !== 'string' || a.label.trim() === '') return false;
+  if (typeof a.icon !== 'string' || !ALL_ACTIVITY_ICONS.includes(a.icon)) return false;
+  if (typeof a.color !== 'string') return false;
+
+  return true;
+}
+
+// Validate activities array
+function isValidActivitiesArray(activities: unknown): activities is CustomActivity[] {
+  if (!Array.isArray(activities)) return false;
+  if (activities.length === 0 || activities.length > MAX_ACTIVITIES) return false;
+
+  // Check all activities are valid
+  if (!activities.every(isValidActivity)) return false;
+
+  // Check for unique IDs
+  const ids = activities.map((a) => a.id);
+  if (new Set(ids).size !== ids.length) return false;
 
   return true;
 }
@@ -74,7 +103,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { unit, waterUnit, targetWeight, chartColor, dateFormat } = body;
+    const { unit, waterUnit, targetWeight, chartColor, dateFormat, activities } = body;
 
     // Validate unit if provided
     if (unit !== undefined && !['kg', 'lb'].includes(unit)) {
@@ -119,8 +148,25 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    // Validate activities if provided
+    if (activities !== undefined && !isValidActivitiesArray(activities)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid activities. Must have 1-10 activities with unique IDs and valid icons.' },
+        { status: 400 }
+      );
+    }
+
+    // Only include defined values to avoid overwriting with undefined
+    const updateData: Partial<UserSettings> = {};
+    if (unit !== undefined) updateData.unit = unit;
+    if (waterUnit !== undefined) updateData.waterUnit = waterUnit;
+    if (targetWeight !== undefined) updateData.targetWeight = targetWeight;
+    if (chartColor !== undefined) updateData.chartColor = chartColor;
+    if (dateFormat !== undefined) updateData.dateFormat = dateFormat;
+    if (activities !== undefined) updateData.activities = activities;
+
     const updated = await updateSettings(
-      { unit, waterUnit, targetWeight, chartColor, dateFormat },
+      updateData,
       session.username
     );
 

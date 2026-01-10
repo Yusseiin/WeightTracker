@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, LogOut, Key, Users, Save, Loader2, UserPen } from 'lucide-react';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
@@ -20,9 +20,10 @@ import {
 import { ChangePasswordDialog } from '@/components/change-password-dialog';
 import { ChangeNicknameDialog } from '@/components/change-nickname-dialog';
 import { UserManagementDialog } from '@/components/user-management-dialog';
+import { ActivityManager } from '@/components/activity-manager';
 import { DateFormatEditor } from '@/components/date-format-editor';
 import { DEFAULT_DATE_FORMAT } from '@/lib/date-utils';
-import type { SessionUser, UserSettings, ChartColor, WaterUnit, DateFormatSettings, DateLocale, SingleDateFormat } from '@/lib/types';
+import type { SessionUser, UserSettings, ChartColor, WaterUnit, DateFormatSettings, DateLocale, SingleDateFormat, CustomActivity, WeightEntry } from '@/lib/types';
 
 interface SettingsPageProps {
   session: SessionUser;
@@ -58,6 +59,7 @@ function ensureValidDateFormat(settings?: Partial<DateFormatSettings>): DateForm
 export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
   const router = useRouter();
   const [settings, setSettings] = useState(initialSettings);
+  const [entries, setEntries] = useState<WeightEntry[]>([]);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
@@ -74,6 +76,23 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
   const [localDateFormat, setLocalDateFormat] = useState<DateFormatSettings>(
     ensureValidDateFormat(settings.dateFormat)
   );
+
+  // Fetch entries for activity usage check
+  const fetchEntries = useCallback(async () => {
+    try {
+      const response = await fetch('/api/entries');
+      const result = await response.json();
+      if (result.success) {
+        setEntries(result.data);
+      }
+    } catch {
+      // Silently fail - entries are only needed for activity deletion check
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchEntries();
+  }, [fetchEntries]);
 
   // Check if there are unsaved changes
   const hasChanges =
@@ -184,6 +203,22 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
 
   const handleAxisFormatChange = (value: SingleDateFormat) => {
     setLocalDateFormat(prev => ({ ...prev, axisFormat: value }));
+  };
+
+  const handleActivitiesSave = async (activities: CustomActivity[]) => {
+    const response = await fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ activities })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      setSettings(result.data);
+    } else {
+      throw new Error(result.error || 'Failed to save activities');
+    }
   };
 
   return (
@@ -298,6 +333,21 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                       </ToggleGroupItem>
                     ))}
                   </ToggleGroup>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Activities Card */}
+            <Card className="py-4">
+              <CardContent className="space-y-4">
+                <h3 className="font-medium text-base">Activities</h3>
+                <div className="space-y-2">
+                  <Label>Custom Activities</Label>
+                  <ActivityManager
+                    activities={settings.activities}
+                    onSave={handleActivitiesSave}
+                    entries={entries}
+                  />
                 </div>
               </CardContent>
             </Card>

@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Sofa, Dumbbell, Activity, Droplets } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { Droplets } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -34,10 +33,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import type { WeightEntry, EntryFormData, WaterEntry, WaterUnit } from '@/lib/types';
+import { DynamicIcon } from '@/components/dynamic-icon';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useIsMobile } from '@/hooks/use-mobile';
+import type { WeightEntry, EntryFormData, WaterEntry, WaterUnit, CustomActivity } from '@/lib/types';
 import { mlToOz, ozToMl } from '@/lib/water-utils';
 import { formatDateForTooltip } from '@/lib/date-utils';
+import { cn } from '@/lib/utils';
 
 interface EditEntryDialogProps {
   entry: WeightEntry | null;
@@ -49,6 +51,7 @@ interface EditEntryDialogProps {
   waterUnit: WaterUnit;
   waterEntries: WaterEntry[];
   onUpdateWater: (date: string, amount: number) => Promise<void>;
+  activities: CustomActivity[];
 }
 
 export function EditEntryDialog({
@@ -60,10 +63,11 @@ export function EditEntryDialog({
   unit,
   waterUnit,
   waterEntries,
-  onUpdateWater
+  onUpdateWater,
+  activities
 }: EditEntryDialogProps) {
   const [weight, setWeight] = useState<string>('');
-  const [training, setTraining] = useState<'0' | '1' | '2'>('0');
+  const [training, setTraining] = useState<string>('');
   const [sleep, setSleep] = useState<'0' | '1' | '2'>('0');
   const [date, setDate] = useState<string>('');
   const [time, setTime] = useState<string>('');
@@ -76,7 +80,7 @@ export function EditEntryDialog({
   useEffect(() => {
     if (entry) {
       setWeight(entry.weight.toString());
-      setTraining(entry.training.toString() as '0' | '1' | '2');
+      setTraining(entry.training);
       setSleep(entry.sleep.toString() as '0' | '1' | '2');
       const entryDate = new Date(entry.timestamp);
       const entryDateStr = format(entryDate, 'yyyy-MM-dd');
@@ -105,7 +109,7 @@ export function EditEntryDialog({
 
       await onSave(entry.id, {
         weight: parseFloat(weight),
-        training: parseInt(training) as 0 | 1 | 2,
+        training: training,
         sleep: parseInt(sleep) as 0 | 1 | 2,
         timestamp
       });
@@ -196,63 +200,70 @@ export function EditEntryDialog({
       {/* Activity type toggle */}
       <div className="space-y-2">
         <Label>Activity</Label>
-        <ToggleGroup
-          type="single"
-          value={training}
-          onValueChange={(v) => v && setTraining(v as '0' | '1' | '2')}
-          className="justify-center flex-wrap"
-          variant="outline"
-        >
-          <ToggleGroupItem value="0" aria-label="Rest" className="flex-1 min-w-20">
-            <Sofa className="h-4 w-4 mr-2" />
-            Rest
-          </ToggleGroupItem>
-          <ToggleGroupItem value="1" aria-label="Weights" className="flex-1 min-w-20">
-            <Dumbbell className="h-4 w-4 mr-2" />
-            Weights
-          </ToggleGroupItem>
-          <ToggleGroupItem value="2" aria-label="Cardio" className="flex-1 min-w-20">
-            <Activity className="h-4 w-4 mr-2" />
-            Cardio
-          </ToggleGroupItem>
-        </ToggleGroup>
+        <div className="grid grid-cols-4 gap-2">
+          {activities.map((activity) => (
+            <button
+              key={activity.id}
+              type="button"
+              onClick={() => setTraining(activity.id)}
+              className={cn(
+                "flex flex-col items-center justify-center py-3 px-1 rounded-md border text-sm transition-colors",
+                training === activity.id
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-input bg-background hover:bg-accent hover:text-accent-foreground"
+              )}
+            >
+              <DynamicIcon name={activity.icon} className={cn('h-5 w-5 mb-1', activity.color)} />
+              <span className="text-xs truncate w-full text-center">{activity.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Sleep quality toggle */}
       <div className="space-y-2">
         <Label>Sleep Quality</Label>
-        <ToggleGroup
-          type="single"
-          value={sleep}
-          onValueChange={(v) => v && setSleep(v as '0' | '1' | '2')}
-          className="justify-center flex-wrap"
-          variant="outline"
-        >
-          <ToggleGroupItem
-            value="0"
-            aria-label="Good sleep"
-            className="flex-1 min-w-20 data-[state=on]:bg-green-500/20 data-[state=on]:text-green-600 data-[state=on]:border-green-500 data-[state=on]:border data-[state=on]:z-10"
+        <div className="grid grid-cols-3 gap-2">
+          <button
+            type="button"
+            onClick={() => setSleep('0')}
+            className={cn(
+              "flex items-center justify-center py-3 px-2 rounded-md border text-sm transition-colors",
+              sleep === '0'
+                ? "border-green-500 bg-green-500/20 text-green-600"
+                : "border-input bg-background hover:bg-accent hover:text-accent-foreground"
+            )}
           >
             <span className="w-3 h-3 rounded-full bg-green-500 mr-2" />
             Good
-          </ToggleGroupItem>
-          <ToggleGroupItem
-            value="1"
-            aria-label="Fair sleep"
-            className="flex-1 min-w-20 data-[state=on]:bg-orange-500/20 data-[state=on]:text-orange-600 data-[state=on]:border-orange-500 data-[state=on]:border data-[state=on]:z-10"
+          </button>
+          <button
+            type="button"
+            onClick={() => setSleep('1')}
+            className={cn(
+              "flex items-center justify-center py-3 px-2 rounded-md border text-sm transition-colors",
+              sleep === '1'
+                ? "border-orange-500 bg-orange-500/20 text-orange-600"
+                : "border-input bg-background hover:bg-accent hover:text-accent-foreground"
+            )}
           >
             <span className="w-3 h-3 rounded-full bg-orange-500 mr-2" />
             Fair
-          </ToggleGroupItem>
-          <ToggleGroupItem
-            value="2"
-            aria-label="Poor sleep"
-            className="flex-1 min-w-20 data-[state=on]:bg-red-500/20 data-[state=on]:text-red-600 data-[state=on]:border-red-500 data-[state=on]:border data-[state=on]:z-10"
+          </button>
+          <button
+            type="button"
+            onClick={() => setSleep('2')}
+            className={cn(
+              "flex items-center justify-center py-3 px-2 rounded-md border text-sm transition-colors",
+              sleep === '2'
+                ? "border-red-500 bg-red-500/20 text-red-600"
+                : "border-input bg-background hover:bg-accent hover:text-accent-foreground"
+            )}
           >
             <span className="w-3 h-3 rounded-full bg-red-500 mr-2" />
             Poor
-          </ToggleGroupItem>
-        </ToggleGroup>
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -293,21 +304,21 @@ export function EditEntryDialog({
     </div>
   );
 
-  // Render Drawer on mobile
+  // Use Drawer on mobile, Dialog on desktop
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={onOpenChange} handleOnly>
+      <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent>
           <DrawerHeader>
             <DrawerTitle>Edit Entry</DrawerTitle>
           </DrawerHeader>
-          <div className="px-4 pb-4 overflow-y-auto touch-pan-y">
+          <ScrollArea className="flex-1 px-4 max-h-[60vh]">
             <FormContent />
-          </div>
-          <DrawerFooter>
+          </ScrollArea>
+          <DrawerFooter className="pt-4">
             <FooterButtons />
             <DrawerClose asChild>
-              <Button variant="outline" className="w-full">Cancel</Button>
+              <Button variant="outline">Cancel</Button>
             </DrawerClose>
           </DrawerFooter>
         </DrawerContent>
@@ -315,17 +326,18 @@ export function EditEntryDialog({
     );
   }
 
-  // Render Dialog on desktop
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Edit Entry</DialogTitle>
         </DialogHeader>
-        <FormContent />
-        <DialogFooter className="flex-col sm:flex-row gap-2">
+        <ScrollArea className="flex-1 -mx-6 px-6">
+          <FormContent />
+        </ScrollArea>
+        <DialogFooter className="flex-col gap-2 sm:flex-row mt-4">
           <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline" className="w-full sm:w-auto">Cancel</Button>
           </DialogClose>
           <FooterButtons />
         </DialogFooter>

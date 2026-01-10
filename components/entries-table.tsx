@@ -2,11 +2,13 @@
 
 import { useMemo } from 'react';
 import { format } from 'date-fns';
-import { Sofa, Dumbbell, Activity, Droplets } from 'lucide-react';
+import { Droplets } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { DynamicIcon } from '@/components/dynamic-icon';
 import { formatWaterAmount } from '@/lib/water-utils';
 import { formatDateForTable } from '@/lib/date-utils';
-import type { WeightEntry, WaterEntry, WaterUnit, DateFormatSettings } from '@/lib/types';
+import type { WeightEntry, WaterEntry, WaterUnit, DateFormatSettings, CustomActivity } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 interface EntriesTableProps {
   entries: WeightEntry[];
@@ -15,19 +17,15 @@ interface EntriesTableProps {
   onRowClick: (entry: WeightEntry) => void;
   waterEntries?: WaterEntry[];
   dateFormat?: DateFormatSettings;
+  activities: CustomActivity[];
 }
 
-function TrainingIcon({ type }: { type: number }) {
-  switch (type) {
-    case 0:
-      return <Sofa className="h-4 w-4 text-muted-foreground" />;
-    case 1:
-      return <Dumbbell className="h-4 w-4 text-blue-500" />;
-    case 2:
-      return <Activity className="h-4 w-4 text-green-500" />;
-    default:
-      return null;
+function TrainingIcon({ activityId, activities }: { activityId: string; activities: CustomActivity[] }) {
+  const activity = activities.find((a) => a.id === activityId);
+  if (!activity) {
+    return <DynamicIcon name="HelpCircle" className="h-4 w-4 text-muted-foreground" />;
   }
+  return <DynamicIcon name={activity.icon} className={cn('h-4 w-4', activity.color)} />;
 }
 
 function SleepIndicator({ quality }: { quality: number }) {
@@ -35,7 +33,7 @@ function SleepIndicator({ quality }: { quality: number }) {
   return <span className={`w-3 h-3 rounded-full inline-block ${colors[quality]}`} />;
 }
 
-export function EntriesTable({ entries, unit, waterUnit, onRowClick, waterEntries = [], dateFormat }: EntriesTableProps) {
+export function EntriesTable({ entries, unit, waterUnit, onRowClick, waterEntries = [], dateFormat, activities }: EntriesTableProps) {
   // Create a map of water entries by date for quick lookup
   const waterByDate = useMemo(() => {
     const map = new Map<string, WaterEntry>();
@@ -100,7 +98,7 @@ export function EntriesTable({ entries, unit, waterUnit, onRowClick, waterEntrie
                   </td>
                   <td className="py-2 px-0.5 text-center">
                     <div className="flex justify-center">
-                      <TrainingIcon type={entry.training} />
+                      <TrainingIcon activityId={entry.training} activities={activities} />
                     </div>
                   </td>
                   <td className="py-2 px-0.5 text-center">

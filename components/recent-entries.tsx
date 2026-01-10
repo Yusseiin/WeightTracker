@@ -1,29 +1,27 @@
 "use client";
 
 import { format } from 'date-fns';
-import { Sofa, Dumbbell, Activity, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import type { WeightEntry } from '@/lib/types';
+import { DynamicIcon } from '@/components/dynamic-icon';
+import type { WeightEntry, CustomActivity } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 interface RecentEntriesProps {
   entries: WeightEntry[];
   unit: 'kg' | 'lb';
   onDelete?: (id: string) => void;
   isDeleting?: string | null;
+  activities: CustomActivity[];
 }
 
-function TrainingIcon({ type }: { type: number }) {
-  switch (type) {
-    case 0:
-      return <Sofa className="h-4 w-4 text-muted-foreground" />;
-    case 1:
-      return <Dumbbell className="h-4 w-4 text-blue-500" />;
-    case 2:
-      return <Activity className="h-4 w-4 text-green-500" />;
-    default:
-      return null;
+function TrainingIcon({ activityId, activities }: { activityId: string; activities: CustomActivity[] }) {
+  const activity = activities.find((a) => a.id === activityId);
+  if (!activity) {
+    return <DynamicIcon name="HelpCircle" className="h-4 w-4 text-muted-foreground" />;
   }
+  return <DynamicIcon name={activity.icon} className={cn('h-4 w-4', activity.color)} />;
 }
 
 function SleepIndicator({ quality }: { quality: number }) {
@@ -43,7 +41,7 @@ function WeightDiff({ current, previous }: { current: number; previous: number |
   return <span className={`text-xs ${colorClass}`}>({formatted})</span>;
 }
 
-export function RecentEntries({ entries, unit, onDelete, isDeleting }: RecentEntriesProps) {
+export function RecentEntries({ entries, unit, onDelete, isDeleting, activities }: RecentEntriesProps) {
   if (entries.length === 0) {
     return (
       <Card>
@@ -51,7 +49,7 @@ export function RecentEntries({ entries, unit, onDelete, isDeleting }: RecentEnt
           <CardTitle className="text-lg">Recent Entries</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex h-[100px] items-center justify-center text-muted-foreground">
+          <div className="flex h-25 items-center justify-center text-muted-foreground">
             No entries yet
           </div>
         </CardContent>
@@ -90,7 +88,7 @@ export function RecentEntries({ entries, unit, onDelete, isDeleting }: RecentEnt
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
-                    <TrainingIcon type={entry.training} />
+                    <TrainingIcon activityId={entry.training} activities={activities} />
                     <SleepIndicator quality={entry.sleep} />
                   </div>
                   {onDelete && (

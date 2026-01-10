@@ -19,6 +19,14 @@ export const metadata: Metadata = {
   description: "Track your weight with me :)",
 };
 
+// Viewport configuration to prevent layout shifts when keyboard appears
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  interactiveWidget: 'resizes-visual', // Keeps layout stable when keyboard appears
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{

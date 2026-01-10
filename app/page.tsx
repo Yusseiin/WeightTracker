@@ -28,7 +28,7 @@ export default async function Home() {
   const waterEntries = await getWaterEntries(userId);
 
   return (
-    <div className="h-dvh bg-background flex flex-col overflow-hidden">
+    <div className="h-[80vh] bg-background flex flex-col">
       <WeightTracker
         initialEntries={entries}
         initialSettings={settings}
