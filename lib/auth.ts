@@ -1,7 +1,26 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { cookies } from 'next/headers';
+import bcrypt from 'bcryptjs';
 import { User, SessionUser, SESSION_COOKIE_NAME, CreateUserRequest, UserRole } from './types';
+
+// Bcrypt salt rounds (10 is recommended - good balance of security and performance)
+const SALT_ROUNDS = 10;
+
+// Helper to check if a password is already hashed (bcrypt hashes start with $2a$, $2b$, or $2y$)
+function isPasswordHashed(password: string): boolean {
+  return /^\$2[aby]\$\d{2}\$/.test(password);
+}
+
+// Hash a password
+export async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, SALT_ROUNDS);
+}
+
+// Compare password with hash
+export async function comparePassword(password: string, hash: string): Promise<boolean> {
+  return bcrypt.compare(password, hash);
+}
 
 // Config directory - configurable via env for Docker/Unraid
 const CONFIG_PATH = process.env.CONFIG_PATH || '/config';
@@ -78,19 +97,36 @@ export async function getUsers(): Promise<User[]> {
     }>;
 
     // Ensure all users have role and createdAt (backward compatibility)
-    return users.map((user, index) => ({
+    const normalizedUsers = users.map((user, index) => ({
       username: user.username,
       password: user.password,
       nickname: user.nickname,
       role: user.role || (index === 0 ? 'admin' : 'user'),
       createdAt: user.createdAt || new Date().toISOString()
     }));
+
+    // Check if any passwords need to be hashed (migration from plain-text)
+    let needsSave = false;
+    for (const user of normalizedUsers) {
+      if (!isPasswordHashed(user.password)) {
+        user.password = await hashPassword(user.password);
+        needsSave = true;
+      }
+    }
+
+    // Save if we migrated any passwords
+    if (needsSave) {
+      await fs.writeFile(USERS_FILE, JSON.stringify(normalizedUsers, null, 2), 'utf-8');
+    }
+
+    return normalizedUsers;
   } catch {
-    // File doesn't exist, create with default admin user
+    // File doesn't exist, create with default admin user (hashed password)
+    const hashedPassword = await hashPassword('changeme');
     const defaultUsers: User[] = [
       {
         username: 'admin',
-        password: 'changeme',
+        password: hashedPassword,
         nickname: 'Administrator',
         role: 'admin',
         createdAt: new Date().toISOString()
@@ -110,8 +146,15 @@ async function saveUsers(users: User[]): Promise<void> {
 // Validate user credentials
 export async function validateUser(username: string, password: string): Promise<User | null> {
   const users = await getUsers();
-  const user = users.find(u => u.username === username && u.password === password);
-  return user || null;
+  const user = users.find(u => u.username === username);
+
+  if (!user) {
+    return null;
+  }
+
+  // Compare password with bcrypt hash
+  const isValid = await comparePassword(password, user.password);
+  return isValid ? user : null;
 }
 
 // Get user by username (without password)
@@ -172,9 +215,12 @@ export async function createUser(data: CreateUserRequest): Promise<User> {
     throw new Error('Password must be at least 6 characters');
   }
 
+  // Hash the password before storing
+  const hashedPassword = await hashPassword(data.password);
+
   const newUser: User = {
     username: data.username,
-    password: data.password,
+    password: hashedPassword,
     nickname: data.nickname || data.username,
     role: data.role,
     createdAt: new Date().toISOString()
@@ -199,7 +245,9 @@ export async function updateUserPassword(
     throw new Error('User not found');
   }
 
-  if (users[userIndex].password !== currentPassword) {
+  // Verify current password using bcrypt
+  const isCurrentValid = await comparePassword(currentPassword, users[userIndex].password);
+  if (!isCurrentValid) {
     throw new Error('Current password is incorrect');
   }
 
@@ -207,7 +255,8 @@ export async function updateUserPassword(
     throw new Error('New password must be at least 6 characters');
   }
 
-  users[userIndex].password = newPassword;
+  // Hash the new password before storing
+  users[userIndex].password = await hashPassword(newPassword);
   await saveUsers(users);
 }
 
