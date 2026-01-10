@@ -24,6 +24,13 @@ const changelog: ChangelogEntry[] = [
     version: process.env.NEXT_PUBLIC_VERSION || "",
     date: "2025-01-10",
     changes: [
+      { type: "fixed", description: "Fixed login for HTTP connection" },
+    ],
+  },
+  {
+    version: "v0.0.1",
+    date: "2025-01-10",
+    changes: [
       { type: "added", description: "First Release :)" },
     ],
   },

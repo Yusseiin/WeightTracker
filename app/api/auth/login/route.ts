@@ -33,10 +33,12 @@ export async function POST(request: NextRequest) {
     };
 
     // Set HTTP-only cookie
+    // secure: false to support HTTP access on local networks (Unraid, Docker)
+    // For HTTPS deployments behind a reverse proxy, set SECURE_COOKIES=true
     const cookieStore = await cookies();
     cookieStore.set(SESSION_COOKIE_NAME, createSessionValue(user), {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.SECURE_COOKIES === 'true',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 30, // 30 days
       path: '/'
