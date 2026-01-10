@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="https://raw.githubusercontent.com/yusseiin/weighttracker/main/public/icon.png" width="150" height="80" alt="Weight Tracker Logo">
+  <img src="https://raw.githubusercontent.com/yusseiin/weighttracker/main/public/icon.png" width="120" height="120" alt="Weight Tracker Logo">
   <br>
   Weight Tracker
 </h1>
