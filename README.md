@@ -33,28 +33,28 @@
 
 ## Screenshots
 
-<table>
+<table border="0" cellspacing="0" cellpadding="0">
   <tr>
-    <th>
+    <td>
       <a href="docs/screenshots/chart.jpeg" target="_blank">
         <img src="docs/screenshots/chart.jpeg" width="200px" alt="Chart View" />
       </a>
-    </th>
-    <th>
+    </td>
+    <td>
       <a href="docs/screenshots/History.jpeg" target="_blank">
         <img src="docs/screenshots/History.jpeg" width="200px" alt="History View" />
       </a>
-    </th>
-    <th>
+    </td>
+    <td>
       <a href="docs/screenshots/addentry.jpeg" target="_blank">
         <img src="docs/screenshots/addentry.jpeg" width="200px" alt="Add Entry" />
       </a>
-    </th>
-    <th>
+    </td>
+    <td>
       <a href="docs/screenshots/water.jpeg" target="_blank">
         <img src="docs/screenshots/water.jpeg" width="200px" alt="Water Tracking" />
       </a>
-    </th>
+    </td>
   </tr>
 </table>
 
