@@ -214,6 +214,7 @@ Each user gets their own data files in separate folders inside the config direct
 | `CONFIG_PATH` | Directory for storing JSON data files | `/config` |
 | `PUID` | User ID for file permissions (Unraid) | `1000` |
 | `PGID` | Group ID for file permissions (Unraid) | `1000` |
+| `API_KEY` | Secret key for API authentication (enables HA integration) | (disabled) |
 
 ## Docker Deployment
 
@@ -392,6 +393,166 @@ nextjserision/
 | POST | `/api/users` | Create new user |
 | PATCH | `/api/users/[username]` | Update user |
 | DELETE | `/api/users/[username]` | Delete user |
+
+## Home Assistant Integration
+
+Weight Tracker supports API key authentication for integration with Home Assistant REST sensors and automations.
+
+### Setup
+
+1. Generate a secure API key (e.g., using `openssl rand -hex 32`)
+2. Add environment variables to your Docker configuration:
+
+```yaml
+environment:
+  - API_KEY=your-secret-api-key-here
+```
+
+3. The API accepts authentication via:
+   - `Authorization: Bearer YOUR_API_KEY` header
+   - `X-API-Key: YOUR_API_KEY` header
+
+4. For multi-user setups, specify which user's data to access:
+   - `X-API-User: username` header (optional, defaults to first admin user)
+
+### Multi-User Example
+
+```bash
+# Get admin's weight entries (default)
+curl -H "Authorization: Bearer YOUR_API_KEY" http://YOUR_SERVER:3000/api/entries
+
+# Get marco's weight entries
+curl -H "Authorization: Bearer YOUR_API_KEY" -H "X-API-User: marco" http://YOUR_SERVER:3000/api/entries
+
+# Get giulia's water data
+curl -H "Authorization: Bearer YOUR_API_KEY" -H "X-API-User: giulia" http://YOUR_SERVER:3000/api/water
+```
+
+### REST Sensors
+
+Add these sensors to your Home Assistant `configuration.yaml`:
+
+```yaml
+rest:
+  - resource: http://YOUR_SERVER:3000/api/entries
+    scan_interval: 3600
+    headers:
+      Authorization: "Bearer YOUR_API_KEY"
+    sensor:
+      - name: "Weight Tracker - Latest Weight"
+        value_template: "{{ value_json.data[0].weight if value_json.data else 'unknown' }}"
+        unit_of_measurement: "kg"
+        json_attributes_path: "$.data[0]"
+        json_attributes:
+          - timestamp
+          - training
+          - sleep
+
+  - resource: http://YOUR_SERVER:3000/api/water
+    scan_interval: 300
+    headers:
+      Authorization: "Bearer YOUR_API_KEY"
+    sensor:
+      - name: "Weight Tracker - Today Water"
+        value_template: "{{ value_json.data.amount if value_json.data else 0 }}"
+        unit_of_measurement: "ml"
+```
+
+#### Multi-User Sensors
+
+To track multiple users, add the `X-API-User` header:
+
+```yaml
+rest:
+  # Marco's weight
+  - resource: http://YOUR_SERVER:3000/api/entries
+    scan_interval: 3600
+    headers:
+      Authorization: "Bearer YOUR_API_KEY"
+      X-API-User: "marco"
+    sensor:
+      - name: "Marco - Latest Weight"
+        value_template: "{{ value_json.data[0].weight if value_json.data else 'unknown' }}"
+        unit_of_measurement: "kg"
+
+  # Giulia's weight
+  - resource: http://YOUR_SERVER:3000/api/entries
+    scan_interval: 3600
+    headers:
+      Authorization: "Bearer YOUR_API_KEY"
+      X-API-User: "giulia"
+    sensor:
+      - name: "Giulia - Latest Weight"
+        value_template: "{{ value_json.data[0].weight if value_json.data else 'unknown' }}"
+        unit_of_measurement: "kg"
+```
+
+### REST Commands
+
+Add water via Home Assistant:
+
+```yaml
+rest_command:
+  weight_tracker_add_water:
+    url: http://YOUR_SERVER:3000/api/water
+    method: POST
+    headers:
+      Authorization: "Bearer YOUR_API_KEY"
+      Content-Type: "application/json"
+    payload: '{"amount": {{ amount }}}'
+
+  weight_tracker_add_weight:
+    url: http://YOUR_SERVER:3000/api/entries
+    method: POST
+    headers:
+      Authorization: "Bearer YOUR_API_KEY"
+      Content-Type: "application/json"
+    payload: '{"weight": {{ weight }}, "training": "{{ training }}", "sleep": {{ sleep }}}'
+```
+
+Use in automations or scripts:
+
+```yaml
+# Add water (amount in ml)
+service: rest_command.weight_tracker_add_water
+data:
+  amount: 250
+
+# Add weight entry
+service: rest_command.weight_tracker_add_weight
+data:
+  weight: 75.5        # Weight in kg or lb (based on your settings)
+  training: "rest"    # Activity ID: "rest", "weights", "cardio", or custom activity ID
+  sleep: 0            # Sleep quality: 0=Good, 1=Fair, 2=Poor
+```
+
+### Example Automation - Water Reminder
+
+```yaml
+automation:
+  - alias: "Water Reminder"
+    trigger:
+      - platform: time_pattern
+        hours: "/2"
+    condition:
+      - condition: template
+        value_template: "{{ states('sensor.weight_tracker_today_water') | int < 2000 }}"
+      - condition: time
+        after: "09:00:00"
+        before: "21:00:00"
+    action:
+      - service: notify.mobile_app_your_phone
+        data:
+          title: "Drink Water!"
+          message: "You've only had {{ states('sensor.weight_tracker_today_water') }}ml today. Goal: 2000ml"
+```
+
+### Security Notes
+
+- Use a strong, randomly generated API key
+- The API key provides full access to the configured user's data
+- Consider using HTTPS (via reverse proxy) for production deployments
+- Keep your API key secret and don't commit it to version control
 
 ## Data Models
 

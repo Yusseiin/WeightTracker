@@ -22,6 +22,14 @@ interface ChangelogEntry {
 const changelog: ChangelogEntry[] = [
   {
     version: process.env.NEXT_PUBLIC_VERSION || "",
+    date: "2025-01-11",
+    changes: [
+      { type: "added", description: "Home Assistant integration with API key authentication" },
+      { type: "added", description: "REST API support for external tools and automations" },
+    ],
+  },
+  {
+    version: "v0.0.3",
     date: "2025-01-10",
     changes: [
       { type: "added", description: "Bcrypt for secure login" },

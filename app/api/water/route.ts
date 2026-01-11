@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth';
+import { getSession, getApiKeyUser } from '@/lib/auth';
 import { getTodayWater, getWaterEntry, getWaterEntries, addWater, resetTodayWater, setWaterAmount } from '@/lib/water';
 import { ApiResponse, WaterEntry } from '@/lib/types';
 
@@ -7,7 +7,8 @@ import { ApiResponse, WaterEntry } from '@/lib/types';
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
-    if (!session) {
+    const user = session || await getApiKeyUser(request);
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'Not authenticated' },
         { status: 401 }
@@ -22,13 +23,13 @@ export async function GET(request: NextRequest) {
 
     if (all === 'true') {
       // Return all water entries
-      data = await getWaterEntries(session.username);
+      data = await getWaterEntries(user.username);
     } else if (date) {
       // Return specific date
-      data = await getWaterEntry(session.username, date);
+      data = await getWaterEntry(user.username, date);
     } else {
       // Return today's water
-      data = await getTodayWater(session.username);
+      data = await getTodayWater(user.username);
     }
 
     const response: ApiResponse<typeof data> = {
@@ -38,11 +39,13 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to fetch water data';
+    const status = message.includes('not found') ? 404 : 500;
     const response: ApiResponse<null> = {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch water data'
+      error: message
     };
-    return NextResponse.json(response, { status: 500 });
+    return NextResponse.json(response, { status });
   }
 }
 
@@ -50,7 +53,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
-    if (!session) {
+    const user = session || await getApiKeyUser(request);
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'Not authenticated' },
         { status: 401 }
@@ -68,7 +72,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const entry = await addWater(session.username, amount);
+    const entry = await addWater(user.username, amount);
 
     const response: ApiResponse<WaterEntry> = {
       success: true,
@@ -77,26 +81,29 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to add water';
+    const status = message.includes('not found') ? 404 : 500;
     const response: ApiResponse<null> = {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to add water'
+      error: message
     };
-    return NextResponse.json(response, { status: 500 });
+    return NextResponse.json(response, { status });
   }
 }
 
 // DELETE /api/water - Reset today's water to 0
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   try {
     const session = await getSession();
-    if (!session) {
+    const user = session || await getApiKeyUser(request);
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'Not authenticated' },
         { status: 401 }
       );
     }
 
-    const entry = await resetTodayWater(session.username);
+    const entry = await resetTodayWater(user.username);
 
     const response: ApiResponse<WaterEntry> = {
       success: true,
@@ -105,11 +112,13 @@ export async function DELETE() {
 
     return NextResponse.json(response);
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to reset water';
+    const status = message.includes('not found') ? 404 : 500;
     const response: ApiResponse<null> = {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to reset water'
+      error: message
     };
-    return NextResponse.json(response, { status: 500 });
+    return NextResponse.json(response, { status });
   }
 }
 
@@ -117,7 +126,8 @@ export async function DELETE() {
 export async function PATCH(request: NextRequest) {
   try {
     const session = await getSession();
-    if (!session) {
+    const user = session || await getApiKeyUser(request);
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'Not authenticated' },
         { status: 401 }
@@ -143,7 +153,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const entry = await setWaterAmount(session.username, date, amount);
+    const entry = await setWaterAmount(user.username, date, amount);
 
     const response: ApiResponse<WaterEntry> = {
       success: true,
@@ -152,10 +162,12 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to update water';
+    const status = message.includes('not found') ? 404 : 500;
     const response: ApiResponse<null> = {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to update water'
+      error: message
     };
-    return NextResponse.json(response, { status: 500 });
+    return NextResponse.json(response, { status });
   }
 }

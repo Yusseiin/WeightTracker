@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { cookies } from 'next/headers';
 import bcrypt from 'bcryptjs';
+import { NextRequest } from 'next/server';
 import { User, SessionUser, SESSION_COOKIE_NAME, CreateUserRequest, UserRole } from './types';
 
 // Bcrypt salt rounds (10 is recommended - good balance of security and performance)
@@ -301,4 +302,65 @@ export async function deleteUser(username: string): Promise<void> {
 export async function getUsersWithoutPasswords(): Promise<Omit<User, 'password'>[]> {
   const users = await getUsers();
   return users.map(({ password, ...user }) => user);
+}
+
+// Validate API key from request headers and return session user
+// Supports both "Authorization: Bearer <key>" and "X-API-Key: <key>" headers
+// Optionally supports "X-API-User: <username>" header to specify which user's data to access
+export async function getApiKeyUser(request: NextRequest): Promise<SessionUser | null> {
+  const apiKey = process.env.API_KEY;
+
+  // API key authentication is disabled if not configured
+  if (!apiKey) {
+    return null;
+  }
+
+  // Check Authorization header (Bearer token)
+  const authHeader = request.headers.get('authorization');
+  let providedKey: string | null = null;
+
+  if (authHeader?.startsWith('Bearer ')) {
+    providedKey = authHeader.slice(7);
+  }
+
+  // Fallback to X-API-Key header
+  if (!providedKey) {
+    providedKey = request.headers.get('x-api-key');
+  }
+
+  // No key provided
+  if (!providedKey) {
+    return null;
+  }
+
+  // Validate key
+  if (providedKey !== apiKey) {
+    return null;
+  }
+
+  // Check for X-API-User header to specify which user's data to access
+  const requestedUser = request.headers.get('x-api-user');
+
+  if (requestedUser) {
+    // Validate that the requested user exists
+    const user = await getUserByUsername(requestedUser);
+    if (user) {
+      return user;
+    }
+    // User specified but doesn't exist - throw error
+    throw new Error(`User '${requestedUser}' not found`);
+  }
+
+  // No X-API-User header - use first admin user as default
+  const users = await getUsers();
+  const adminUser = users.find(u => u.role === 'admin');
+  if (adminUser) {
+    return {
+      username: adminUser.username,
+      nickname: adminUser.nickname,
+      role: adminUser.role
+    };
+  }
+
+  return null;
 }

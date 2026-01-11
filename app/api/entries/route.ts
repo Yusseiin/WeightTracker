@@ -1,20 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getEntries, addEntry } from '@/lib/data';
-import { getSession } from '@/lib/auth';
+import { getSession, getApiKeyUser } from '@/lib/auth';
 import { ApiResponse, WeightEntry } from '@/lib/types';
 
 // GET /api/entries - List all entries
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
-    if (!session) {
+    const user = session || await getApiKeyUser(request);
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'Not authenticated' },
         { status: 401 }
       );
     }
 
-    const entries = await getEntries(session.username);
+    const entries = await getEntries(user.username);
 
     const response: ApiResponse<WeightEntry[]> = {
       success: true,
@@ -23,11 +24,13 @@ export async function GET() {
 
     return NextResponse.json(response);
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to fetch entries';
+    const status = message.includes('not found') ? 404 : 500;
     const response: ApiResponse<null> = {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch entries'
+      error: message
     };
-    return NextResponse.json(response, { status: 500 });
+    return NextResponse.json(response, { status });
   }
 }
 
@@ -35,7 +38,8 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
-    if (!session) {
+    const user = session || await getApiKeyUser(request);
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'Not authenticated' },
         { status: 401 }
@@ -69,13 +73,13 @@ export async function POST(request: NextRequest) {
 
     const entry = await addEntry(
       {
-        author: session.username,
+        author: user.username,
         weight,
         training,
         sleep,
         timestamp: timestamp || new Date().toISOString()
       },
-      session.username
+      user.username
     );
 
     const response: ApiResponse<WeightEntry> = {
@@ -85,10 +89,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(response, { status: 201 });
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to create entry';
+    const status = message.includes('not found') ? 404 : 500;
     const response: ApiResponse<null> = {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to create entry'
+      error: message
     };
-    return NextResponse.json(response, { status: 500 });
+    return NextResponse.json(response, { status });
   }
 }
