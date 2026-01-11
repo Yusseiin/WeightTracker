@@ -31,6 +31,17 @@
 
 ---
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/chart.jpeg" alt="Chart View" width="200">&nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/History.jpeg" alt="History View" width="200">&nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/addentry.jpeg" alt="Add Entry" width="200">&nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/water.jpeg" alt="Water Tracking" width="200">
+</p>
+
+---
+
 ## Features
 
 ### Core Tracking
@@ -80,6 +91,7 @@
 - **Admin Features**: Create, edit, and delete users from the settings popup
 - **Password Management**: Users can change their own password
 - **Nickname Management**: Users can change their display nickname
+- **Secure Password Storage**: Passwords are hashed using bcrypt (automatic migration from plain-text)
 
 ### UI/UX
 
@@ -146,14 +158,14 @@ Users are stored in `/config/users/users.json` (or `CONFIG_PATH/users/users.json
 [
   {
     "username": "admin",
-    "password": "changeme",
+    "password": "",
     "nickname": "Administrator",
     "role": "admin",
     "createdAt": "2024-01-01T00:00:00.000Z"
   },
   {
     "username": "john",
-    "password": "mypassword",
+    "password": "",
     "nickname": "John Doe",
     "role": "user",
     "createdAt": "2024-01-01T00:00:00.000Z"
