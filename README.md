@@ -33,12 +33,30 @@
 
 ## Screenshots
 
-<p align="center">
-  <img src="docs/screenshots/chart.jpeg" alt="Chart View" width="200">&nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/History.jpeg" alt="History View" width="200">&nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/addentry.jpeg" alt="Add Entry" width="200">&nbsp;&nbsp;&nbsp;
-  <img src="docs/screenshots/water.jpeg" alt="Water Tracking" width="200">
-</p>
+<table>
+  <tr>
+    <th>
+      <a href="docs/screenshots/chart.jpeg" target="_blank">
+        <img src="docs/screenshots/chart.jpeg" width="200px" alt="Chart View" />
+      </a>
+    </th>
+    <th>
+      <a href="docs/screenshots/History.jpeg" target="_blank">
+        <img src="docs/screenshots/History.jpeg" width="200px" alt="History View" />
+      </a>
+    </th>
+    <th>
+      <a href="docs/screenshots/addentry.jpeg" target="_blank">
+        <img src="docs/screenshots/addentry.jpeg" width="200px" alt="Add Entry" />
+      </a>
+    </th>
+    <th>
+      <a href="docs/screenshots/water.jpeg" target="_blank">
+        <img src="docs/screenshots/water.jpeg" width="200px" alt="Water Tracking" />
+      </a>
+    </th>
+  </tr>
+</table>
 
 ---
 
