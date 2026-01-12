@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 export const showErrorToast = (message: string = 'Oops, there was an error processing your request.', description?: string) => {
     return toast.error(message, {
         description: description,
-        position: 'top-center',
+        position: 'bottom-center',
         classNames: {
             //description: "!text-muted-foreground",
         },
@@ -20,7 +20,7 @@ export const showErrorToast = (message: string = 'Oops, there was an error proce
 export const showSuccessToast = (message: string = 'Success!', description?: string) => {
     return toast.success(message, {
         description: description,
-        position: 'top-center',
+        position: 'bottom-center',
         classNames: {
             description: "!text-muted-foreground",
         },
@@ -35,7 +35,7 @@ export const showSuccessToast = (message: string = 'Success!', description?: str
 export const showInfoToast = (message: string = 'Info', description?: string) => {
     return toast.info(message, {
         description: description,
-        position: 'top-center',
+        position: 'bottom-center',
         classNames: {
             description: "!text-muted-foreground",
         },
@@ -50,7 +50,7 @@ export const showInfoToast = (message: string = 'Info', description?: string) =>
 export const showWarningToast = (message: string = 'Warning', description?: string) => {
     return toast.warning(message, {
         description: description,
-        position: 'top-center',
+        position: 'bottom-center',
         classNames: {
             description: "!--color-black)",
         },

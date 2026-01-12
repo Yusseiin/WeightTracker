@@ -19,7 +19,7 @@ UnMove.xml
 # next.js
 /.next/
 /out/
-
+/resource/
 # production
 /build
 

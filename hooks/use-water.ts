@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
 import type { WaterEntry } from '@/lib/types';
+import { getProgressMilestone, calculateRawProgress } from '@/lib/goals';
 
 interface UseWaterReturn {
   todayWater: WaterEntry | null;
@@ -14,7 +15,11 @@ interface UseWaterReturn {
   updateWater: (date: string, amount: number) => Promise<void>;
 }
 
-export function useWater(initialWater: WaterEntry | null, initialWaterEntries: WaterEntry[] = []): UseWaterReturn {
+export function useWater(
+  initialWater: WaterEntry | null,
+  initialWaterEntries: WaterEntry[] = [],
+  dailyWaterGoal?: number | null
+): UseWaterReturn {
   const [todayWater, setTodayWater] = useState<WaterEntry | null>(initialWater);
   const [waterEntries, setWaterEntries] = useState<WaterEntry[]>(initialWaterEntries);
   const [isLoading, setIsLoading] = useState(false);
@@ -63,7 +68,23 @@ export function useWater(initialWater: WaterEntry | null, initialWaterEntries: W
           }
           return [...prev, result.data];
         });
-        showSuccessToast(`Added ${amount >= 1000 ? `${amount / 1000}L` : `${amount}ml`}`);
+
+        // Check for milestone achievements if there's a goal
+        if (dailyWaterGoal && dailyWaterGoal > 0) {
+          const prevAmount = previousWater?.amount || 0;
+          const newAmount = result.data.amount;
+          const prevPercent = calculateRawProgress(prevAmount, dailyWaterGoal);
+          const newPercent = calculateRawProgress(newAmount, dailyWaterGoal);
+
+          const milestone = getProgressMilestone(prevPercent, newPercent);
+          if (milestone) {
+            showSuccessToast(`${milestone.emoji} ${milestone.message}`);
+          } else {
+            showSuccessToast(`Added ${amount >= 1000 ? `${amount / 1000}L` : `${amount}ml`}`);
+          }
+        } else {
+          showSuccessToast(`Added ${amount >= 1000 ? `${amount / 1000}L` : `${amount}ml`}`);
+        }
       } else {
         // Rollback
         setTodayWater(previousWater);
@@ -76,7 +97,7 @@ export function useWater(initialWater: WaterEntry | null, initialWaterEntries: W
     } finally {
       setIsLoading(false);
     }
-  }, [todayWater]);
+  }, [todayWater, dailyWaterGoal]);
 
   const resetWater = useCallback(async () => {
     setIsLoading(true);

@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -21,9 +22,11 @@ import { ChangePasswordDialog } from '@/components/change-password-dialog';
 import { ChangeNicknameDialog } from '@/components/change-nickname-dialog';
 import { UserManagementDialog } from '@/components/user-management-dialog';
 import { ActivityManager } from '@/components/activity-manager';
+import { WaterPresetManager } from '@/components/water-preset-manager';
 import { DateFormatEditor } from '@/components/date-format-editor';
 import { DEFAULT_DATE_FORMAT } from '@/lib/date-utils';
-import type { SessionUser, UserSettings, ChartColor, WaterUnit, DateFormatSettings, DateLocale, SingleDateFormat, CustomActivity, WeightEntry } from '@/lib/types';
+import type { SessionUser, UserSettings, ChartColor, WaterUnit, DateFormatSettings, DateLocale, SingleDateFormat, CustomActivity, WeightEntry, GoalSettings, WeekStartsOn, WaterPreset } from '@/lib/types';
+import { DEFAULT_GOALS, WEEK_DAYS } from '@/lib/types';
 
 interface SettingsPageProps {
   session: SessionUser;
@@ -76,6 +79,10 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
   const [localDateFormat, setLocalDateFormat] = useState<DateFormatSettings>(
     ensureValidDateFormat(settings.dateFormat)
   );
+  const [localGoals, setLocalGoals] = useState<GoalSettings>(
+    settings.goals || DEFAULT_GOALS
+  );
+  const [localShowQuotes, setLocalShowQuotes] = useState(settings.showQuotes ?? true);
 
   // Fetch entries for activity usage check
   const fetchEntries = useCallback(async () => {
@@ -100,7 +107,9 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
     localWaterUnit !== (settings.waterUnit || 'ml') ||
     localChartColor !== settings.chartColor ||
     (localTargetWeight === '' ? null : parseFloat(localTargetWeight)) !== settings.targetWeight ||
-    JSON.stringify(localDateFormat) !== JSON.stringify(ensureValidDateFormat(settings.dateFormat));
+    JSON.stringify(localDateFormat) !== JSON.stringify(ensureValidDateFormat(settings.dateFormat)) ||
+    JSON.stringify(localGoals) !== JSON.stringify(settings.goals || DEFAULT_GOALS) ||
+    localShowQuotes !== (settings.showQuotes ?? true);
 
   // Reset local state when settings change externally
   useEffect(() => {
@@ -109,6 +118,8 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
     setLocalTargetWeight(settings.targetWeight?.toString() ?? '');
     setLocalChartColor(settings.chartColor);
     setLocalDateFormat(ensureValidDateFormat(settings.dateFormat));
+    setLocalGoals(settings.goals || DEFAULT_GOALS);
+    setLocalShowQuotes(settings.showQuotes ?? true);
   }, [settings]);
 
   const handleGoBack = () => {
@@ -148,7 +159,9 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
           waterUnit: localWaterUnit,
           targetWeight,
           chartColor: localChartColor,
-          dateFormat: localDateFormat
+          dateFormat: localDateFormat,
+          goals: localGoals,
+          showQuotes: localShowQuotes
         })
       });
 
@@ -218,6 +231,22 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
       setSettings(result.data);
     } else {
       throw new Error(result.error || 'Failed to save activities');
+    }
+  };
+
+  const handleWaterPresetsSave = async (waterPresets: WaterPreset[]) => {
+    const response = await fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ waterPresets })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      setSettings(result.data);
+    } else {
+      throw new Error(result.error || 'Failed to save water presets');
     }
   };
 
@@ -309,10 +338,10 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
               </CardContent>
             </Card>
 
-            {/* Chart Card */}
+            {/* Display Card */}
             <Card className="py-4">
               <CardContent className="space-y-4">
-                <h3 className="font-medium text-base">Chart</h3>
+                <h3 className="font-medium text-base">Display</h3>
                 <div className="space-y-2">
                   <Label>Chart Color</Label>
                   <ToggleGroup
@@ -334,6 +363,100 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                     ))}
                   </ToggleGroup>
                 </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="showQuotes"
+                    checked={localShowQuotes}
+                    onCheckedChange={(checked) => setLocalShowQuotes(checked === true)}
+                  />
+                  <Label htmlFor="showQuotes" className="cursor-pointer">
+                    Show motivational quotes
+                  </Label>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Goals Card */}
+            <Card className="py-4">
+              <CardContent className="space-y-4">
+                <h3 className="font-medium text-base">Goals</h3>
+                <p className="text-xs text-muted-foreground">Optional goals for gamification</p>
+
+                {/* Daily Water Goal */}
+                <div className="space-y-2">
+                  <Label>Daily Water Goal ({localWaterUnit === 'ml' ? 'ml' : 'oz'})</Label>
+                  <Input
+                    type="number"
+                    step={localWaterUnit === 'ml' ? '100' : '1'}
+                    placeholder="e.g. 2000"
+                    value={localGoals.dailyWaterGoal ?? ''}
+                    onChange={(e) => setLocalGoals(prev => ({
+                      ...prev,
+                      dailyWaterGoal: e.target.value === '' ? null : parseFloat(e.target.value)
+                    }))}
+                    className="max-w-32"
+                  />
+                </div>
+
+                {/* Weekly Weight Goal */}
+                <div className="space-y-2">
+                  <Label>Weekly Weight Goal ({localUnit}/week)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    placeholder="e.g. -0.5"
+                    value={localGoals.weeklyWeightGoal ?? ''}
+                    onChange={(e) => setLocalGoals(prev => ({
+                      ...prev,
+                      weeklyWeightGoal: e.target.value === '' ? null : parseFloat(e.target.value)
+                    }))}
+                    className="max-w-32"
+                  />
+                  <p className="text-xs text-muted-foreground">Negative for weight loss</p>
+                </div>
+
+                {/* Monthly Weight Goal */}
+                <div className="space-y-2">
+                  <Label>Monthly Weight Goal ({localUnit}/month)</Label>
+                  <Input
+                    type="number"
+                    step="0.5"
+                    placeholder="e.g. -2"
+                    value={localGoals.monthlyWeightGoal ?? ''}
+                    onChange={(e) => setLocalGoals(prev => ({
+                      ...prev,
+                      monthlyWeightGoal: e.target.value === '' ? null : parseFloat(e.target.value)
+                    }))}
+                    className="max-w-32"
+                  />
+                  <p className="text-xs text-muted-foreground">Negative for weight loss</p>
+                </div>
+
+                {/* Week Starts On */}
+                <div className="space-y-2">
+                  <Label>Week Starts On</Label>
+                  <Select
+                    value={String(localGoals.weekStartsOn ?? 1)}
+                    onValueChange={(value) => {
+                      setLocalGoals(prev => ({
+                        ...prev,
+                        weekStartsOn: parseInt(value) as WeekStartsOn
+                      }));
+                    }}
+                  >
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {WEEK_DAYS.map((day) => (
+                        <SelectItem key={day.value} value={String(day.value)}>
+                          {day.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </CardContent>
             </Card>
 
@@ -347,6 +470,21 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                     activities={settings.activities}
                     onSave={handleActivitiesSave}
                     entries={entries}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Water Presets Card */}
+            <Card className="py-4">
+              <CardContent className="space-y-4">
+                <h3 className="font-medium text-base">Water Presets</h3>
+                <div className="space-y-2">
+                  <Label>Quick-add Buttons</Label>
+                  <WaterPresetManager
+                    presets={settings.waterPresets}
+                    onSave={handleWaterPresetsSave}
+                    waterUnit={localWaterUnit}
                   />
                 </div>
               </CardContent>

@@ -21,7 +21,19 @@ interface ChangelogEntry {
 // Changelog data - add new entries at the top
 const changelog: ChangelogEntry[] = [
   {
-    version: process.env.NEXT_PUBLIC_VERSION || "",
+    version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
+    date: "2025-01-12",
+    changes: [
+      { type: "added", description: "Motivational daily quotes" },
+      { type: "added", description: "Added PWA Image" },
+      { type: "added", description: "Added some more icons" },
+      { type: "added", description: "Added the possibility to change water preset" },
+      { type: "added", description: "Added the possibility to track daily water consumption" },
+      { type: "added", description: "Added the possibility to track weekly and monthly weight loss/gain" },
+    ],
+  },
+  {
+    version: "v0.0.4",
     date: "2025-01-11",
     changes: [
       { type: "added", description: "Home Assistant integration with API key authentication" },
@@ -80,7 +92,7 @@ export function ChangelogDialog({ open, onOpenChange }: ChangelogDialogProps) {
               <div key={`${entry.version}-${index}`} className="space-y-3">
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold text-base">
-                    v{entry.version}
+                    {entry.version}
                   </h3>
                   {index === 0 && (
                     <Badge variant="secondary" className="text-xs">

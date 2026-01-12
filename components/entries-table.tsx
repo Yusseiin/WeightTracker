@@ -70,8 +70,8 @@ export function EntriesTable({ entries, unit, waterUnit, onRowClick, waterEntrie
 
   return (
     <Card className="py-0">
-      <CardContent className="px-0 sm:px-2 pt-4">
-        <h3 className="text-lg font-semibold mb-0 px-2 sm:px-0">History</h3>
+      <CardContent className="px-0 sm:px-2">
+        {/* <h3 className="text-lg font-semibold mb-0 px-2 sm:px-0">History</h3> */}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

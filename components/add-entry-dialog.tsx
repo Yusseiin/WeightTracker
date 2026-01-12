@@ -103,7 +103,7 @@ export function AddEntryDialog({ onSubmit, unit, activities }: AddEntryDialogPro
     }
   };
 
-  const FormContent = () => (
+  const formContent = (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       {/* Weight input */}
       <div className="space-y-2">
@@ -227,7 +227,7 @@ export function AddEntryDialog({ onSubmit, unit, activities }: AddEntryDialogPro
             <DrawerTitle>Add Weight Entry</DrawerTitle>
           </DrawerHeader>
           <ScrollArea className="flex-1 px-4 max-h-[60vh]">
-            <FormContent />
+            {formContent}
           </ScrollArea>
           <DrawerFooter className="pt-4">
             <Button
@@ -256,7 +256,7 @@ export function AddEntryDialog({ onSubmit, unit, activities }: AddEntryDialogPro
           <DialogTitle>Add Weight Entry</DialogTitle>
         </DialogHeader>
         <ScrollArea className="flex-1 -mx-6 px-6">
-          <FormContent />
+          {formContent}
         </ScrollArea>
         <DialogFooter className="flex-col gap-2 sm:flex-row mt-4">
           <DialogClose asChild>

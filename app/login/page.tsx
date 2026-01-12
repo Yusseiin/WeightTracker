@@ -6,7 +6,8 @@ import { useForm, Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod/v4';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
-import { Scale, LogIn } from 'lucide-react';
+import { LogIn } from 'lucide-react';
+import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -69,9 +70,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="p-3 rounded-full bg-primary/10">
-              <Scale className="h-8 w-8 text-primary" />
-            </div>
+            <Image src="/logo.svg" alt="Weight Tracker" width={120} height={120} />
           </div>
           <CardTitle className="text-2xl">Weight Tracker</CardTitle>
           <CardDescription>Sign in to track your progress</CardDescription>

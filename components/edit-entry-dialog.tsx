@@ -142,7 +142,7 @@ export function EditEntryDialog({
     ? formatDateForTooltip(entry.timestamp)
     : '';
 
-  const FormContent = () => (
+  const formContent = (
     <div className="space-y-6">
       {/* Date and Time inputs */}
       <div className="grid grid-cols-2 gap-4">
@@ -268,7 +268,7 @@ export function EditEntryDialog({
     </div>
   );
 
-  const FooterButtons = () => (
+  const footerButtons = (
     <div className="flex gap-2 w-full">
       <AlertDialog>
         <AlertDialogTrigger asChild>
@@ -313,10 +313,10 @@ export function EditEntryDialog({
             <DrawerTitle>Edit Entry</DrawerTitle>
           </DrawerHeader>
           <ScrollArea className="flex-1 px-4 max-h-[60vh]">
-            <FormContent />
+            {formContent}
           </ScrollArea>
           <DrawerFooter className="pt-4">
-            <FooterButtons />
+            {footerButtons}
             <DrawerClose asChild>
               <Button variant="outline">Cancel</Button>
             </DrawerClose>
@@ -333,13 +333,13 @@ export function EditEntryDialog({
           <DialogTitle>Edit Entry</DialogTitle>
         </DialogHeader>
         <ScrollArea className="flex-1 -mx-6 px-6">
-          <FormContent />
+          {formContent}
         </ScrollArea>
         <DialogFooter className="flex-col gap-2 sm:flex-row mt-4">
           <DialogClose asChild>
             <Button variant="outline" className="w-full sm:w-auto">Cancel</Button>
           </DialogClose>
-          <FooterButtons />
+          {footerButtons}
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -15,8 +15,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "WeightTracker",
-  description: "Track your weight with me :)",
+  title: "Weight Tracker",
+  description: "A self-hosted mobile-first weight tracking application",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Weight Tracker",
+  },
+  icons: {
+    icon: [
+      { url: "/pwa-64x64.png", sizes: "64x64", type: "image/png" },
+      { url: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/pwa-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon-180x180.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
 };
 
 // Viewport configuration to prevent layout shifts when keyboard appears

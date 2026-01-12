@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
 import type { WeightEntry, EntryFormData, UserSettings } from '@/lib/types';
+import { checkWeeklyGoalAchievement, checkMonthlyGoalAchievement } from '@/lib/goals';
 
 interface UseWeightEntriesReturn {
   entries: WeightEntry[];
@@ -49,15 +50,37 @@ export function useWeightEntries(
       const result = await response.json();
 
       if (result.success) {
+        const newEntry = result.data as WeightEntry;
+
+        // Check for weight goal achievements before updating state
+        const weeklyGoal = settings.goals?.weeklyWeightGoal;
+        const monthlyGoal = settings.goals?.monthlyWeightGoal;
+        const weekStartsOn = settings.goals?.weekStartsOn ?? 1;
+
+        const weeklyAchievement = weeklyGoal
+          ? checkWeeklyGoalAchievement(entries, newEntry, weeklyGoal, weekStartsOn)
+          : null;
+        const monthlyAchievement = monthlyGoal
+          ? checkMonthlyGoalAchievement(entries, newEntry, monthlyGoal)
+          : null;
+
         // Add new entry to the beginning (sorted by timestamp desc)
         setEntries(prev => {
-          const newEntries = [result.data, ...prev];
+          const newEntries = [newEntry, ...prev];
           // Re-sort to ensure proper order
           return newEntries.sort(
             (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
           );
         });
-        showSuccessToast('Entry added successfully!');
+
+        // Show motivational toasts for goal achievements
+        if (monthlyAchievement?.achieved) {
+          showSuccessToast(`🏆 ${monthlyAchievement.message}`);
+        } else if (weeklyAchievement?.achieved) {
+          showSuccessToast(`🔥 ${weeklyAchievement.message}`);
+        } else {
+          showSuccessToast('Entry added successfully!');
+        }
       } else {
         showErrorToast(result.error || 'Failed to add entry');
         throw new Error(result.error);
@@ -69,7 +92,7 @@ export function useWeightEntries(
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [entries, settings]);
 
   const updateEntry = useCallback(async (id: string, data: Partial<EntryFormData>) => {
     const previousEntries = entries;
@@ -130,7 +153,7 @@ export function useWeightEntries(
         setEntries(previousEntries);
         showErrorToast(result.error || 'Failed to delete entry');
       }
-    } catch (error) {
+    } catch {
       // Rollback on error
       setEntries(previousEntries);
       showErrorToast('Failed to delete entry');
@@ -163,7 +186,7 @@ export function useWeightEntries(
         setSettings(previousSettings);
         showErrorToast(result.error || 'Failed to update settings');
       }
-    } catch (error) {
+    } catch {
       // Rollback on error
       setSettings(previousSettings);
       showErrorToast('Failed to update settings');

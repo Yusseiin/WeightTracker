@@ -161,7 +161,7 @@ export function ActivityManager({ activities = [], onSave, entries }: ActivityMa
     }
   };
 
-  const ActivityList = () => (
+  const activityListContent = (
     <div className="space-y-4">
       {/* Activity list */}
       <div className="space-y-2">
@@ -175,41 +175,45 @@ export function ActivityManager({ activities = [], onSave, entries }: ActivityMa
           >
             {editingId === activity.id && editingActivity ? (
               // Editing mode
-              <>
-                <IconPicker
-                  value={editingActivity.icon}
-                  onChange={(icon) => setEditingActivity({ ...editingActivity, icon })}
-                  colorClass={editingActivity.color}
-                />
+              <div className="flex flex-col gap-2 w-full">
+                <div className="flex items-center gap-2">
+                  <IconPicker
+                    value={editingActivity.icon}
+                    onChange={(icon) => setEditingActivity({ ...editingActivity, icon })}
+                    colorClass={editingActivity.color}
+                  />
+                  <div className="flex gap-1">
+                    {ACTIVITY_COLORS.slice(0, 5).map((color) => (
+                      <button
+                        key={color.value}
+                        type="button"
+                        className={cn(
+                          'w-6 h-6 rounded-full border-2',
+                          editingActivity.color === color.value
+                            ? 'border-foreground'
+                            : 'border-transparent'
+                        )}
+                        style={{ backgroundColor: color.preview }}
+                        onClick={() => setEditingActivity({ ...editingActivity, color: color.value })}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex gap-1 ml-auto">
+                    <Button variant="ghost" size="icon" onClick={saveEdit}>
+                      <Check className="h-4 w-4 text-green-500" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={cancelEdit}>
+                      <X className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </div>
+                </div>
                 <Input
                   value={editingActivity.label}
                   onChange={(e) => setEditingActivity({ ...editingActivity, label: e.target.value })}
-                  className="flex-1"
+                  className="w-full"
                   placeholder="Activity name"
                 />
-                <div className="flex gap-1">
-                  {ACTIVITY_COLORS.slice(0, 5).map((color) => (
-                    <button
-                      key={color.value}
-                      type="button"
-                      className={cn(
-                        'w-6 h-6 rounded-full border-2',
-                        editingActivity.color === color.value
-                          ? 'border-foreground'
-                          : 'border-transparent'
-                      )}
-                      style={{ backgroundColor: color.preview }}
-                      onClick={() => setEditingActivity({ ...editingActivity, color: color.value })}
-                    />
-                  ))}
-                </div>
-                <Button variant="ghost" size="icon" onClick={saveEdit}>
-                  <Check className="h-4 w-4 text-green-500" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={cancelEdit}>
-                  <X className="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </>
+              </div>
             ) : (
               // Display mode
               <>
@@ -260,41 +264,47 @@ export function ActivityManager({ activities = [], onSave, entries }: ActivityMa
 
       {/* Add new activity form */}
       {isAdding ? (
-        <div className="flex items-center gap-2 p-3 border rounded-lg border-dashed">
-          <IconPicker
-            value={newActivity.icon}
-            onChange={(icon) => setNewActivity({ ...newActivity, icon })}
-            colorClass={newActivity.color}
-          />
-          <Input
-            value={newActivity.label}
-            onChange={(e) => setNewActivity({ ...newActivity, label: e.target.value })}
-            className="flex-1"
-            placeholder="Activity name"
-            autoFocus
-          />
-          <div className="flex gap-1">
-            {ACTIVITY_COLORS.slice(0, 5).map((color) => (
-              <button
-                key={color.value}
-                type="button"
-                className={cn(
-                  'w-6 h-6 rounded-full border-2',
-                  newActivity.color === color.value
-                    ? 'border-foreground'
-                    : 'border-transparent'
-                )}
-                style={{ backgroundColor: color.preview }}
-                onClick={() => setNewActivity({ ...newActivity, color: color.value })}
+        <div className="p-3 border rounded-lg border-dashed">
+          <div className="flex flex-col gap-2 w-full">
+            <div className="flex items-center gap-2">
+              <IconPicker
+                value={newActivity.icon}
+                onChange={(icon) => setNewActivity({ ...newActivity, icon })}
+                colorClass={newActivity.color}
               />
-            ))}
+              <div className="flex gap-1">
+                {ACTIVITY_COLORS.slice(0, 5).map((color) => (
+                  <button
+                    key={color.value}
+                    type="button"
+                    className={cn(
+                      'w-6 h-6 rounded-full border-2',
+                      newActivity.color === color.value
+                        ? 'border-foreground'
+                        : 'border-transparent'
+                    )}
+                    style={{ backgroundColor: color.preview }}
+                    onClick={() => setNewActivity({ ...newActivity, color: color.value })}
+                  />
+                ))}
+              </div>
+              <div className="flex gap-1 ml-auto">
+                <Button variant="ghost" size="icon" onClick={addActivity} disabled={!newActivity.label.trim()}>
+                  <Check className="h-4 w-4 text-green-500" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => setIsAdding(false)}>
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </div>
+            </div>
+            <Input
+              value={newActivity.label}
+              onChange={(e) => setNewActivity({ ...newActivity, label: e.target.value })}
+              className="w-full"
+              placeholder="Activity name"
+              autoFocus
+            />
           </div>
-          <Button variant="ghost" size="icon" onClick={addActivity} disabled={!newActivity.label.trim()}>
-            <Check className="h-4 w-4 text-green-500" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => setIsAdding(false)}>
-            <X className="h-4 w-4 text-muted-foreground" />
-          </Button>
         </div>
       ) : (
         <Button
@@ -343,7 +353,7 @@ export function ActivityManager({ activities = [], onSave, entries }: ActivityMa
               <DrawerTitle>Manage Activities</DrawerTitle>
             </DrawerHeader>
             <div className="px-4 pb-4 overflow-y-auto max-h-[60vh]">
-              <ActivityList />
+              {activityListContent}
             </div>
             <DrawerFooter>
               <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
@@ -384,7 +394,7 @@ export function ActivityManager({ activities = [], onSave, entries }: ActivityMa
           <DialogHeader>
             <DialogTitle>Manage Activities</DialogTitle>
           </DialogHeader>
-          <ActivityList />
+          {activityListContent}
           <div className="flex justify-end gap-2 mt-4">
             <DialogClose asChild>
               <Button variant="outline">Cancel</Button>

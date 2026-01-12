@@ -26,6 +26,25 @@ export const DEFAULT_ACTIVITIES: CustomActivity[] = [
   { id: 'cardio', label: 'Cardio', icon: 'Activity', color: 'text-green-500' },
 ];
 
+// Water preset configuration
+export interface WaterPreset {
+  id: string;           // Unique identifier (e.g., 'wp_abc123')
+  label: string;        // User-defined name (e.g., 'Cup', 'Bottle')
+  icon: string;         // Lucide icon name (e.g., 'GlassWater', 'Milk')
+  amount: number;       // Amount in ml (always stored in ml)
+}
+
+// Maximum number of water presets
+export const MAX_WATER_PRESETS = 6;
+
+// Default water presets for new users
+export const DEFAULT_WATER_PRESETS: WaterPreset[] = [
+  { id: 'cup', label: 'Cup', icon: 'GlassWater', amount: 200 },
+  { id: 'half', label: '0.5L', icon: 'Droplets', amount: 500 },
+  { id: 'bottle', label: '0.75L', icon: 'BottleWine', amount: 750 },
+  { id: 'liter', label: '1L', icon: 'Milk', amount: 1000 },
+];
+
 // Chart color options
 export type ChartColor = 'primary' | 'blue' | 'green' | 'orange' | 'purple';
 
@@ -66,6 +85,36 @@ export interface DateFormatSettings {
   axisFormat: SingleDateFormat;   // Format for chart X-axis
 }
 
+// Week start day options (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+export type WeekStartsOn = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+// Day names for week start selection
+export const WEEK_DAYS = [
+  { value: 0, label: 'Sunday' },
+  { value: 1, label: 'Monday' },
+  { value: 2, label: 'Tuesday' },
+  { value: 3, label: 'Wednesday' },
+  { value: 4, label: 'Thursday' },
+  { value: 5, label: 'Friday' },
+  { value: 6, label: 'Saturday' },
+] as const;
+
+// Goal settings for gamification
+export interface GoalSettings {
+  dailyWaterGoal: number | null;    // Daily water goal in ml, null = no goal
+  weeklyWeightGoal: number | null;  // Weekly weight change in kg (negative = lose, positive = gain)
+  monthlyWeightGoal: number | null; // Monthly weight change in kg
+  weekStartsOn: WeekStartsOn;       // When the week starts (0 = Sunday, 1 = Monday)
+}
+
+// Default goal settings
+export const DEFAULT_GOALS: GoalSettings = {
+  dailyWaterGoal: null,
+  weeklyWeightGoal: null,
+  monthlyWeightGoal: null,
+  weekStartsOn: 1, // Monday by default
+};
+
 // User settings model
 export interface UserSettings {
   userId: string;
@@ -74,7 +123,10 @@ export interface UserSettings {
   targetWeight: number | null;
   chartColor: ChartColor;
   dateFormat: DateFormatSettings;
-  activities: CustomActivity[];   // User's custom activities (max 10)
+  activities: CustomActivity[];   // User's custom activities (max 12)
+  waterPresets: WaterPreset[];    // User's custom water presets (max 6)
+  goals: GoalSettings;            // Gamification goals
+  showQuotes: boolean;            // Show motivational quotes
   createdAt: string;
   updatedAt: string;
 }
@@ -161,16 +213,18 @@ export interface WaterEntry {
 
 // Water amount options in ml (stored internally always in ml)
 export const WATER_AMOUNTS = {
-  cup: 200,       // 200ml / ~7oz
-  halfLiter: 500, // 0.5L / ~17oz
-  liter: 1000,    // 1L / ~34oz
+  cup: 200,            // 200ml / ~7oz
+  halfLiter: 500,      // 0.5L / ~17oz
+  threeQuarters: 750,  // 0.75L / ~25oz
+  liter: 1000,         // 1L / ~34oz
 } as const;
 
 // Water amount options in oz for imperial display
 export const WATER_AMOUNTS_OZ = {
-  cup: 8,         // 8oz (~237ml, standard US cup)
-  halfLiter: 17,  // ~17oz (~500ml)
-  liter: 34,      // ~34oz (~1L)
+  cup: 8,              // 8oz (~237ml, standard US cup)
+  halfLiter: 17,       // ~17oz (~500ml)
+  threeQuarters: 25,   // ~25oz (~750ml)
+  liter: 34,           // ~34oz (~1L)
 } as const;
 
 // Conversion constants

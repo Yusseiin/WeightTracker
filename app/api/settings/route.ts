@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSettings, updateSettings } from '@/lib/data';
 import { getSession } from '@/lib/auth';
-import { ApiResponse, UserSettings, DateFormatSettings, SingleDateFormat, CustomActivity, MAX_ACTIVITIES } from '@/lib/types';
-import { ALL_ACTIVITY_ICONS } from '@/lib/icons';
+import { ApiResponse, UserSettings, DateFormatSettings, SingleDateFormat, CustomActivity, MAX_ACTIVITIES, GoalSettings, WaterPreset, MAX_WATER_PRESETS } from '@/lib/types';
+import { ALL_ACTIVITY_ICONS, WATER_ICONS } from '@/lib/icons';
 
 // Validation constants
 const VALID_DATE_FORMATS = ['dd/MM/yyyy', 'MM/dd/yyyy', 'yyyy-MM-dd', 'dd MMM yyyy', 'EEE dd/MM', 'EEE.dd/MM', 'dd/MM', 'MMM dd', 'custom'];
@@ -63,6 +63,62 @@ function isValidActivitiesArray(activities: unknown): activities is CustomActivi
   return true;
 }
 
+// Validate goal settings
+function isValidGoalSettings(goals: unknown): goals is GoalSettings {
+  if (!goals || typeof goals !== 'object') return false;
+  const g = goals as Record<string, unknown>;
+
+  // dailyWaterGoal: null or positive number
+  if (g.dailyWaterGoal !== null && g.dailyWaterGoal !== undefined) {
+    if (typeof g.dailyWaterGoal !== 'number' || g.dailyWaterGoal < 0) return false;
+  }
+
+  // weeklyWeightGoal: null or number (can be negative for weight loss)
+  if (g.weeklyWeightGoal !== null && g.weeklyWeightGoal !== undefined) {
+    if (typeof g.weeklyWeightGoal !== 'number') return false;
+  }
+
+  // monthlyWeightGoal: null or number (can be negative for weight loss)
+  if (g.monthlyWeightGoal !== null && g.monthlyWeightGoal !== undefined) {
+    if (typeof g.monthlyWeightGoal !== 'number') return false;
+  }
+
+  // weekStartsOn: 0-6 (Sunday to Saturday)
+  if (g.weekStartsOn !== undefined) {
+    if (typeof g.weekStartsOn !== 'number' || g.weekStartsOn < 0 || g.weekStartsOn > 6) return false;
+  }
+
+  return true;
+}
+
+// Validate a single water preset
+function isValidWaterPreset(preset: unknown): preset is WaterPreset {
+  if (!preset || typeof preset !== 'object') return false;
+  const p = preset as Record<string, unknown>;
+
+  if (typeof p.id !== 'string' || p.id.trim() === '') return false;
+  if (typeof p.label !== 'string' || p.label.trim() === '') return false;
+  if (typeof p.icon !== 'string' || !WATER_ICONS.includes(p.icon)) return false;
+  if (typeof p.amount !== 'number' || p.amount <= 0) return false;
+
+  return true;
+}
+
+// Validate water presets array
+function isValidWaterPresetsArray(presets: unknown): presets is WaterPreset[] {
+  if (!Array.isArray(presets)) return false;
+  if (presets.length === 0 || presets.length > MAX_WATER_PRESETS) return false;
+
+  // Check all presets are valid
+  if (!presets.every(isValidWaterPreset)) return false;
+
+  // Check for unique IDs
+  const ids = presets.map((p) => p.id);
+  if (new Set(ids).size !== ids.length) return false;
+
+  return true;
+}
+
 // GET /api/settings - Get user settings
 export async function GET() {
   try {
@@ -103,7 +159,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { unit, waterUnit, targetWeight, chartColor, dateFormat, activities } = body;
+    const { unit, waterUnit, targetWeight, chartColor, dateFormat, activities, waterPresets, goals, showQuotes } = body;
 
     // Validate unit if provided
     if (unit !== undefined && !['kg', 'lb'].includes(unit)) {
@@ -151,7 +207,31 @@ export async function PUT(request: NextRequest) {
     // Validate activities if provided
     if (activities !== undefined && !isValidActivitiesArray(activities)) {
       return NextResponse.json(
-        { success: false, error: 'Invalid activities. Must have 1-10 activities with unique IDs and valid icons.' },
+        { success: false, error: 'Invalid activities. Must have 1-12 activities with unique IDs and valid icons.' },
+        { status: 400 }
+      );
+    }
+
+    // Validate water presets if provided
+    if (waterPresets !== undefined && !isValidWaterPresetsArray(waterPresets)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid water presets. Must have 1-6 presets with unique IDs and valid icons.' },
+        { status: 400 }
+      );
+    }
+
+    // Validate goals if provided
+    if (goals !== undefined && !isValidGoalSettings(goals)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid goal settings' },
+        { status: 400 }
+      );
+    }
+
+    // Validate showQuotes if provided
+    if (showQuotes !== undefined && typeof showQuotes !== 'boolean') {
+      return NextResponse.json(
+        { success: false, error: 'Invalid showQuotes value. Must be a boolean' },
         { status: 400 }
       );
     }
@@ -164,6 +244,9 @@ export async function PUT(request: NextRequest) {
     if (chartColor !== undefined) updateData.chartColor = chartColor;
     if (dateFormat !== undefined) updateData.dateFormat = dateFormat;
     if (activities !== undefined) updateData.activities = activities;
+    if (waterPresets !== undefined) updateData.waterPresets = waterPresets;
+    if (goals !== undefined) updateData.goals = goals;
+    if (showQuotes !== undefined) updateData.showQuotes = showQuotes;
 
     const updated = await updateSettings(
       updateData,

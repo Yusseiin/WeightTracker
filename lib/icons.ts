@@ -35,6 +35,12 @@ export const ACTIVITY_ICON_CATEGORIES: IconCategory[] = [
       'TreePine',
       'Compass',
       'Map',
+      'Volleyball',
+      'FishingHook',
+      'HandFist',
+      'WavesLadder',
+      'BowArrow',
+      'Sword',
     ],
   },
   {
@@ -73,6 +79,17 @@ export const ACTIVITY_ICON_CATEGORIES: IconCategory[] = [
 export const ALL_ACTIVITY_ICONS: string[] = ACTIVITY_ICON_CATEGORIES.flatMap(
   (category) => category.icons
 );
+
+// Icons available for water presets
+export const WATER_ICONS: string[] = [
+  'Droplets',
+  'GlassWater',
+  'Milk',
+  'BottleWine',
+  'CupSoda',
+  'Coffee',
+  'Beer',
+];
 
 // Color options for activities
 export interface ActivityColor {

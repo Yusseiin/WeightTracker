@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { WeightEntry, UserSettings, DEFAULT_USER_ID, DateFormatSettings, DEFAULT_ACTIVITIES } from './types';
+import { WeightEntry, UserSettings, DEFAULT_USER_ID, DEFAULT_ACTIVITIES, DEFAULT_GOALS, DEFAULT_WATER_PRESETS } from './types';
 import { DEFAULT_DATE_FORMAT } from './date-utils';
 
 // Config directory - configurable via env for Docker/Unraid
@@ -175,6 +175,9 @@ const defaultSettings = (userId: string): UserSettings => ({
   chartColor: 'blue',
   dateFormat: DEFAULT_DATE_FORMAT,
   activities: DEFAULT_ACTIVITIES,
+  waterPresets: DEFAULT_WATER_PRESETS,
+  goals: DEFAULT_GOALS,
+  showQuotes: true,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString()
 });
@@ -228,6 +231,26 @@ export async function getSettings(userId: string = DEFAULT_USER_ID): Promise<Use
     // Add activities if missing (backward compatibility)
     if (!settings.activities || !Array.isArray(settings.activities) || settings.activities.length === 0) {
       settings.activities = DEFAULT_ACTIVITIES;
+      needsSave = true;
+    }
+    // Add goals if missing (backward compatibility)
+    if (!settings.goals) {
+      settings.goals = DEFAULT_GOALS;
+      needsSave = true;
+    }
+    // Add weekStartsOn to goals if missing (backward compatibility)
+    if (settings.goals && settings.goals.weekStartsOn === undefined) {
+      settings.goals.weekStartsOn = 1; // Monday default
+      needsSave = true;
+    }
+    // Add showQuotes if missing (backward compatibility)
+    if (settings.showQuotes === undefined) {
+      settings.showQuotes = true;
+      needsSave = true;
+    }
+    // Add waterPresets if missing (backward compatibility)
+    if (!settings.waterPresets || !Array.isArray(settings.waterPresets) || settings.waterPresets.length === 0) {
+      settings.waterPresets = DEFAULT_WATER_PRESETS;
       needsSave = true;
     }
 

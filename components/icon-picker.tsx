@@ -56,7 +56,7 @@ export function IconPicker({ value, onChange, colorClass = 'text-foreground' }: 
           className="pl-9"
         />
       </div>
-      <div className="max-h-[300px] overflow-y-auto space-y-4">
+      <div className="max-h-75 overflow-y-auto space-y-4">
         {filteredCategories.length === 0 ? (
           <p className="text-center text-muted-foreground py-4">No icons found</p>
         ) : (

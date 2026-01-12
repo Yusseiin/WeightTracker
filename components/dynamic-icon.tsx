@@ -24,6 +24,12 @@ import {
   TreePine,
   Compass,
   Map,
+  Volleyball,
+  FishingHook,
+  HandFist,
+  WavesLadder,
+  BowArrow,
+  Sword,
   // Rest & Wellness
   Sofa,
   Moon,
@@ -35,6 +41,13 @@ import {
   Wind,
   Cloud,
   Leaf,
+  // Water presets
+  Droplets,
+  GlassWater,
+  Milk,
+  BottleWine,
+  Beer,
+  CupSoda,
   // General
   Star,
   Circle,
@@ -75,6 +88,12 @@ const iconMap: Record<string, ComponentType<LucideProps>> = {
   TreePine,
   Compass,
   Map,
+  Volleyball,
+  FishingHook,
+  HandFist,
+  WavesLadder,
+  BowArrow,
+  Sword,
   // Rest & Wellness
   Sofa,
   Moon,
@@ -86,6 +105,13 @@ const iconMap: Record<string, ComponentType<LucideProps>> = {
   Wind,
   Cloud,
   Leaf,
+  // Water presets
+  Droplets,
+  GlassWater,
+  Milk,
+  BottleWine,
+  Beer,
+  CupSoda,
   // General
   Star,
   Circle,

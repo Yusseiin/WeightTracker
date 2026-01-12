@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Droplets, GlassWater, RotateCcw, Pencil } from 'lucide-react';
+import { Droplets, RotateCcw, Pencil } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -22,11 +22,12 @@ import {
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { WATER_AMOUNTS, type WaterEntry, type WaterUnit } from '@/lib/types';
+import { type WaterEntry, type WaterUnit, type WaterPreset } from '@/lib/types';
 import { formatWaterAmount, ozToMl } from '@/lib/water-utils';
+import { DynamicIcon } from './dynamic-icon';
+import { cn } from '@/lib/utils';
 
 interface AddWaterDialogProps {
   todayWater: WaterEntry | null;
@@ -34,6 +35,7 @@ interface AddWaterDialogProps {
   onResetWater: () => Promise<void>;
   isLoading?: boolean;
   waterUnit: WaterUnit;
+  waterPresets: WaterPreset[];
 }
 
 export function AddWaterDialog({
@@ -41,7 +43,8 @@ export function AddWaterDialog({
   onAddWater,
   onResetWater,
   isLoading = false,
-  waterUnit
+  waterUnit,
+  waterPresets
 }: AddWaterDialogProps) {
   const [open, setOpen] = useState(false);
   const [selectedAmount, setSelectedAmount] = useState<string>('');
@@ -105,7 +108,7 @@ export function AddWaterDialog({
 
   const canAdd = isCustomMode ? (parseInt(customAmount) || 0) > 0 : !!selectedAmount;
 
-  const FormContent = () => (
+  const formContent = (
     <div className="space-y-6">
       {/* Current amount display */}
       <div className="text-center p-4 bg-muted rounded-lg">
@@ -117,56 +120,27 @@ export function AddWaterDialog({
 
       {/* Water amount selection */}
       <div className="space-y-3">
-        <ToggleGroup
-          type="single"
-          value={isCustomMode ? 'custom' : selectedAmount}
-          onValueChange={handlePresetSelect}
-          className="w-full"
-          variant="outline"
-        >
-          <ToggleGroupItem
-            value={WATER_AMOUNTS.cup.toString()}
-            aria-label={waterUnit === 'oz' ? 'Cup (8oz)' : 'Cup (200ml)'}
-            className="flex-1 flex-col h-auto py-3"
-          >
-            <GlassWater className="h-5 w-5 mb-1" />
-            <span className="text-sm font-medium">Cup</span>
-            <span className="text-xs text-muted-foreground">
-              {waterUnit === 'oz' ? '8oz' : '200ml'}
-            </span>
-          </ToggleGroupItem>
-          <ToggleGroupItem
-            value={WATER_AMOUNTS.halfLiter.toString()}
-            aria-label={waterUnit === 'oz' ? '17oz' : 'Half liter (500ml)'}
-            className="flex-1 flex-col h-auto py-3"
-          >
-            <Droplets className="h-5 w-5 mb-1" />
-            <span className="text-sm font-medium">{waterUnit === 'oz' ? '17oz' : '0.5L'}</span>
-            <span className="text-xs text-muted-foreground">
-              {waterUnit === 'oz' ? '~500ml' : '500ml'}
-            </span>
-          </ToggleGroupItem>
-          <ToggleGroupItem
-            value={WATER_AMOUNTS.liter.toString()}
-            aria-label={waterUnit === 'oz' ? '34oz' : 'One liter (1000ml)'}
-            className="flex-1 flex-col h-auto py-3"
-          >
-            <Droplets className="h-5 w-5 mb-1" />
-            <span className="text-sm font-medium">{waterUnit === 'oz' ? '34oz' : '1L'}</span>
-            <span className="text-xs text-muted-foreground">
-              {waterUnit === 'oz' ? '~1L' : '1000ml'}
-            </span>
-          </ToggleGroupItem>
-          <ToggleGroupItem
-            value="custom"
-            aria-label="Custom amount"
-            className="flex-1 flex-col h-auto py-3"
-          >
-            <Pencil className="h-5 w-5 mb-1" />
-            <span className="text-sm font-medium">Custom</span>
-            <span className="text-xs text-muted-foreground">{unitLabel}</span>
-          </ToggleGroupItem>
-        </ToggleGroup>
+        <div className="grid grid-cols-4 gap-2">
+          {waterPresets.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => handlePresetSelect(preset.amount.toString())}
+              className={cn(
+                "flex flex-col items-center justify-center py-3 px-1 rounded-md border text-sm transition-colors",
+                selectedAmount === preset.amount.toString() && !isCustomMode
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-input bg-background hover:bg-accent hover:text-accent-foreground"
+              )}
+            >
+              <DynamicIcon name={preset.icon} className="h-5 w-5 mb-1 text-blue-500" />
+              <span className="text-xs font-medium truncate w-full text-center">{preset.label}</span>
+              <span className="text-xs text-muted-foreground">
+                {formatWaterAmount(preset.amount, waterUnit)}
+              </span>
+            </button>
+          ))}
+        </div>
 
         {/* Custom amount input - only shown when custom is selected */}
         {isCustomMode && (
@@ -188,16 +162,26 @@ export function AddWaterDialog({
         )}
       </div>
 
-      {/* Reset button */}
-      <Button
-        variant="outline"
-        onClick={handleReset}
-        disabled={isSubmitting || isLoading || currentAmount === 0}
-        className="w-full"
-      >
-        <RotateCcw className="h-4 w-4 mr-2" />
-        Reset to 0
-      </Button>
+      {/* Custom and Reset buttons row */}
+      <div className="flex gap-2">
+        <Button
+          variant={isCustomMode ? "default" : "outline"}
+          onClick={() => handlePresetSelect('custom')}
+          className="flex-1"
+        >
+          <Pencil className="h-4 w-4 mr-2" />
+          Custom
+        </Button>
+        <Button
+          variant="outline"
+          onClick={handleReset}
+          disabled={isSubmitting || isLoading || currentAmount === 0}
+          className="flex-1"
+        >
+          <RotateCcw className="h-4 w-4 mr-2" />
+          Reset to 0
+        </Button>
+      </div>
     </div>
   );
 
@@ -227,7 +211,7 @@ export function AddWaterDialog({
             </DrawerTitle>
           </DrawerHeader>
           <ScrollArea className="flex-1 px-4 max-h-[60vh]">
-            <FormContent />
+            {formContent}
           </ScrollArea>
           <DrawerFooter className="pt-4">
             <Button
@@ -258,7 +242,7 @@ export function AddWaterDialog({
           </DialogTitle>
         </DialogHeader>
         <ScrollArea className="flex-1 -mx-6 px-6">
-          <FormContent />
+          {formContent}
         </ScrollArea>
         <DialogFooter className="flex-col gap-2 sm:flex-row mt-4">
           <DialogClose asChild>

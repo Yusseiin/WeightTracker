@@ -13,6 +13,7 @@ import { useWater } from '@/hooks/use-water';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { WeightEntry, UserSettings, SessionUser, WaterEntry } from '@/lib/types';
 import { ChangelogDialog } from './changelog-dialog';
+import { MotivationalQuote } from './motivational-quote';
 import { Button } from './ui/button';
 import { Info } from 'lucide-react';
 
@@ -40,7 +41,7 @@ export function WeightTracker({ initialEntries, initialSettings, initialWater, i
     addWater,
     resetWater,
     updateWater
-  } = useWater(initialWater, initialWaterEntries);
+  } = useWater(initialWater, initialWaterEntries, settings.goals?.dailyWaterGoal);
 
   const [selectedEntry, setSelectedEntry] = useState<WeightEntry | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -58,6 +59,7 @@ export function WeightTracker({ initialEntries, initialSettings, initialWater, i
       <header className="shrink-0 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
         <div className="container flex h-12 items-center justify-between px-4 max-w-3xl mx-auto">
           <div className="flex items-center gap-2">
+            <img src="/logo.svg" alt="Logo" className="h-6 w-6" />
             <h1 className="text-lg font-semibold">Weight Tracker</h1>
             {session && (
               <span className="text-sm text-muted-foreground">
@@ -81,6 +83,8 @@ export function WeightTracker({ initialEntries, initialSettings, initialWater, i
 
       {/* Main content */}
       <main className="container px-4 py-1 pb-18 space-y-1 max-w-3xl mx-auto flex-1 overflow-hidden flex flex-col">
+        {settings.showQuotes !== false && <MotivationalQuote />}
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 flex flex-col overflow-hidden">
           <TabsList className="w-full grid grid-cols-2 shrink-0">
             <TabsTrigger value="chart">Chart</TabsTrigger>
@@ -94,6 +98,8 @@ export function WeightTracker({ initialEntries, initialSettings, initialWater, i
               todayWater={todayWater}
               unit={settings.unit}
               waterUnit={settings.waterUnit || 'ml'}
+              goals={settings.goals}
+              waterEntries={waterEntries}
             />
           )}
 
@@ -151,6 +157,7 @@ export function WeightTracker({ initialEntries, initialSettings, initialWater, i
         onResetWater={resetWater}
         isLoading={isWaterLoading}
         waterUnit={settings.waterUnit || 'ml'}
+        waterPresets={settings.waterPresets}
       />
       <ChangelogDialog open={changelogOpen} onOpenChange={setChangelogOpen} />
     </>
