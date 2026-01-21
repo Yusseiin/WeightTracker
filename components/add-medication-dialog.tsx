@@ -1,0 +1,408 @@
+"use client";
+
+import { useState, useMemo, useEffect } from 'react';
+import { format, parseISO } from 'date-fns';
+import { Pill, Check, X, Minus, Calendar, Clock } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose
+} from '@/components/ui/dialog';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+  DrawerFooter,
+  DrawerClose
+} from '@/components/ui/drawer';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { DynamicIcon } from './dynamic-icon';
+import type { MedicationPreset, MedicationEntry } from '@/lib/types';
+import { cn } from '@/lib/utils';
+
+// Three states: 'unselected' (no entry), 'taken', 'not_taken'
+type MedicationState = 'unselected' | 'taken' | 'not_taken';
+
+interface LocalMedicationState {
+  state: MedicationState;
+  date: string;
+  time: string;
+  existingEntryId?: string;
+  originalState: MedicationState;
+  originalDate: string;
+  originalTime: string;
+}
+
+interface AddMedicationDialogProps {
+  medicationPresets: MedicationPreset[];
+  todayMedications: MedicationEntry[];
+  onToggleMedication: (medicationId: string, taken: boolean, date?: string, timestamp?: string) => Promise<void>;
+  onDeleteMedication?: (id: string) => Promise<void>;
+  isLoading?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function AddMedicationDialog({
+  medicationPresets = [],
+  todayMedications = [],
+  onToggleMedication,
+  onDeleteMedication,
+  isLoading = false,
+  open: controlledOpen,
+  onOpenChange
+}: AddMedicationDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  // Support both controlled and uncontrolled modes
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (onOpenChange || (() => {})) : setInternalOpen;
+  const [isSaving, setIsSaving] = useState(false);
+  const isMobile = useIsMobile();
+
+  // Local state for all medications (not persisted until Done is pressed)
+  const [localStates, setLocalStates] = useState<Record<string, LocalMedicationState>>({});
+
+  // Initialize local state when dialog opens
+  useEffect(() => {
+    if (open) {
+      const now = new Date();
+      const todayDate = format(now, 'yyyy-MM-dd');
+      const currentTime = format(now, 'HH:mm');
+
+      const initialStates: Record<string, LocalMedicationState> = {};
+      for (const preset of medicationPresets) {
+        // Check if there's an existing entry for this medication today
+        const existingEntry = todayMedications.find(e => e.medicationId === preset.id && e.date === todayDate);
+
+        if (existingEntry) {
+          const entryTime = existingEntry.timestamp
+            ? format(parseISO(existingEntry.timestamp), 'HH:mm')
+            : currentTime;
+          const currentState: MedicationState = existingEntry.taken ? 'taken' : 'not_taken';
+
+          initialStates[preset.id] = {
+            state: currentState,
+            date: existingEntry.date,
+            time: entryTime,
+            existingEntryId: existingEntry.id,
+            originalState: currentState,
+            originalDate: existingEntry.date,
+            originalTime: entryTime
+          };
+        } else {
+          initialStates[preset.id] = {
+            state: 'unselected',
+            date: todayDate,
+            time: currentTime,
+            existingEntryId: undefined,
+            originalState: 'unselected',
+            originalDate: todayDate,
+            originalTime: currentTime
+          };
+        }
+      }
+      setLocalStates(initialStates);
+    }
+  }, [open, medicationPresets, todayMedications]);
+
+  // Update local state for a medication
+  const handleSetState = (medicationId: string, newState: MedicationState) => {
+    setLocalStates(prev => ({
+      ...prev,
+      [medicationId]: { ...prev[medicationId], state: newState }
+    }));
+  };
+
+  // Update date for a medication
+  const handleDateChange = (medicationId: string, date: string) => {
+    setLocalStates(prev => ({
+      ...prev,
+      [medicationId]: { ...prev[medicationId], date }
+    }));
+  };
+
+  // Update time for a medication
+  const handleTimeChange = (medicationId: string, time: string) => {
+    setLocalStates(prev => ({
+      ...prev,
+      [medicationId]: { ...prev[medicationId], time }
+    }));
+  };
+
+  // Check if there are any changes to save
+  const hasChanges = useMemo(() => {
+    return Object.entries(localStates).some(([, state]) => {
+      return state.state !== state.originalState ||
+             state.date !== state.originalDate ||
+             state.time !== state.originalTime;
+    });
+  }, [localStates]);
+
+  // Save all changes when Done is pressed
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      for (const [medicationId, state] of Object.entries(localStates)) {
+        const hasStateChanged = state.state !== state.originalState;
+        const hasDateTimeChanged = state.date !== state.originalDate || state.time !== state.originalTime;
+
+        // Skip if nothing changed
+        if (!hasStateChanged && !hasDateTimeChanged) continue;
+
+        if (state.state === 'unselected') {
+          // Delete the entry if it was previously set
+          if (onDeleteMedication && state.existingEntryId) {
+            await onDeleteMedication(state.existingEntryId);
+          }
+        } else {
+          // Build timestamp from date and time
+          let timestamp: string | undefined;
+          if (state.date && state.time) {
+            const [hours, minutes] = state.time.split(':').map(Number);
+            const date = parseISO(state.date);
+            date.setHours(hours, minutes, 0, 0);
+            timestamp = date.toISOString();
+          }
+
+          // Create or update entry
+          await onToggleMedication(medicationId, state.state === 'taken', state.date, timestamp);
+        }
+      }
+      setOpen(false);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Count taken medications for today (from local state)
+  const takenCount = useMemo(() => {
+    const today = format(new Date(), 'yyyy-MM-dd');
+    return Object.values(localStates).filter(s => s.date === today && s.state === 'taken').length;
+  }, [localStates]);
+
+  const formContent = medicationPresets.length === 0 ? (
+    <div className="py-8 text-center text-muted-foreground">
+      <Pill className="h-8 w-8 mx-auto mb-2 opacity-50" />
+      <p>No medications configured</p>
+      <p className="text-sm mt-1">Add medications in Settings</p>
+    </div>
+  ) : (
+    <div className="space-y-3">
+      {medicationPresets.map((preset) => {
+        const localState = localStates[preset.id];
+        if (!localState) return null;
+
+        const state = localState.state;
+
+        return (
+          <div
+            key={preset.id}
+            className={cn(
+              "p-4 rounded-lg border transition-colors",
+              state === 'taken' && "bg-green-500/10 border-green-500/30",
+              state === 'not_taken' && "bg-red-500/10 border-red-500/30",
+              state === 'unselected' && "bg-muted/50 border-border"
+            )}
+          >
+            {/* Header row with icon, label, and action buttons */}
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "p-2 rounded-full",
+                state === 'taken' && "bg-green-500/20",
+                state === 'not_taken' && "bg-red-500/20",
+                state === 'unselected' && "bg-muted"
+              )}>
+                <DynamicIcon
+                  name={preset.icon}
+                  className={cn(
+                    "h-5 w-5",
+                    state === 'taken' && "text-green-500",
+                    state === 'not_taken' && "text-red-500",
+                    state === 'unselected' && preset.color
+                  )}
+                />
+              </div>
+              <span className={cn(
+                "flex-1 font-medium",
+                state === 'taken' && "text-green-600 dark:text-green-400",
+                state === 'not_taken' && "text-red-600 dark:text-red-400"
+              )}>
+                {preset.label}
+              </span>
+
+              {/* Three-state toggle buttons */}
+              <div className="flex items-center gap-1">
+                {/* Not taken button */}
+                <button
+                  onClick={() => handleSetState(preset.id, 'not_taken')}
+                  disabled={isLoading || isSaving}
+                  className={cn(
+                    "w-8 h-8 rounded-full flex items-center justify-center transition-colors",
+                    state === 'not_taken'
+                      ? "bg-red-500 text-white"
+                      : "bg-muted text-muted-foreground hover:bg-red-500/20 hover:text-red-500"
+                  )}
+                  title="Mark as not taken"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+
+                {/* Unselect button (only show if not already unselected) */}
+                {state !== 'unselected' && onDeleteMedication && (
+                  <button
+                    onClick={() => handleSetState(preset.id, 'unselected')}
+                    disabled={isLoading || isSaving}
+                    className="w-8 h-8 rounded-full flex items-center justify-center bg-muted text-muted-foreground hover:bg-muted-foreground/20 transition-colors"
+                    title="Clear selection"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                )}
+
+                {/* Taken button */}
+                <button
+                  onClick={() => handleSetState(preset.id, 'taken')}
+                  disabled={isLoading || isSaving}
+                  className={cn(
+                    "w-8 h-8 rounded-full flex items-center justify-center transition-colors",
+                    state === 'taken'
+                      ? "bg-green-500 text-white"
+                      : "bg-muted text-muted-foreground hover:bg-green-500/20 hover:text-green-500"
+                  )}
+                  title="Mark as taken"
+                >
+                  <Check className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Date and time inputs */}
+            <div className="flex items-center gap-2 mt-3">
+              <div className="flex items-center gap-1 flex-1">
+                <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                <Input
+                  type="date"
+                  value={localState.date}
+                  onChange={(e) => handleDateChange(preset.id, e.target.value)}
+                  className="h-8 text-sm"
+                  disabled={isSaving}
+                />
+              </div>
+              <div className="flex items-center gap-1 flex-1">
+                <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                <Input
+                  type="time"
+                  value={localState.time}
+                  onChange={(e) => handleTimeChange(preset.id, e.target.value)}
+                  className="h-8 text-sm"
+                  disabled={isSaving}
+                />
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  // Only render trigger button in uncontrolled mode
+  const TriggerButton = !isControlled ? (
+    <Button
+      size="lg"
+      variant="outline"
+      className="fixed bottom-6 left-60 rounded-full shadow-lg h-14 w-14 z-50 border-purple-500/50"
+    >
+      <Pill className="h-6 w-6 text-purple-500" />
+      <span className="sr-only">Track medications</span>
+    </Button>
+  ) : null;
+
+  // Use Drawer on mobile, Dialog on desktop
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={setOpen}>
+        {TriggerButton && (
+          <DrawerTrigger asChild>
+            {TriggerButton}
+          </DrawerTrigger>
+        )}
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle className="flex items-center gap-2 justify-center">
+              <Pill className="h-5 w-5 text-purple-500" />
+              Medications
+              {medicationPresets.length > 0 && (
+                <span className="text-sm font-normal text-muted-foreground">
+                  ({takenCount}/{medicationPresets.length})
+                </span>
+              )}
+            </DrawerTitle>
+          </DrawerHeader>
+          <ScrollArea className="flex-1 px-4 max-h-[60vh]">
+            {formContent}
+          </ScrollArea>
+          <DrawerFooter className="pt-4">
+            <Button
+              onClick={handleSave}
+              disabled={isSaving || !hasChanges}
+            >
+              {isSaving ? 'Saving...' : 'Done'}
+            </Button>
+            <DrawerClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DrawerClose>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      {TriggerButton && (
+        <DialogTrigger asChild>
+          {TriggerButton}
+        </DialogTrigger>
+      )}
+      <DialogContent className="max-h-[85vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Pill className="h-5 w-5 text-purple-500" />
+            Medications
+            {medicationPresets.length > 0 && (
+              <span className="text-sm font-normal text-muted-foreground">
+                ({takenCount}/{medicationPresets.length})
+              </span>
+            )}
+          </DialogTitle>
+        </DialogHeader>
+        <ScrollArea className="flex-1 -mx-6 px-6">
+          {formContent}
+        </ScrollArea>
+        <DialogFooter className="mt-4 flex-col gap-2 sm:flex-row">
+          <DialogClose asChild>
+            <Button variant="outline" className="w-full sm:w-auto">Cancel</Button>
+          </DialogClose>
+          <Button
+            onClick={handleSave}
+            disabled={isSaving || !hasChanges}
+            className="w-full sm:w-auto"
+          >
+            {isSaving ? 'Saving...' : 'Done'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
