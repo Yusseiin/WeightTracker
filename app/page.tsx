@@ -2,6 +2,9 @@ import { cookies } from 'next/headers';
 import { WeightTracker } from '@/components/weight-tracker';
 import { getEntries, getSettings } from '@/lib/data';
 import { getTodayWater, getWaterEntries } from '@/lib/water';
+import { getTodaySteps, getStepsEntries } from '@/lib/steps';
+import { getTodayPressure, getPressureEntries } from '@/lib/pressure';
+import { getTodayMedications, getMedicationEntries } from '@/lib/medication';
 import { SESSION_COOKIE_NAME, SessionUser } from '@/lib/types';
 
 export default async function Home() {
@@ -26,6 +29,12 @@ export default async function Home() {
   const settings = await getSettings(userId);
   const todayWater = await getTodayWater(userId);
   const waterEntries = await getWaterEntries(userId);
+  const todaySteps = await getTodaySteps(userId);
+  const stepsEntries = await getStepsEntries(userId);
+  const todayPressure = await getTodayPressure(userId);
+  const pressureEntries = await getPressureEntries(userId);
+  const todayMedications = await getTodayMedications(userId);
+  const medicationEntries = await getMedicationEntries(userId);
 
   return (
     <div className="h-screen bg-background flex flex-col">
@@ -34,6 +43,12 @@ export default async function Home() {
         initialSettings={settings}
         initialWater={todayWater}
         initialWaterEntries={waterEntries}
+        initialTodaySteps={todaySteps}
+        initialStepsEntries={stepsEntries}
+        initialTodayPressure={todayPressure}
+        initialPressureEntries={pressureEntries}
+        initialTodayMedications={todayMedications}
+        initialMedicationEntries={medicationEntries}
         session={session}
       />
     </div>

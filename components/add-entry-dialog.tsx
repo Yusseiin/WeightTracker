@@ -52,12 +52,19 @@ interface AddEntryDialogProps {
   onSubmit: (data: EntryFormData) => Promise<void>;
   unit: 'kg' | 'lb';
   activities: CustomActivity[];
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function AddEntryDialog({ onSubmit, unit, activities }: AddEntryDialogProps) {
-  const [open, setOpen] = useState(false);
+export function AddEntryDialog({ onSubmit, unit, activities, open: controlledOpen, onOpenChange }: AddEntryDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isMobile = useIsMobile();
+
+  // Support both controlled and uncontrolled modes
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (onOpenChange || (() => {})) : setInternalOpen;
 
   // Get first activity ID as default
   const defaultActivityId = activities[0]?.id || 'rest';
@@ -205,7 +212,8 @@ export function AddEntryDialog({ onSubmit, unit, activities }: AddEntryDialogPro
     </form>
   );
 
-  const TriggerButton = (
+  // Only render trigger button in uncontrolled mode
+  const TriggerButton = !isControlled ? (
     <Button
       size="lg"
       className="fixed bottom-6 right-6 rounded-full shadow-lg h-14 w-14 z-50 md:relative md:bottom-auto md:right-auto md:rounded-md md:h-auto md:w-auto md:px-4 md:py-2"
@@ -213,15 +221,17 @@ export function AddEntryDialog({ onSubmit, unit, activities }: AddEntryDialogPro
       <Plus className="h-6 w-6 md:h-4 md:w-4 md:mr-2" />
       <span className="sr-only md:not-sr-only">Add Entry</span>
     </Button>
-  );
+  ) : null;
 
   // Use Drawer on mobile, Dialog on desktop
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={setOpen}>
-        <DrawerTrigger asChild>
-          {TriggerButton}
-        </DrawerTrigger>
+        {TriggerButton && (
+          <DrawerTrigger asChild>
+            {TriggerButton}
+          </DrawerTrigger>
+        )}
         <DrawerContent>
           <DrawerHeader>
             <DrawerTitle>Add Weight Entry</DrawerTitle>
@@ -248,9 +258,11 @@ export function AddEntryDialog({ onSubmit, unit, activities }: AddEntryDialogPro
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {TriggerButton}
-      </DialogTrigger>
+      {TriggerButton && (
+        <DialogTrigger asChild>
+          {TriggerButton}
+        </DialogTrigger>
+      )}
       <DialogContent className="max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Add Weight Entry</DialogTitle>

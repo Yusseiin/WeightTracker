@@ -143,7 +143,7 @@ export function WeightChart({ entries, targetWeight, unit, chartColor = 'primary
         <ChartContainer config={chartConfig} className="h-full w-full">
           <LineChart
             data={chartData}
-            margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+            margin={{ top: 10, right: 10, left: -10, bottom: 15 }}
           >
             <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
             <XAxis

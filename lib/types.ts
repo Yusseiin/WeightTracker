@@ -37,6 +37,24 @@ export interface WaterPreset {
 // Maximum number of water presets
 export const MAX_WATER_PRESETS = 6;
 
+// Medication preset configuration
+export interface MedicationPreset {
+  id: string;               // Unique identifier (e.g., 'med_abc123')
+  label: string;            // User-defined name (e.g., 'Morning pill', 'Evening vitamin')
+  icon: string;             // Lucide icon name (e.g., 'Pill', 'Syringe')
+  color: string;            // Tailwind color class (e.g., 'text-purple-500')
+}
+
+// Maximum number of medication presets
+export const MAX_MEDICATIONS = 8;
+
+// Default medication presets for new users
+export const DEFAULT_MEDICATION_PRESETS: MedicationPreset[] = [
+  { id: 'morning', label: 'Morning', icon: 'Sunrise', color: 'text-orange-500' },
+  { id: 'afternoon', label: 'Afternoon', icon: 'Sun', color: 'text-yellow-500' },
+  { id: 'evening', label: 'Evening', icon: 'Moon', color: 'text-indigo-500' },
+];
+
 // Default water presets for new users
 export const DEFAULT_WATER_PRESETS: WaterPreset[] = [
   { id: 'cup', label: 'Cup', icon: 'GlassWater', amount: 200 },
@@ -105,6 +123,14 @@ export interface GoalSettings {
   weeklyWeightGoal: number | null;  // Weekly weight change in kg (negative = lose, positive = gain)
   monthlyWeightGoal: number | null; // Monthly weight change in kg
   weekStartsOn: WeekStartsOn;       // When the week starts (0 = Sunday, 1 = Monday)
+  dailyStepsGoal: number | null;    // Daily steps goal, null = no goal
+}
+
+// Optional feature toggles
+export interface FeatureToggles {
+  stepsEnabled: boolean;            // Show steps tracking button
+  pressureEnabled: boolean;         // Show blood pressure tracking button
+  medicationEnabled: boolean;       // Show medication tracking button
 }
 
 // Default goal settings
@@ -113,6 +139,14 @@ export const DEFAULT_GOALS: GoalSettings = {
   weeklyWeightGoal: null,
   monthlyWeightGoal: null,
   weekStartsOn: 1, // Monday by default
+  dailyStepsGoal: null,
+};
+
+// Default feature toggles
+export const DEFAULT_FEATURE_TOGGLES: FeatureToggles = {
+  stepsEnabled: false,
+  pressureEnabled: false,
+  medicationEnabled: false,
 };
 
 // User settings model
@@ -125,7 +159,9 @@ export interface UserSettings {
   dateFormat: DateFormatSettings;
   activities: CustomActivity[];   // User's custom activities (max 12)
   waterPresets: WaterPreset[];    // User's custom water presets (max 6)
+  medicationPresets: MedicationPreset[]; // User's custom medication presets (max 8)
   goals: GoalSettings;            // Gamification goals
+  features: FeatureToggles;       // Optional feature toggles
   showQuotes: boolean;            // Show motivational quotes
   createdAt: string;
   updatedAt: string;
@@ -229,3 +265,35 @@ export const WATER_AMOUNTS_OZ = {
 
 // Conversion constants
 export const ML_PER_OZ = 29.5735;
+
+// Steps entry (one per day, max 5 digits)
+export interface StepsEntry {
+  id: string;
+  author: string;
+  date: string;        // YYYY-MM-DD format (one entry per day)
+  steps: number;       // Max 99999 (5 digits)
+  timestamp: string;   // ISO 8601 - time of measurement (can be edited independently)
+  updatedAt: string;   // ISO 8601
+}
+
+// Blood pressure entry (multiple per day)
+export interface PressureEntry {
+  id: string;
+  author: string;
+  date: string;        // YYYY-MM-DD format
+  systolic: number;    // Upper value (e.g., 120)
+  diastolic: number;   // Lower value (e.g., 80)
+  timestamp: string;   // ISO 8601 - time of measurement (can be edited independently)
+  updatedAt: string;   // ISO 8601
+}
+
+// Medication entry (tracking whether medications were taken)
+export interface MedicationEntry {
+  id: string;
+  author: string;
+  date: string;        // YYYY-MM-DD format
+  medicationId: string; // References MedicationPreset.id
+  taken: boolean;      // Whether the medication was taken
+  timestamp: string;   // ISO 8601 - time when marked
+  updatedAt: string;   // ISO 8601
+}

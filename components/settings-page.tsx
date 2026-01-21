@@ -23,10 +23,11 @@ import { ChangeNicknameDialog } from '@/components/change-nickname-dialog';
 import { UserManagementDialog } from '@/components/user-management-dialog';
 import { ActivityManager } from '@/components/activity-manager';
 import { WaterPresetManager } from '@/components/water-preset-manager';
+import { MedicationManager } from '@/components/medication-manager';
 import { DateFormatEditor } from '@/components/date-format-editor';
 import { DEFAULT_DATE_FORMAT } from '@/lib/date-utils';
-import type { SessionUser, UserSettings, ChartColor, WaterUnit, DateFormatSettings, DateLocale, SingleDateFormat, CustomActivity, WeightEntry, GoalSettings, WeekStartsOn, WaterPreset } from '@/lib/types';
-import { DEFAULT_GOALS, WEEK_DAYS } from '@/lib/types';
+import type { SessionUser, UserSettings, ChartColor, WaterUnit, DateFormatSettings, DateLocale, SingleDateFormat, CustomActivity, WeightEntry, GoalSettings, WeekStartsOn, WaterPreset, FeatureToggles, MedicationPreset, MedicationEntry } from '@/lib/types';
+import { DEFAULT_GOALS, WEEK_DAYS, DEFAULT_FEATURE_TOGGLES } from '@/lib/types';
 
 interface SettingsPageProps {
   session: SessionUser;
@@ -63,6 +64,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
   const router = useRouter();
   const [settings, setSettings] = useState(initialSettings);
   const [entries, setEntries] = useState<WeightEntry[]>([]);
+  const [medicationEntries, setMedicationEntries] = useState<MedicationEntry[]>([]);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
@@ -82,6 +84,9 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
   const [localGoals, setLocalGoals] = useState<GoalSettings>(
     settings.goals || DEFAULT_GOALS
   );
+  const [localFeatures, setLocalFeatures] = useState<FeatureToggles>(
+    settings.features || DEFAULT_FEATURE_TOGGLES
+  );
   const [localShowQuotes, setLocalShowQuotes] = useState(settings.showQuotes ?? true);
 
   // Fetch entries for activity usage check
@@ -97,9 +102,23 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
     }
   }, []);
 
+  // Fetch medication entries for medication usage check
+  const fetchMedicationEntries = useCallback(async () => {
+    try {
+      const response = await fetch('/api/medications?all=true');
+      const result = await response.json();
+      if (result.success) {
+        setMedicationEntries(result.data);
+      }
+    } catch {
+      // Silently fail - entries are only needed for medication deletion check
+    }
+  }, []);
+
   useEffect(() => {
     fetchEntries();
-  }, [fetchEntries]);
+    fetchMedicationEntries();
+  }, [fetchEntries, fetchMedicationEntries]);
 
   // Check if there are unsaved changes
   const hasChanges =
@@ -109,6 +128,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
     (localTargetWeight === '' ? null : parseFloat(localTargetWeight)) !== settings.targetWeight ||
     JSON.stringify(localDateFormat) !== JSON.stringify(ensureValidDateFormat(settings.dateFormat)) ||
     JSON.stringify(localGoals) !== JSON.stringify(settings.goals || DEFAULT_GOALS) ||
+    JSON.stringify(localFeatures) !== JSON.stringify(settings.features || DEFAULT_FEATURE_TOGGLES) ||
     localShowQuotes !== (settings.showQuotes ?? true);
 
   // Reset local state when settings change externally
@@ -119,6 +139,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
     setLocalChartColor(settings.chartColor);
     setLocalDateFormat(ensureValidDateFormat(settings.dateFormat));
     setLocalGoals(settings.goals || DEFAULT_GOALS);
+    setLocalFeatures(settings.features || DEFAULT_FEATURE_TOGGLES);
     setLocalShowQuotes(settings.showQuotes ?? true);
   }, [settings]);
 
@@ -161,6 +182,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
           chartColor: localChartColor,
           dateFormat: localDateFormat,
           goals: localGoals,
+          features: localFeatures,
           showQuotes: localShowQuotes
         })
       });
@@ -247,6 +269,22 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
       setSettings(result.data);
     } else {
       throw new Error(result.error || 'Failed to save water presets');
+    }
+  };
+
+  const handleMedicationPresetsSave = async (medicationPresets: MedicationPreset[]) => {
+    const response = await fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ medicationPresets })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      setSettings(result.data);
+    } else {
+      throw new Error(result.error || 'Failed to save medication presets');
     }
   };
 
@@ -377,6 +415,59 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
               </CardContent>
             </Card>
 
+            {/* Optional Features Card */}
+            <Card className="py-4">
+              <CardContent className="space-y-4">
+                <h3 className="font-medium text-base">Optional Features</h3>
+                <p className="text-xs text-muted-foreground">Enable additional tracking buttons</p>
+
+                {/* Steps Tracking */}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="stepsEnabled"
+                    checked={localFeatures.stepsEnabled}
+                    onCheckedChange={(checked) => setLocalFeatures(prev => ({
+                      ...prev,
+                      stepsEnabled: checked === true
+                    }))}
+                  />
+                  <Label htmlFor="stepsEnabled" className="cursor-pointer">
+                    Enable steps tracking
+                  </Label>
+                </div>
+
+                {/* Blood Pressure Tracking */}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="pressureEnabled"
+                    checked={localFeatures.pressureEnabled}
+                    onCheckedChange={(checked) => setLocalFeatures(prev => ({
+                      ...prev,
+                      pressureEnabled: checked === true
+                    }))}
+                  />
+                  <Label htmlFor="pressureEnabled" className="cursor-pointer">
+                    Enable blood pressure tracking
+                  </Label>
+                </div>
+
+                {/* Medication Tracking */}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="medicationEnabled"
+                    checked={localFeatures.medicationEnabled}
+                    onCheckedChange={(checked) => setLocalFeatures(prev => ({
+                      ...prev,
+                      medicationEnabled: checked === true
+                    }))}
+                  />
+                  <Label htmlFor="medicationEnabled" className="cursor-pointer">
+                    Enable medication tracking
+                  </Label>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Goals Card */}
             <Card className="py-4">
               <CardContent className="space-y-4">
@@ -398,6 +489,24 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                     className="max-w-32"
                   />
                 </div>
+
+                {/* Daily Steps Goal - only show if steps feature is enabled */}
+                {localFeatures.stepsEnabled && (
+                  <div className="space-y-2">
+                    <Label>Daily Steps Goal</Label>
+                    <Input
+                      type="number"
+                      step="1000"
+                      placeholder="e.g. 10000"
+                      value={localGoals.dailyStepsGoal ?? ''}
+                      onChange={(e) => setLocalGoals(prev => ({
+                        ...prev,
+                        dailyStepsGoal: e.target.value === '' ? null : parseInt(e.target.value)
+                      }))}
+                      className="max-w-32"
+                    />
+                  </div>
+                )}
 
                 {/* Weekly Weight Goal */}
                 <div className="space-y-2">
@@ -489,6 +598,23 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Medication Presets Card - only show if medication feature is enabled */}
+            {localFeatures.medicationEnabled && (
+              <Card className="py-4">
+                <CardContent className="space-y-4">
+                  <h3 className="font-medium text-base">Medication Presets</h3>
+                  <div className="space-y-2">
+                    <Label>Medications to Track</Label>
+                    <MedicationManager
+                      medications={settings.medicationPresets || []}
+                      onSave={handleMedicationPresetsSave}
+                      medicationEntries={medicationEntries}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Right Column - Date Format & Account */}

@@ -73,6 +73,33 @@ export const ACTIVITY_ICON_CATEGORIES: IconCategory[] = [
       'Flag',
     ],
   },
+  {
+    name: 'Medical',
+    icons: [
+      'Pill',
+      'Tablets',
+      'Syringe',
+      'Stethoscope',
+      'HeartPulse',
+      'Thermometer',
+      'Bandage',
+      'TestTube',
+      'Microscope',
+      'Brain',
+      'Eye',
+      'Ear',
+      'Hand',
+      'Bone',
+      'Droplet',
+      'CircleDot',
+      'Clock',
+      'Sunrise',
+      'Sunset',
+      'Moon',
+      'Sun',
+      'AlarmClock',
+    ],
+  },
 ];
 
 // Flat list of all available icons for validation
@@ -89,6 +116,32 @@ export const WATER_ICONS: string[] = [
   'CupSoda',
   'Coffee',
   'Beer',
+];
+
+// Icons available for medication presets
+export const MEDICATION_ICONS: string[] = [
+  'Pill',
+  'Tablets',
+  'Syringe',
+  'Stethoscope',
+  'HeartPulse',
+  'Thermometer',
+  'Bandage',
+  'TestTube',
+  'Microscope',
+  'Brain',
+  'Eye',
+  'Ear',
+  'Hand',
+  'Bone',
+  'Droplet',
+  'CircleDot',
+  'Clock',
+  'Sunrise',
+  'Sunset',
+  'Moon',
+  'Sun',
+  'AlarmClock',
 ];
 
 // Color options for activities

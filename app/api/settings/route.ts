@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSettings, updateSettings } from '@/lib/data';
 import { getSession } from '@/lib/auth';
-import { ApiResponse, UserSettings, DateFormatSettings, SingleDateFormat, CustomActivity, MAX_ACTIVITIES, GoalSettings, WaterPreset, MAX_WATER_PRESETS } from '@/lib/types';
-import { ALL_ACTIVITY_ICONS, WATER_ICONS } from '@/lib/icons';
+import { ApiResponse, UserSettings, DateFormatSettings, SingleDateFormat, CustomActivity, MAX_ACTIVITIES, GoalSettings, WaterPreset, MAX_WATER_PRESETS, FeatureToggles, MedicationPreset, MAX_MEDICATIONS } from '@/lib/types';
+import { ALL_ACTIVITY_ICONS, WATER_ICONS, MEDICATION_ICONS } from '@/lib/icons';
 
 // Validation constants
 const VALID_DATE_FORMATS = ['dd/MM/yyyy', 'MM/dd/yyyy', 'yyyy-MM-dd', 'dd MMM yyyy', 'EEE dd/MM', 'EEE.dd/MM', 'dd/MM', 'MMM dd', 'custom'];
@@ -119,6 +119,45 @@ function isValidWaterPresetsArray(presets: unknown): presets is WaterPreset[] {
   return true;
 }
 
+// Validate feature toggles
+function isValidFeatureToggles(features: unknown): features is FeatureToggles {
+  if (!features || typeof features !== 'object') return false;
+  const f = features as Record<string, unknown>;
+
+  if (typeof f.stepsEnabled !== 'boolean') return false;
+  if (typeof f.pressureEnabled !== 'boolean') return false;
+
+  return true;
+}
+
+// Validate a single medication preset
+function isValidMedicationPreset(preset: unknown): preset is MedicationPreset {
+  if (!preset || typeof preset !== 'object') return false;
+  const p = preset as Record<string, unknown>;
+
+  if (typeof p.id !== 'string' || p.id.trim() === '') return false;
+  if (typeof p.label !== 'string' || p.label.trim() === '') return false;
+  if (typeof p.icon !== 'string' || !MEDICATION_ICONS.includes(p.icon)) return false;
+  if (typeof p.color !== 'string') return false;
+
+  return true;
+}
+
+// Validate medication presets array
+function isValidMedicationPresetsArray(presets: unknown): presets is MedicationPreset[] {
+  if (!Array.isArray(presets)) return false;
+  if (presets.length > MAX_MEDICATIONS) return false;
+
+  // Check all presets are valid
+  if (!presets.every(isValidMedicationPreset)) return false;
+
+  // Check for unique IDs
+  const ids = presets.map((p) => p.id);
+  if (new Set(ids).size !== ids.length) return false;
+
+  return true;
+}
+
 // GET /api/settings - Get user settings
 export async function GET() {
   try {
@@ -159,7 +198,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { unit, waterUnit, targetWeight, chartColor, dateFormat, activities, waterPresets, goals, showQuotes } = body;
+    const { unit, waterUnit, targetWeight, chartColor, dateFormat, activities, waterPresets, medicationPresets, goals, features, showQuotes } = body;
 
     // Validate unit if provided
     if (unit !== undefined && !['kg', 'lb'].includes(unit)) {
@@ -220,10 +259,26 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    // Validate medication presets if provided
+    if (medicationPresets !== undefined && !isValidMedicationPresetsArray(medicationPresets)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid medication presets. Must have 0-8 presets with unique IDs and valid icons.' },
+        { status: 400 }
+      );
+    }
+
     // Validate goals if provided
     if (goals !== undefined && !isValidGoalSettings(goals)) {
       return NextResponse.json(
         { success: false, error: 'Invalid goal settings' },
+        { status: 400 }
+      );
+    }
+
+    // Validate features if provided
+    if (features !== undefined && !isValidFeatureToggles(features)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid feature toggles' },
         { status: 400 }
       );
     }
@@ -245,7 +300,9 @@ export async function PUT(request: NextRequest) {
     if (dateFormat !== undefined) updateData.dateFormat = dateFormat;
     if (activities !== undefined) updateData.activities = activities;
     if (waterPresets !== undefined) updateData.waterPresets = waterPresets;
+    if (medicationPresets !== undefined) updateData.medicationPresets = medicationPresets;
     if (goals !== undefined) updateData.goals = goals;
+    if (features !== undefined) updateData.features = features;
     if (showQuotes !== undefined) updateData.showQuotes = showQuotes;
 
     const updated = await updateSettings(

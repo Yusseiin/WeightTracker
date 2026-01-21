@@ -36,6 +36,8 @@ interface AddWaterDialogProps {
   isLoading?: boolean;
   waterUnit: WaterUnit;
   waterPresets: WaterPreset[];
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function AddWaterDialog({
@@ -44,9 +46,16 @@ export function AddWaterDialog({
   onResetWater,
   isLoading = false,
   waterUnit,
-  waterPresets
+  waterPresets,
+  open: controlledOpen,
+  onOpenChange
 }: AddWaterDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  // Support both controlled and uncontrolled modes
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (onOpenChange || (() => {})) : setInternalOpen;
   const [selectedAmount, setSelectedAmount] = useState<string>('');
   const [customAmount, setCustomAmount] = useState<string>('');
   const [isCustomMode, setIsCustomMode] = useState(false);
@@ -185,7 +194,8 @@ export function AddWaterDialog({
     </div>
   );
 
-  const TriggerButton = (
+  // Only render trigger button in uncontrolled mode
+  const TriggerButton = !isControlled ? (
     <Button
       size="lg"
       variant="outline"
@@ -194,15 +204,17 @@ export function AddWaterDialog({
       <Droplets className="h-6 w-6 text-primary" />
       <span className="sr-only">Add water</span>
     </Button>
-  );
+  ) : null;
 
   // Use Drawer on mobile, Dialog on desktop
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={setOpen}>
-        <DrawerTrigger asChild>
-          {TriggerButton}
-        </DrawerTrigger>
+        {TriggerButton && (
+          <DrawerTrigger asChild>
+            {TriggerButton}
+          </DrawerTrigger>
+        )}
         <DrawerContent>
           <DrawerHeader>
             <DrawerTitle className="flex items-center gap-2 justify-center">
@@ -231,9 +243,11 @@ export function AddWaterDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {TriggerButton}
-      </DialogTrigger>
+      {TriggerButton && (
+        <DialogTrigger asChild>
+          {TriggerButton}
+        </DialogTrigger>
+      )}
       <DialogContent className="max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

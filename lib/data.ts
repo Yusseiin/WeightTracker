@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { WeightEntry, UserSettings, DEFAULT_USER_ID, DEFAULT_ACTIVITIES, DEFAULT_GOALS, DEFAULT_WATER_PRESETS } from './types';
+import { WeightEntry, UserSettings, DEFAULT_USER_ID, DEFAULT_ACTIVITIES, DEFAULT_GOALS, DEFAULT_WATER_PRESETS, DEFAULT_FEATURE_TOGGLES, DEFAULT_MEDICATION_PRESETS } from './types';
 import { DEFAULT_DATE_FORMAT } from './date-utils';
 
 // Config directory - configurable via env for Docker/Unraid
@@ -176,7 +176,9 @@ const defaultSettings = (userId: string): UserSettings => ({
   dateFormat: DEFAULT_DATE_FORMAT,
   activities: DEFAULT_ACTIVITIES,
   waterPresets: DEFAULT_WATER_PRESETS,
+  medicationPresets: DEFAULT_MEDICATION_PRESETS,
   goals: DEFAULT_GOALS,
+  features: DEFAULT_FEATURE_TOGGLES,
   showQuotes: true,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString()
@@ -251,6 +253,16 @@ export async function getSettings(userId: string = DEFAULT_USER_ID): Promise<Use
     // Add waterPresets if missing (backward compatibility)
     if (!settings.waterPresets || !Array.isArray(settings.waterPresets) || settings.waterPresets.length === 0) {
       settings.waterPresets = DEFAULT_WATER_PRESETS;
+      needsSave = true;
+    }
+    // Add features if missing (backward compatibility)
+    if (!settings.features) {
+      settings.features = DEFAULT_FEATURE_TOGGLES;
+      needsSave = true;
+    }
+    // Add dailyStepsGoal to goals if missing (backward compatibility)
+    if (settings.goals && settings.goals.dailyStepsGoal === undefined) {
+      settings.goals.dailyStepsGoal = null;
       needsSave = true;
     }
 

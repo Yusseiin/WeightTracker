@@ -6,7 +6,7 @@ import "./globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
-  subsets: ["latin"],
+  subsets: ["latin"]
 });
 
 const geistMono = Geist_Mono({
@@ -60,7 +60,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
-          <Toaster position="bottom-center" />
+          <Toaster position="top-left" closeButton />
         </ThemeProvider>
       </body>
     </html>
