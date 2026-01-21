@@ -95,7 +95,7 @@ export interface SingleDateFormat {
   showWeekday: boolean;           // Prepend weekday (Mon, Tue, etc.)
 }
 
-// All 3 date format settings
+// All date format settings
 export interface DateFormatSettings {
   locale: DateLocale;             // Shared locale for all formats
   tableFormat: SingleDateFormat;  // Format for history table

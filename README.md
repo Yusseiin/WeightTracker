@@ -5,7 +5,7 @@
 </h1>
 
 <p align="center">
-  <strong>A self-hosted mobile-first weight tracking application to log your weight, water consumption, and fitness progress</strong>
+  <strong>A self-hosted mobile-first weight tracking application to log your weight, water consumption, steps, blood pressure, medications, and fitness progress</strong>
 </p>
 
 <p align="center">
@@ -68,7 +68,15 @@
 - **Water Consumption**: Track daily water intake with quick-add buttons (Cup 200ml/8oz, 0.5L/17oz, 1L/34oz), custom amount input, and reset functionality
 - **Activity Logging**: Track activity type with each entry - includes 3 default activities (Rest, Weights, Cardio)
 - **Sleep Quality**: Record sleep quality (Good, Fair, Poor) with color indicators alongside weight
-- **Today Recap**: Quick summary card showing today's weight and water at a glance
+- **Today Recap**: Quick summary card showing today's weight, water, steps, blood pressure, and medications at a glance
+
+### Optional Tracking Features
+
+Enable/disable these features in Settings → Features:
+
+- **Steps Tracking**: Log daily step count with optional daily goal. One entry per day with timestamp for when steps were recorded
+- **Blood Pressure**: Track systolic/diastolic readings multiple times per day with timestamps. View history and trends
+- **Medication Tracking**: Configure custom medication schedules (e.g., morning, afternoon, evening pills) and track whether each medication was taken daily
 
 ### Custom Activities
 
@@ -114,7 +122,7 @@
 ### UI/UX
 
 - **Mobile-First Design**: Responsive UI with bottom drawer on mobile, dialog on desktop
-- **Floating Action Buttons**: Quick access to add weight (bottom right) and water (bottom left) on mobile
+- **Floating Action Buttons**: Quick access to add weight (bottom right) and water (bottom left) on mobile, plus optional steps, blood pressure, and medication buttons when features are enabled
 - **Dark Mode**: Automatic theme switching based on system preference
 - **Toast Notifications**: Success and error feedback using Sonner
 - **Changelog Dialog**: View version history and release notes with color-coded changes
@@ -203,8 +211,14 @@ Each user gets their own data files in separate folders inside the config direct
 │   └── {username}.json         # Weight entries per user
 ├── settings/
 │   └── {username}.json         # Settings per user
-└── water/
-    └── {username}.json         # Water consumption per user
+├── water/
+│   └── {username}.json         # Water consumption per user
+├── steps/
+│   └── {username}.json         # Daily steps per user
+├── pressure/
+│   └── {username}.json         # Blood pressure readings per user
+└── medications/
+    └── {username}.json         # Medication tracking per user
 ```
 
 ### Environment Variables
@@ -305,7 +319,10 @@ nextjserision/
 │   │   ├── entries/            # Weight entries CRUD
 │   │   ├── settings/           # User settings
 │   │   ├── users/              # User management (admin only)
-│   │   └── water/              # Water tracking
+│   │   ├── water/              # Water tracking
+│   │   ├── steps/              # Steps tracking
+│   │   ├── pressure/           # Blood pressure tracking
+│   │   └── medications/        # Medication tracking
 │   ├── login/                  # Login page
 │   ├── settings/               # Settings page
 │   ├── layout.tsx              # Root layout
@@ -314,7 +331,10 @@ nextjserision/
 │   ├── users/                  # User credentials folder
 │   ├── entries/                # Weight entries folder
 │   ├── settings/               # Settings folder
-│   └── water/                  # Water consumption folder
+│   ├── water/                  # Water consumption folder
+│   ├── steps/                  # Daily steps folder
+│   ├── pressure/               # Blood pressure readings folder
+│   └── medications/            # Medication tracking folder
 ├── components/
 │   ├── ui/                     # shadcn components
 │   ├── weight-chart.tsx        # Chart component
@@ -324,6 +344,13 @@ nextjserision/
 │   ├── add-entry-dialog.tsx    # Add entry form (drawer/dialog)
 │   ├── edit-entry-dialog.tsx   # Edit/delete entry
 │   ├── add-water-dialog.tsx    # Add water form (drawer/dialog)
+│   ├── add-steps-dialog.tsx    # Add steps form (drawer/dialog)
+│   ├── edit-steps-dialog.tsx   # Edit/delete steps entry
+│   ├── add-pressure-dialog.tsx # Add blood pressure (drawer/dialog)
+│   ├── edit-pressure-dialog.tsx # Edit/delete pressure entry
+│   ├── add-medication-dialog.tsx # Track medications taken
+│   ├── edit-medication-dialog.tsx # Edit medication entry
+│   ├── medication-manager.tsx  # Custom medication presets
 │   ├── settings-page.tsx       # Full settings page
 │   ├── settings-popup.tsx      # Settings popup in header
 │   ├── activity-manager.tsx    # Custom activity CRUD
@@ -335,11 +362,17 @@ nextjserision/
 ├── hooks/
 │   ├── use-mobile.ts           # Mobile detection
 │   ├── use-weight-entries.ts   # Weight data management hook
-│   └── use-water.ts            # Water data management hook
+│   ├── use-water.ts            # Water data management hook
+│   ├── use-steps.ts            # Steps data management hook
+│   ├── use-pressure.ts         # Blood pressure data management hook
+│   └── use-medications.ts      # Medication data management hook
 ├── lib/
 │   ├── auth.ts                 # Authentication utilities
 │   ├── data.ts                 # Data storage utilities
 │   ├── water.ts                # Water storage utilities
+│   ├── steps.ts                # Steps storage utilities
+│   ├── pressure.ts             # Blood pressure storage utilities
+│   ├── medication.ts           # Medication storage utilities
 │   ├── icons.ts                # Curated icon list with categories
 │   ├── date-utils.ts           # Date formatting utilities
 │   ├── water-utils.ts          # Water unit conversion utilities
@@ -393,6 +426,33 @@ nextjserision/
 | POST | `/api/users` | Create new user |
 | PATCH | `/api/users/[username]` | Update user |
 | DELETE | `/api/users/[username]` | Delete user |
+
+### Steps
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/steps` | Get today's steps (or ?date=YYYY-MM-DD or ?all=true for all entries) |
+| POST | `/api/steps` | Create/update today's steps |
+| PATCH | `/api/steps` | Update steps for specific date |
+| DELETE | `/api/steps` | Delete steps entry |
+
+### Blood Pressure
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/pressure` | Get all pressure entries (or ?date=YYYY-MM-DD for specific day) |
+| POST | `/api/pressure` | Create new pressure entry |
+| PATCH | `/api/pressure` | Update pressure entry by ID |
+| DELETE | `/api/pressure` | Delete pressure entry by ID |
+
+### Medications
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/medications` | Get all medication entries (or ?date=YYYY-MM-DD for specific day) |
+| POST | `/api/medications` | Create new medication entry |
+| PATCH | `/api/medications` | Update medication entry by ID |
+| DELETE | `/api/medications` | Delete medication entry by ID |
 
 ## Home Assistant Integration
 
@@ -604,6 +664,58 @@ automation:
 }
 ```
 
+### Steps Entry
+
+```typescript
+{
+  id: string;
+  author: string;
+  date: string;               // YYYY-MM-DD (one entry per day)
+  steps: number;              // Max 99999 (5 digits)
+  timestamp: string;          // ISO 8601 - time of measurement
+  updatedAt: string;          // ISO 8601
+}
+```
+
+### Blood Pressure Entry
+
+```typescript
+{
+  id: string;
+  author: string;
+  date: string;               // YYYY-MM-DD
+  systolic: number;           // Upper value (e.g., 120)
+  diastolic: number;          // Lower value (e.g., 80)
+  timestamp: string;          // ISO 8601 - time of measurement
+  updatedAt: string;          // ISO 8601
+}
+```
+
+### Medication Preset
+
+```typescript
+{
+  id: string;                 // Unique identifier (e.g., 'morning', 'med_abc123')
+  label: string;              // User-defined name (e.g., 'Morning pill')
+  icon: string;               // Lucide icon name (e.g., 'Sunrise', 'Pill')
+  color: string;              // Tailwind color class (e.g., 'text-purple-500')
+}
+```
+
+### Medication Entry
+
+```typescript
+{
+  id: string;
+  author: string;
+  date: string;               // YYYY-MM-DD
+  medicationId: string;       // References MedicationPreset.id
+  taken: boolean;             // Whether the medication was taken
+  timestamp: string;          // ISO 8601 - time when marked
+  updatedAt: string;          // ISO 8601
+}
+```
+
 ### User Settings
 
 ```typescript
@@ -614,6 +726,20 @@ automation:
   targetWeight: number | null;
   chartColor: 'primary' | 'blue' | 'green' | 'orange' | 'purple';
   activities: CustomActivity[];  // User's custom activities (max 12)
+  waterPresets: WaterPreset[];   // Custom water presets (max 6)
+  medicationPresets: MedicationPreset[]; // Custom medication presets (max 8)
+  goals: {
+    dailyWaterGoal: number | null;    // Daily water goal in ml
+    weeklyWeightGoal: number | null;  // Weekly weight change in kg
+    monthlyWeightGoal: number | null; // Monthly weight change in kg
+    weekStartsOn: 0 | 1 | 2 | 3 | 4 | 5 | 6; // Week start day (0 = Sunday)
+    dailyStepsGoal: number | null;    // Daily steps goal
+  };
+  features: {
+    stepsEnabled: boolean;      // Show steps tracking button
+    pressureEnabled: boolean;   // Show blood pressure tracking button
+    medicationEnabled: boolean; // Show medication tracking button
+  };
   dateFormat: {
     dateFormat: string;       // 'dd/MM/yyyy', 'MM/dd/yyyy', etc.
     customDateFormat?: string; // For custom patterns
@@ -625,6 +751,16 @@ automation:
   updatedAt: string;
 }
 ```
+
+### Default Medication Presets
+
+New users start with these 3 default medication presets:
+
+| ID | Label | Icon | Color |
+|----|-------|------|-------|
+| `morning` | Morning | Sunrise | `text-orange-500` |
+| `afternoon` | Afternoon | Sun | `text-yellow-500` |
+| `evening` | Evening | Moon | `text-indigo-500` |
 
 ### Default Activities
 

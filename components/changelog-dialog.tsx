@@ -22,7 +22,16 @@ interface ChangelogEntry {
 const changelog: ChangelogEntry[] = [
   {
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
-    date: "2025-01-12",
+    date: "2026-01-21",
+    changes: [
+      { type: "added", description: "Added Steps tracker" },
+      { type: "added", description: "Added Blood Pressure tracker" },
+      { type: "added", description: "Added Medifications tracker" },
+       ],
+  },
+  {
+    version: "v0.0.5",
+    date: "2026-01-12",
     changes: [
       { type: "added", description: "Motivational daily quotes" },
       { type: "added", description: "Added PWA Image" },
@@ -34,7 +43,7 @@ const changelog: ChangelogEntry[] = [
   },
   {
     version: "v0.0.4",
-    date: "2025-01-11",
+    date: "2026-01-11",
     changes: [
       { type: "added", description: "Home Assistant integration with API key authentication" },
       { type: "added", description: "REST API support for external tools and automations" },
@@ -42,21 +51,21 @@ const changelog: ChangelogEntry[] = [
   },
   {
     version: "v0.0.3",
-    date: "2025-01-10",
+    date: "2026-01-10",
     changes: [
       { type: "added", description: "Bcrypt for secure login" },
     ],
   },
   {
     version: "v0.0.2",
-    date: "2025-01-10",
+    date: "2026-01-10",
     changes: [
       { type: "fixed", description: "Fixed login for HTTP connection" },
     ],
   },
   {
     version: "v0.0.1",
-    date: "2025-01-10",
+    date: "2026-01-10",
     changes: [
       { type: "added", description: "First Release :)" },
     ],
