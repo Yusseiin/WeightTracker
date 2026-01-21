@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:test": "CONFIG_PATH=./config next dev",
+    "generate-fake-data": "npx tsx scripts/generate-fake-data.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

@@ -36,23 +36,45 @@
 <table border="0" cellspacing="0" cellpadding="0">
   <tr>
     <td>
-      <a href="docs/screenshots/chart.jpeg" target="_blank">
-        <img src="docs/screenshots/chart.jpeg" width="200px" alt="Chart View" />
+      <a href="docs/screenshots/chart.png" target="_blank">
+        <img src="docs/screenshots/chart.png" width="200px" alt="Chart View" />
       </a>
     </td>
     <td>
-      <a href="docs/screenshots/History.jpeg" target="_blank">
-        <img src="docs/screenshots/History.jpeg" width="200px" alt="History View" />
+      <a href="docs/screenshots/history.png" target="_blank">
+        <img src="docs/screenshots/history.png" width="200px" alt="History View" />
       </a>
     </td>
     <td>
-      <a href="docs/screenshots/addentry.jpeg" target="_blank">
-        <img src="docs/screenshots/addentry.jpeg" width="200px" alt="Add Entry" />
+      <a href="docs/screenshots/addentry.png" target="_blank">
+        <img src="docs/screenshots/addentry.png" width="200px" alt="Add Entry" />
       </a>
     </td>
     <td>
-      <a href="docs/screenshots/water.jpeg" target="_blank">
-        <img src="docs/screenshots/water.jpeg" width="200px" alt="Water Tracking" />
+      <a href="docs/screenshots/water.png" target="_blank">
+        <img src="docs/screenshots/water.png" width="200px" alt="Water Tracking" />
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <a href="docs/screenshots/step.png" target="_blank">
+        <img src="docs/screenshots/step.png" width="200px" alt="Steps Tracking" />
+      </a>
+    </td>
+    <td>
+      <a href="docs/screenshots/blood.png" target="_blank">
+        <img src="docs/screenshots/blood.png" width="200px" alt="Blood Pressure" />
+      </a>
+    </td>
+    <td>
+      <a href="docs/screenshots/chartblood.png" target="_blank">
+        <img src="docs/screenshots/chartblood.png" width="200px" alt="Blood Pressure Chart" />
+      </a>
+    </td>
+    <td>
+      <a href="docs/screenshots/medication.png" target="_blank">
+        <img src="docs/screenshots/medication.png" width="200px" alt="Medication Tracking" />
       </a>
     </td>
   </tr>

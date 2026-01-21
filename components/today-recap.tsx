@@ -157,17 +157,24 @@ export function TodayRecap({
   const medicationEnabled = features?.medicationEnabled ?? false;
 
   // Collapse state with localStorage persistence
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('todayRecapCollapsed') === 'true';
-    }
-    return false;
-  });
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
 
-  // Persist collapse state
+  // Read from localStorage after hydration to avoid SSR mismatch
   useEffect(() => {
-    localStorage.setItem('todayRecapCollapsed', String(isCollapsed));
-  }, [isCollapsed]);
+    const stored = localStorage.getItem('todayRecapCollapsed');
+    if (stored === 'true') {
+      setIsCollapsed(true);
+    }
+    setIsHydrated(true);
+  }, []);
+
+  // Persist collapse state (only after hydration)
+  useEffect(() => {
+    if (isHydrated) {
+      localStorage.setItem('todayRecapCollapsed', String(isCollapsed));
+    }
+  }, [isCollapsed, isHydrated]);
 
   // Calculate medication status
   const medicationCount = useMemo(() => {

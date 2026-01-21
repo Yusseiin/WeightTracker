@@ -27,7 +27,12 @@ const changelog: ChangelogEntry[] = [
       { type: "added", description: "Added Steps tracker" },
       { type: "added", description: "Added Blood Pressure tracker" },
       { type: "added", description: "Added Medifications tracker" },
-       ],
+      { type: "added", description: "Added new graph for each" },
+      { type: "added", description: "Added an hide button for the today recap" },
+      { type: "added", description: "Added an hide for the quotes" },
+      { type: "added", description: "Added a close icon on the toastß" },
+      { type: "changed", description: "Changed the filter for the graph" },
+    ],
   },
   {
     version: "v0.0.5",

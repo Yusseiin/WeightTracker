@@ -178,6 +178,14 @@ export function WeightTracker({
               unit={settings.unit}
               chartColor={settings.chartColor}
               dateFormat={settings.dateFormat}
+              waterEntries={waterEntries}
+              waterUnit={settings.waterUnit || 'ml'}
+              stepsEntries={stepsEntries}
+              pressureEntries={pressureEntries}
+              medicationEntries={medicationEntries}
+              medicationPresets={settings.medicationPresets || []}
+              features={features}
+              goals={settings.goals}
             />
           </TabsContent>
 
