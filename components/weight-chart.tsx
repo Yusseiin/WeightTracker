@@ -313,7 +313,7 @@ export function WeightChart({
 
   // Render weight chart
   const renderWeightChart = () => (
-    <LineChart data={weightChartData} margin={{ top: 10, right: 10, left: -10, bottom: 15 }}>
+    <LineChart data={weightChartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
       <XAxis
         dataKey="formattedDate"
