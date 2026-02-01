@@ -124,11 +124,12 @@ function isValidFeatureToggles(features: unknown): features is FeatureToggles {
   if (!features || typeof features !== 'object') return false;
   const f = features as Record<string, unknown>;
 
-  if (typeof f.stepsEnabled !== 'boolean') return false;
-  if (typeof f.pressureEnabled !== 'boolean') return false;
-  if (typeof f.medicationEnabled !== 'boolean') return false;
-  if (typeof f.injectionsEnabled !== 'boolean') return false;
-  if (typeof f.waterEnabled !== 'boolean') return false;
+  // All fields are optional - if present, they must be boolean
+  if (f.stepsEnabled !== undefined && typeof f.stepsEnabled !== 'boolean') return false;
+  if (f.pressureEnabled !== undefined && typeof f.pressureEnabled !== 'boolean') return false;
+  if (f.medicationEnabled !== undefined && typeof f.medicationEnabled !== 'boolean') return false;
+  if (f.injectionsEnabled !== undefined && typeof f.injectionsEnabled !== 'boolean') return false;
+  if (f.waterEnabled !== undefined && typeof f.waterEnabled !== 'boolean') return false;
 
   return true;
 }

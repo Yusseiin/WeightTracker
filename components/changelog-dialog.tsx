@@ -24,6 +24,13 @@ const changelog: ChangelogEntry[] = [
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
     date: "2026-02-01",
     changes: [
+      { type: "fixed", description: "Bug with the save settings" },
+    ],
+  },
+  {
+    version: "v0.0.9",
+    date: "2026-02-01",
+    changes: [
       { type: "changed", description: "Increase the injection from 5 to 15" },
     ],
   },

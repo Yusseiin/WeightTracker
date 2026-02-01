@@ -261,6 +261,17 @@ export async function getSettings(userId: string = DEFAULT_USER_ID): Promise<Use
       settings.features = DEFAULT_FEATURE_TOGGLES;
       needsSave = true;
     }
+    // Add missing individual feature toggles (backward compatibility)
+    if (settings.features) {
+      if (settings.features.injectionsEnabled === undefined) {
+        settings.features.injectionsEnabled = false;
+        needsSave = true;
+      }
+      if (settings.features.waterEnabled === undefined) {
+        settings.features.waterEnabled = true;
+        needsSave = true;
+      }
+    }
     // Add dailyStepsGoal to goals if missing (backward compatibility)
     if (settings.goals && settings.goals.dailyStepsGoal === undefined) {
       settings.goals.dailyStepsGoal = null;
