@@ -99,6 +99,7 @@ Enable/disable these features in Settings → Features:
 - **Steps Tracking**: Log daily step count with optional daily goal. One entry per day with timestamp for when steps were recorded
 - **Blood Pressure**: Track systolic/diastolic readings multiple times per day with timestamps. View history and trends
 - **Medication Tracking**: Configure custom medication schedules (e.g., morning, afternoon, evening pills) and track whether each medication was taken daily
+- **Injection Tracking**: Track injection schedules and log when injections are administered (supports up to 15 injections)
 
 ### Custom Activities
 
@@ -111,6 +112,7 @@ Enable/disable these features in Settings → Features:
 ### Data Visualization
 
 - **Progress Chart**: Interactive line chart with Recharts showing weight trends
+- **Multi-Graph Support**: Choose which data to display on the chart (weight, water, steps, blood pressure, etc.) with the ability to show multiple metrics on a single graph
 - **Time Filters**: View data for All time, 1 Month, 3 Months, or 6 Months
 - **Chart Statistics**: Display average, min, and max weight in the selected period
 - **Target Weight Line**: Optional reference line showing your goal weight
