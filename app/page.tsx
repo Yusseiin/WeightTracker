@@ -5,6 +5,7 @@ import { getTodayWater, getWaterEntries } from '@/lib/water';
 import { getTodaySteps, getStepsEntries } from '@/lib/steps';
 import { getTodayPressure, getPressureEntries } from '@/lib/pressure';
 import { getTodayMedications, getMedicationEntries } from '@/lib/medication';
+import { getInjectionEntries, getLastInjection } from '@/lib/injections';
 import { SESSION_COOKIE_NAME, SessionUser } from '@/lib/types';
 
 export default async function Home() {
@@ -35,6 +36,8 @@ export default async function Home() {
   const pressureEntries = await getPressureEntries(userId);
   const todayMedications = await getTodayMedications(userId);
   const medicationEntries = await getMedicationEntries(userId);
+  const injectionEntries = await getInjectionEntries(userId);
+  const lastInjection = await getLastInjection(userId);
 
   return (
     <div className="h-screen bg-background flex flex-col">
@@ -49,6 +52,8 @@ export default async function Home() {
         initialPressureEntries={pressureEntries}
         initialTodayMedications={todayMedications}
         initialMedicationEntries={medicationEntries}
+        initialInjectionEntries={injectionEntries}
+        initialLastInjection={lastInjection}
         session={session}
       />
     </div>

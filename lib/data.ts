@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { WeightEntry, UserSettings, DEFAULT_USER_ID, DEFAULT_ACTIVITIES, DEFAULT_GOALS, DEFAULT_WATER_PRESETS, DEFAULT_FEATURE_TOGGLES, DEFAULT_MEDICATION_PRESETS } from './types';
+import { WeightEntry, UserSettings, DEFAULT_USER_ID, DEFAULT_ACTIVITIES, DEFAULT_GOALS, DEFAULT_WATER_PRESETS, DEFAULT_FEATURE_TOGGLES, DEFAULT_MEDICATION_PRESETS, DEFAULT_INJECTION_SETTINGS } from './types';
 import { DEFAULT_DATE_FORMAT } from './date-utils';
 
 // Config directory - configurable via env for Docker/Unraid
@@ -177,6 +177,7 @@ const defaultSettings = (userId: string): UserSettings => ({
   activities: DEFAULT_ACTIVITIES,
   waterPresets: DEFAULT_WATER_PRESETS,
   medicationPresets: DEFAULT_MEDICATION_PRESETS,
+  injectionSettings: DEFAULT_INJECTION_SETTINGS,
   goals: DEFAULT_GOALS,
   features: DEFAULT_FEATURE_TOGGLES,
   showQuotes: true,

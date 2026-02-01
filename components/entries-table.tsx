@@ -2,22 +2,24 @@
 
 import { useMemo, useState } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Droplets, Scale, Footprints, HeartPulse, Pill } from 'lucide-react';
+import { Droplets, Scale, Footprints, HeartPulse, Pill, Syringe, Info } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DynamicIcon } from '@/components/dynamic-icon';
 import { formatWaterAmount } from '@/lib/water-utils';
 import { formatDateForTable } from '@/lib/date-utils';
 import { getPressureCategory } from '@/lib/pressure-utils';
-import type { WeightEntry, WaterEntry, WaterUnit, DateFormatSettings, CustomActivity, StepsEntry, PressureEntry, FeatureToggles, MedicationEntry, MedicationPreset } from '@/lib/types';
+import type { WeightEntry, WaterEntry, WaterUnit, DateFormatSettings, CustomActivity, StepsEntry, PressureEntry, FeatureToggles, MedicationEntry, MedicationPreset, InjectionEntry, InjectionSettings } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { EditStepsDialog } from '@/components/edit-steps-dialog';
 import { EditPressureDialog } from '@/components/edit-pressure-dialog';
 import { EditMedicationDialog } from '@/components/edit-medication-dialog';
+import { EditInjectionDialog } from '@/components/edit-injection-dialog';
 import { DynamicIcon as MedIcon } from './dynamic-icon';
 import { Check, X } from 'lucide-react';
 
-type TableView = 'weight' | 'steps' | 'pressure' | 'medication';
+type TableView = 'weight' | 'steps' | 'pressure' | 'medication' | 'injections';
 
 interface EntriesTableProps {
   entries: WeightEntry[];
@@ -29,6 +31,8 @@ interface EntriesTableProps {
   pressureEntries?: PressureEntry[];
   medicationEntries?: MedicationEntry[];
   medicationPresets?: MedicationPreset[];
+  injectionEntries?: InjectionEntry[];
+  injectionSettings?: InjectionSettings;
   dateFormat?: DateFormatSettings;
   activities: CustomActivity[];
   features?: FeatureToggles;
@@ -38,6 +42,8 @@ interface EntriesTableProps {
   onDeletePressure?: (id: string) => Promise<void>;
   onUpdateMedication?: (id: string, taken: boolean, timestamp?: string, date?: string) => Promise<void>;
   onDeleteMedication?: (id: string) => Promise<void>;
+  onUpdateInjection?: (id: string, updates: { dose?: number; siteId?: string; timestamp?: string; date?: string; notes?: string }) => Promise<void>;
+  onDeleteInjection?: (id: string) => Promise<void>;
 }
 
 function TrainingIcon({ activityId, activities }: { activityId: string; activities: CustomActivity[] }) {
@@ -63,6 +69,8 @@ export function EntriesTable({
   pressureEntries = [],
   medicationEntries = [],
   medicationPresets = [],
+  injectionEntries = [],
+  injectionSettings,
   dateFormat,
   activities,
   features,
@@ -71,12 +79,15 @@ export function EntriesTable({
   onUpdatePressure,
   onDeletePressure,
   onUpdateMedication,
-  onDeleteMedication
+  onDeleteMedication,
+  onUpdateInjection,
+  onDeleteInjection
 }: EntriesTableProps) {
   const [currentView, setCurrentView] = useState<TableView>('weight');
   const [editingStepsEntry, setEditingStepsEntry] = useState<StepsEntry | null>(null);
   const [editingPressureEntry, setEditingPressureEntry] = useState<PressureEntry | null>(null);
   const [editingMedicationEntry, setEditingMedicationEntry] = useState<MedicationEntry | null>(null);
+  const [editingInjectionEntry, setEditingInjectionEntry] = useState<InjectionEntry | null>(null);
 
   // Create a map of water entries by date for quick lookup
   const waterByDate = useMemo(() => {
@@ -105,10 +116,12 @@ export function EntriesTable({
     return map;
   }, [pressureEntries]);
 
+  const waterEnabled = features?.waterEnabled ?? true;
   const stepsEnabled = features?.stepsEnabled ?? false;
   const pressureEnabled = features?.pressureEnabled ?? false;
   const medicationEnabled = features?.medicationEnabled ?? false;
-  const showViewSwitcher = stepsEnabled || pressureEnabled || medicationEnabled;
+  const injectionsEnabled = features?.injectionsEnabled ?? false;
+  const showViewSwitcher = stepsEnabled || pressureEnabled || medicationEnabled || injectionsEnabled;
 
   // Calculate differences and add water data for weight entries
   const entriesWithDiff = entries.map((entry, index) => {
@@ -156,14 +169,25 @@ export function EntriesTable({
     });
   }, [medicationEntries]);
 
+  // Sort injection entries by date (newest first), then by timestamp
+  const sortedInjectionEntries = useMemo(() => {
+    return [...injectionEntries].sort((a, b) => {
+      const dateCompare = b.date.localeCompare(a.date);
+      if (dateCompare !== 0) return dateCompare;
+      // Same date, sort by timestamp descending
+      return (b.timestamp || '').localeCompare(a.timestamp || '');
+    });
+  }, [injectionEntries]);
+
   // Check if we have any data for the current view
   const hasWeightData = entries.length > 0;
   const hasStepsData = stepsEntries.length > 0;
   const hasPressureData = pressureEntries.length > 0;
   const hasMedicationData = medicationEntries.length > 0;
+  const hasInjectionData = injectionEntries.length > 0;
 
   // If no data at all and no features enabled, show empty state
-  if (!hasWeightData && !hasStepsData && !hasPressureData && !hasMedicationData) {
+  if (!hasWeightData && !hasStepsData && !hasPressureData && !hasMedicationData && !hasInjectionData) {
     return (
       <Card>
         <CardContent className="pt-4">
@@ -194,9 +218,11 @@ export function EntriesTable({
             <th className="text-center py-2 px-0.5 font-medium w-10">Sleep</th>
             <th className="text-right py-2 px-0.5 font-medium">Weight</th>
             <th className="text-right py-2 px-0.5 font-medium w-14">Diff</th>
-            <th className="text-right py-2 px-1 font-medium w-14">
-              <Droplets className="h-4 w-4 inline text-blue-500" />
-            </th>
+            {waterEnabled && (
+              <th className="text-right py-2 px-1 font-medium w-14">
+                <Droplets className="h-4 w-4 inline text-blue-500" />
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -235,9 +261,11 @@ export function EntriesTable({
                     ? `+${entry.diff}`
                     : entry.diff}
               </td>
-              <td className="py-2 px-1 text-right whitespace-nowrap text-blue-500">
-                {entry.water > 0 ? formatWaterAmount(entry.water, waterUnit) : '-'}
-              </td>
+              {waterEnabled && (
+                <td className="py-2 px-1 text-right whitespace-nowrap text-blue-500">
+                  {entry.water > 0 ? formatWaterAmount(entry.water, waterUnit) : '-'}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -410,6 +438,81 @@ export function EntriesTable({
     );
   };
 
+  // Injection table
+  const renderInjectionTable = () => {
+    if (sortedInjectionEntries.length === 0) {
+      return (
+        <div className="flex h-25 items-center justify-center text-muted-foreground">
+          No injections recorded yet
+        </div>
+      );
+    }
+    const canEdit = !!onUpdateInjection;
+    return (
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b text-muted-foreground">
+            <th className="text-center py-2 px-1 font-medium w-8">
+              <span className="sr-only">Notes</span>
+            </th>
+            <th className="text-left py-2 px-1 font-medium">Date</th>
+            <th className="text-left py-2 px-1 font-medium">Medication</th>
+            <th className="text-right py-2 px-1 font-medium">Dose</th>
+            <th className="text-left py-2 px-1 font-medium">Site</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sortedInjectionEntries.map((entry) => {
+            const medication = injectionSettings?.medications?.find(m => m.id === entry.medicationId);
+            const site = injectionSettings?.injectionSites?.find(s => s.id === entry.siteId);
+            return (
+              <tr
+                key={entry.id}
+                onClick={canEdit ? () => setEditingInjectionEntry(entry) : undefined}
+                className={cn(
+                  "border-b last:border-0",
+                  canEdit && "cursor-pointer hover:bg-muted/50 transition-colors"
+                )}
+              >
+                <td className="py-2 px-1 text-center">
+                  {entry.notes && (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <span
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex cursor-pointer"
+                        >
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </span>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto max-w-xs p-3" side="right">
+                        <p className="text-sm">{entry.notes}</p>
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                </td>
+                <td className="py-2 px-1 whitespace-nowrap">
+                  {formatDateTimeForTable(entry.timestamp, dateFormat)}
+                </td>
+                <td className="py-2 px-1 whitespace-nowrap">
+                  <div className="flex items-center gap-2">
+                    <span>{medication?.name || 'Unknown'}</span>
+                  </div>
+                </td>
+                <td className="py-2 px-1 text-right whitespace-nowrap text-teal-500">
+                  {entry.dose} {medication?.unit || 'mg'}
+                </td>
+                <td className="py-2 px-1 whitespace-nowrap text-muted-foreground">
+                  {site?.label || 'Unknown'}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    );
+  };
+
   return (
     <Card className="py-0">
       <CardContent className="px-0 sm:px-2">
@@ -441,6 +544,11 @@ export function EntriesTable({
                   <Pill className="h-4 w-4" />
                 </ToggleGroupItem>
               )}
+              {injectionsEnabled && (
+                <ToggleGroupItem value="injections" aria-label="Injections view">
+                  <Syringe className="h-4 w-4" />
+                </ToggleGroupItem>
+              )}
             </ToggleGroup>
           </div>
         )}
@@ -450,6 +558,7 @@ export function EntriesTable({
           {currentView === 'steps' && stepsEnabled && renderStepsTable()}
           {currentView === 'pressure' && pressureEnabled && renderPressureTable()}
           {currentView === 'medication' && medicationEnabled && renderMedicationTable()}
+          {currentView === 'injections' && injectionsEnabled && renderInjectionTable()}
         </div>
       </CardContent>
 
@@ -484,6 +593,18 @@ export function EntriesTable({
           onOpenChange={(open) => !open && setEditingMedicationEntry(null)}
           onSave={onUpdateMedication}
           onDelete={onDeleteMedication}
+        />
+      )}
+
+      {/* Edit Injection Dialog */}
+      {onUpdateInjection && injectionSettings && (
+        <EditInjectionDialog
+          entry={editingInjectionEntry}
+          injectionSettings={injectionSettings}
+          open={!!editingInjectionEntry}
+          onOpenChange={(open) => !open && setEditingInjectionEntry(null)}
+          onSave={onUpdateInjection}
+          onDelete={onDeleteInjection}
         />
       )}
     </Card>

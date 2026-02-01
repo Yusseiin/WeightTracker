@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
-import { HeartPulse, Clock, Calendar } from 'lucide-react';
+import { HeartPulse } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -149,34 +149,26 @@ export function AddPressureDialog({
           </div>
         )}
 
-        {/* Date input */}
-        <div className="space-y-2">
-          <Label htmlFor="date" className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Date
-          </Label>
-          <Input
-            id="date"
-            type="date"
-            value={dateInput}
-            onChange={(e) => setDateInput(e.target.value)}
-            className="text-lg"
-          />
-        </div>
-
-        {/* Time input */}
-        <div className="space-y-2">
-          <Label htmlFor="time" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Time of measurement
-          </Label>
-          <Input
-            id="time"
-            type="time"
-            value={timeInput}
-            onChange={(e) => setTimeInput(e.target.value)}
-            className="text-lg"
-          />
+        {/* Date and Time inputs */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="date">Date</Label>
+            <Input
+              id="date"
+              type="date"
+              value={dateInput}
+              onChange={(e) => setDateInput(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="time">Time</Label>
+            <Input
+              id="time"
+              type="time"
+              value={timeInput}
+              onChange={(e) => setTimeInput(e.target.value)}
+            />
+          </div>
         </div>
       </div>
     </div>

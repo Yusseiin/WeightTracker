@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Footprints, Clock, Trash2 } from 'lucide-react';
+import { Footprints, Trash2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -140,16 +140,12 @@ export function EditStepsDialog({
 
         {/* Time input */}
         <div className="space-y-2">
-          <Label htmlFor="edit-time" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Time of measurement
-          </Label>
+          <Label htmlFor="edit-time">Time</Label>
           <Input
             id="edit-time"
             type="time"
             value={timeInput}
             onChange={(e) => setTimeInput(e.target.value)}
-            className="text-lg"
           />
         </div>
 

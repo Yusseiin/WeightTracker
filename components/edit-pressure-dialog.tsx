@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
-import { HeartPulse, Clock, Trash2 } from 'lucide-react';
+import { HeartPulse, Trash2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -174,16 +174,12 @@ export function EditPressureDialog({
 
         {/* Time input */}
         <div className="space-y-2">
-          <Label htmlFor="edit-pressure-time" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Time of measurement
-          </Label>
+          <Label htmlFor="edit-pressure-time">Time</Label>
           <Input
             id="edit-pressure-time"
             type="time"
             value={timeInput}
             onChange={(e) => setTimeInput(e.target.value)}
-            className="text-lg"
           />
         </div>
 

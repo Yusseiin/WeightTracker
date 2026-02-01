@@ -131,6 +131,8 @@ export interface FeatureToggles {
   stepsEnabled: boolean;            // Show steps tracking button
   pressureEnabled: boolean;         // Show blood pressure tracking button
   medicationEnabled: boolean;       // Show medication tracking button
+  injectionsEnabled: boolean;       // Show injections tracking button
+  waterEnabled: boolean;            // Show water tracking button
 }
 
 // Default goal settings
@@ -147,6 +149,8 @@ export const DEFAULT_FEATURE_TOGGLES: FeatureToggles = {
   stepsEnabled: false,
   pressureEnabled: false,
   medicationEnabled: false,
+  injectionsEnabled: false,
+  waterEnabled: true,  // Default to true for backwards compatibility
 };
 
 // User settings model
@@ -160,9 +164,11 @@ export interface UserSettings {
   activities: CustomActivity[];   // User's custom activities (max 12)
   waterPresets: WaterPreset[];    // User's custom water presets (max 6)
   medicationPresets: MedicationPreset[]; // User's custom medication presets (max 8)
+  injectionSettings: InjectionSettings; // Injectable medication settings
   goals: GoalSettings;            // Gamification goals
   features: FeatureToggles;       // Optional feature toggles
   showQuotes: boolean;            // Show motivational quotes
+  chartCombinations?: ChartCombination[]; // Custom chart configurations
   createdAt: string;
   updatedAt: string;
 }
@@ -297,3 +303,108 @@ export interface MedicationEntry {
   timestamp: string;   // ISO 8601 - time when marked
   updatedAt: string;   // ISO 8601
 }
+
+// Injectable medication configuration (for GLP-1, insulin, etc.)
+export interface InjectableMedication {
+  id: string;               // Unique identifier (e.g., 'inj_abc123')
+  name: string;             // e.g., 'Ozempic', 'Wegovy', 'Mounjaro', 'Insulin'
+  color: string;            // Tailwind color class (e.g., 'text-teal-500')
+  unit: string;             // e.g., 'mg', 'units'
+  availableDoses: number[]; // e.g., [0.25, 0.5, 1.0]
+}
+
+// Injection site preset
+export interface InjectionSitePreset {
+  id: string;               // Unique identifier (e.g., 'site_abc123')
+  label: string;            // e.g., 'Left Arm', 'Abdomen Right'
+  icon: string;             // Lucide icon name (e.g., 'Syringe')
+}
+
+// Maximum numbers
+export const MAX_INJECTABLE_MEDICATIONS = 15;
+export const MAX_INJECTION_SITES = 8;
+
+// Default injection sites
+export const DEFAULT_INJECTION_SITES: InjectionSitePreset[] = [
+  { id: 'left_arm', label: 'Left Arm', icon: 'Syringe' },
+  { id: 'right_arm', label: 'Right Arm', icon: 'Syringe' },
+  { id: 'left_thigh', label: 'Left Thigh', icon: 'Syringe' },
+  { id: 'right_thigh', label: 'Right Thigh', icon: 'Syringe' },
+  { id: 'abdomen_left', label: 'Abdomen Left', icon: 'Syringe' },
+  { id: 'abdomen_right', label: 'Abdomen Right', icon: 'Syringe' },
+];
+
+// Injection settings stored in UserSettings
+export interface InjectionSettings {
+  medications: InjectableMedication[];      // User configures from scratch
+  injectionSites: InjectionSitePreset[];    // Default sites provided
+  activeMedicationId: string | null;        // Currently active medication
+  currentDose: number | null;               // Current dose level
+  nextRotationOverrides?: Record<string, string>;  // Per-medication next site overrides (medicationId -> siteId)
+}
+
+// Default injection settings
+export const DEFAULT_INJECTION_SETTINGS: InjectionSettings = {
+  medications: [],
+  injectionSites: DEFAULT_INJECTION_SITES,
+  activeMedicationId: null,
+  currentDose: null,
+  nextRotationOverrides: {},
+};
+
+// Injection entry (for tracking injectable medications like GLP-1)
+export interface InjectionEntry {
+  id: string;
+  author: string;
+  date: string;              // YYYY-MM-DD format
+  medicationId: string;      // References InjectableMedication.id
+  dose: number;              // Dose amount in the medication's unit
+  siteId: string;            // References InjectionSitePreset.id
+  timestamp: string;         // ISO 8601 - time of injection
+  notes?: string;            // Optional notes
+  updatedAt: string;         // ISO 8601
+}
+
+// Chart view types
+export type ChartView = 'weight' | 'water' | 'steps' | 'pressure' | 'medication' | 'injections';
+
+// Chart type (line or bar)
+export type ChartType = 'line' | 'bar';
+
+// Mapping of chart views to their chart type
+export const CHART_TYPE_MAP: Record<ChartView, ChartType> = {
+  weight: 'line',
+  pressure: 'line',
+  injections: 'line',
+  water: 'bar',
+  steps: 'bar',
+  medication: 'bar',
+};
+
+// Chart combination configuration
+export interface ChartCombination {
+  id: string;
+  name: string;
+  icon: string;              // Icon name from lucide-react
+  charts: ChartView[];       // Which charts to include
+  chartType: ChartType;
+  enabled: boolean;
+  order: number;
+}
+
+// Available icons for chart customization
+export const CHART_ICONS = [
+  'Scale', 'Droplets', 'Footprints', 'HeartPulse', 'Pill', 'Syringe',
+  'Activity', 'TrendingUp', 'BarChart3', 'LineChart', 'Heart', 'Zap',
+  'Target', 'Award', 'Star', 'Sun', 'Moon', 'Flame'
+] as const;
+
+// Default chart combinations (one per chart type)
+export const DEFAULT_CHART_COMBINATIONS: ChartCombination[] = [
+  { id: 'weight', name: 'Weight', icon: 'Scale', charts: ['weight'], chartType: 'line', enabled: true, order: 0 },
+  { id: 'water', name: 'Water', icon: 'Droplets', charts: ['water'], chartType: 'bar', enabled: true, order: 1 },
+  { id: 'steps', name: 'Steps', icon: 'Footprints', charts: ['steps'], chartType: 'bar', enabled: true, order: 2 },
+  { id: 'pressure', name: 'Blood Pressure', icon: 'HeartPulse', charts: ['pressure'], chartType: 'line', enabled: true, order: 3 },
+  { id: 'medication', name: 'Medication', icon: 'Pill', charts: ['medication'], chartType: 'bar', enabled: true, order: 4 },
+  { id: 'injections', name: 'Injections', icon: 'Syringe', charts: ['injections'], chartType: 'line', enabled: true, order: 5 },
+];

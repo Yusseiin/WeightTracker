@@ -24,10 +24,12 @@ import { UserManagementDialog } from '@/components/user-management-dialog';
 import { ActivityManager } from '@/components/activity-manager';
 import { WaterPresetManager } from '@/components/water-preset-manager';
 import { MedicationManager } from '@/components/medication-manager';
+import { InjectionSettingsManager } from '@/components/injection-settings-manager';
 import { DateFormatEditor } from '@/components/date-format-editor';
 import { DEFAULT_DATE_FORMAT } from '@/lib/date-utils';
-import type { SessionUser, UserSettings, ChartColor, WaterUnit, DateFormatSettings, DateLocale, SingleDateFormat, CustomActivity, WeightEntry, GoalSettings, WeekStartsOn, WaterPreset, FeatureToggles, MedicationPreset, MedicationEntry } from '@/lib/types';
-import { DEFAULT_GOALS, WEEK_DAYS, DEFAULT_FEATURE_TOGGLES } from '@/lib/types';
+import type { SessionUser, UserSettings, ChartColor, WaterUnit, DateFormatSettings, DateLocale, SingleDateFormat, CustomActivity, WeightEntry, GoalSettings, WeekStartsOn, WaterPreset, FeatureToggles, MedicationPreset, MedicationEntry, InjectionSettings, InjectionEntry, ChartCombination } from '@/lib/types';
+import { DEFAULT_GOALS, WEEK_DAYS, DEFAULT_FEATURE_TOGGLES, DEFAULT_INJECTION_SETTINGS, DEFAULT_CHART_COMBINATIONS } from '@/lib/types';
+import { ChartCombinationManager } from '@/components/chart-combination-manager';
 
 interface SettingsPageProps {
   session: SessionUser;
@@ -65,6 +67,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
   const [settings, setSettings] = useState(initialSettings);
   const [entries, setEntries] = useState<WeightEntry[]>([]);
   const [medicationEntries, setMedicationEntries] = useState<MedicationEntry[]>([]);
+  const [injectionEntries, setInjectionEntries] = useState<InjectionEntry[]>([]);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
@@ -115,10 +118,24 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
     }
   }, []);
 
+  // Fetch injection entries for injection usage check
+  const fetchInjectionEntries = useCallback(async () => {
+    try {
+      const response = await fetch('/api/injections?all=true');
+      const result = await response.json();
+      if (result.success) {
+        setInjectionEntries(result.data);
+      }
+    } catch {
+      // Silently fail - entries are only needed for injection deletion check
+    }
+  }, []);
+
   useEffect(() => {
     fetchEntries();
     fetchMedicationEntries();
-  }, [fetchEntries, fetchMedicationEntries]);
+    fetchInjectionEntries();
+  }, [fetchEntries, fetchMedicationEntries, fetchInjectionEntries]);
 
   // Check if there are unsaved changes
   const hasChanges =
@@ -288,6 +305,38 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
     }
   };
 
+  const handleInjectionSettingsSave = async (injectionSettings: InjectionSettings) => {
+    const response = await fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ injectionSettings })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      setSettings(result.data);
+    } else {
+      throw new Error(result.error || 'Failed to save medication presets');
+    }
+  };
+
+  const handleChartCombinationsSave = async (chartCombinations: ChartCombination[]) => {
+    const response = await fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chartCombinations })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      setSettings(result.data);
+    } else {
+      throw new Error(result.error || 'Failed to save chart combinations');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -415,11 +464,41 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
               </CardContent>
             </Card>
 
+            {/* Chart Configuration Card */}
+            <Card className="py-4">
+              <CardContent className="space-y-4">
+                <h3 className="font-medium text-base">Chart Configuration</h3>
+                <p className="text-xs text-muted-foreground">
+                  Customize which charts appear on the homepage and combine compatible charts together
+                </p>
+                <ChartCombinationManager
+                  combinations={settings.chartCombinations || DEFAULT_CHART_COMBINATIONS}
+                  onSave={handleChartCombinationsSave}
+                  features={localFeatures}
+                />
+              </CardContent>
+            </Card>
+
             {/* Optional Features Card */}
             <Card className="py-4">
               <CardContent className="space-y-4">
                 <h3 className="font-medium text-base">Optional Features</h3>
                 <p className="text-xs text-muted-foreground">Enable additional tracking buttons</p>
+
+                {/* Water Tracking */}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="waterEnabled"
+                    checked={localFeatures.waterEnabled}
+                    onCheckedChange={(checked) => setLocalFeatures(prev => ({
+                      ...prev,
+                      waterEnabled: checked === true
+                    }))}
+                  />
+                  <Label htmlFor="waterEnabled" className="cursor-pointer">
+                    Enable water tracking
+                  </Label>
+                </div>
 
                 {/* Steps Tracking */}
                 <div className="flex items-center space-x-2">
@@ -465,6 +544,21 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                     Enable medication tracking
                   </Label>
                 </div>
+
+                {/* Injection Tracking */}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="injectionsEnabled"
+                    checked={localFeatures.injectionsEnabled}
+                    onCheckedChange={(checked) => setLocalFeatures(prev => ({
+                      ...prev,
+                      injectionsEnabled: checked === true
+                    }))}
+                  />
+                  <Label htmlFor="injectionsEnabled" className="cursor-pointer">
+                    Enable injection tracking (GLP-1, insulin, etc.)
+                  </Label>
+                </div>
               </CardContent>
             </Card>
 
@@ -474,21 +568,23 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                 <h3 className="font-medium text-base">Goals</h3>
                 <p className="text-xs text-muted-foreground">Optional goals for gamification</p>
 
-                {/* Daily Water Goal */}
-                <div className="space-y-2">
-                  <Label>Daily Water Goal ({localWaterUnit === 'ml' ? 'ml' : 'oz'})</Label>
-                  <Input
-                    type="number"
-                    step={localWaterUnit === 'ml' ? '100' : '1'}
-                    placeholder="e.g. 2000"
-                    value={localGoals.dailyWaterGoal ?? ''}
-                    onChange={(e) => setLocalGoals(prev => ({
-                      ...prev,
-                      dailyWaterGoal: e.target.value === '' ? null : parseFloat(e.target.value)
-                    }))}
-                    className="max-w-32"
-                  />
-                </div>
+                {/* Daily Water Goal - only show if water feature is enabled */}
+                {localFeatures.waterEnabled && (
+                  <div className="space-y-2">
+                    <Label>Daily Water Goal ({localWaterUnit === 'ml' ? 'ml' : 'oz'})</Label>
+                    <Input
+                      type="number"
+                      step={localWaterUnit === 'ml' ? '100' : '1'}
+                      placeholder="e.g. 2000"
+                      value={localGoals.dailyWaterGoal ?? ''}
+                      onChange={(e) => setLocalGoals(prev => ({
+                        ...prev,
+                        dailyWaterGoal: e.target.value === '' ? null : parseFloat(e.target.value)
+                      }))}
+                      className="max-w-32"
+                    />
+                  </div>
+                )}
 
                 {/* Daily Steps Goal - only show if steps feature is enabled */}
                 {localFeatures.stepsEnabled && (
@@ -584,20 +680,22 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
               </CardContent>
             </Card>
 
-            {/* Water Presets Card */}
-            <Card className="py-4">
-              <CardContent className="space-y-4">
-                <h3 className="font-medium text-base">Water Presets</h3>
-                <div className="space-y-2">
-                  <Label>Quick-add Buttons</Label>
-                  <WaterPresetManager
-                    presets={settings.waterPresets}
-                    onSave={handleWaterPresetsSave}
-                    waterUnit={localWaterUnit}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+            {/* Water Presets Card - only show if water feature is enabled */}
+            {localFeatures.waterEnabled && (
+              <Card className="py-4">
+                <CardContent className="space-y-4">
+                  <h3 className="font-medium text-base">Water Presets</h3>
+                  <div className="space-y-2">
+                    <Label>Quick-add Buttons</Label>
+                    <WaterPresetManager
+                      presets={settings.waterPresets}
+                      onSave={handleWaterPresetsSave}
+                      waterUnit={localWaterUnit}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Medication Presets Card - only show if medication feature is enabled */}
             {localFeatures.medicationEnabled && (
@@ -610,6 +708,24 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                       medications={settings.medicationPresets || []}
                       onSave={handleMedicationPresetsSave}
                       medicationEntries={medicationEntries}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Injection Settings Card - only show if injection feature is enabled */}
+            {localFeatures.injectionsEnabled && (
+              <Card className="py-4">
+                <CardContent className="space-y-4">
+                  <h3 className="font-medium text-base">Injection Settings</h3>
+                  <p className="text-xs text-muted-foreground">Configure medications and injection sites for tracking</p>
+                  <div className="space-y-2">
+                    <Label>Injectable Medications</Label>
+                    <InjectionSettingsManager
+                      settings={settings.injectionSettings || DEFAULT_INJECTION_SETTINGS}
+                      onSave={handleInjectionSettingsSave}
+                      injectionEntries={injectionEntries}
                     />
                   </div>
                 </CardContent>

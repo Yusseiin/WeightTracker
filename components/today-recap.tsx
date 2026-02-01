@@ -2,10 +2,10 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { isToday, parseISO } from 'date-fns';
-import { Scale, Droplets, Flame, Footprints, HeartPulse, Pill, ChevronDown, ChevronUp } from 'lucide-react';
+import { Scale, Droplets, Flame, Footprints, HeartPulse, Pill, Syringe, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import type { WeightEntry, WaterEntry, WaterUnit, GoalSettings, StepsEntry, PressureEntry, FeatureToggles, MedicationEntry, MedicationPreset } from '@/lib/types';
+import type { WeightEntry, WaterEntry, WaterUnit, GoalSettings, StepsEntry, PressureEntry, FeatureToggles, MedicationEntry, MedicationPreset, InjectionEntry, InjectionSettings } from '@/lib/types';
 import { formatWaterAmount } from '@/lib/water-utils';
 import { formatDateForRecap } from '@/lib/date-utils';
 import { calculateWaterStreak, calculateProgress, getCurrentWeekWeightChange, getCurrentMonthWeightChange } from '@/lib/goals';
@@ -24,6 +24,8 @@ interface TodayRecapProps {
   todayMedications?: MedicationEntry[];
   medicationPresets?: MedicationPreset[];
   features?: FeatureToggles;
+  injectionEntries?: InjectionEntry[];
+  injectionSettings?: InjectionSettings;
 }
 
 export function TodayRecap({
@@ -37,7 +39,9 @@ export function TodayRecap({
   todayPressure = [],
   todayMedications = [],
   medicationPresets = [],
-  features
+  features,
+  injectionEntries = [],
+  injectionSettings
 }: TodayRecapProps) {
   const { todayWeight, lastWeight, lastWeightDate } = useMemo(() => {
     if (entries.length === 0) {
@@ -152,9 +156,11 @@ export function TodayRecap({
     : null;
 
   // Count enabled features for grid layout
+  const waterEnabled = features?.waterEnabled ?? true;
   const stepsEnabled = features?.stepsEnabled ?? false;
   const pressureEnabled = features?.pressureEnabled ?? false;
   const medicationEnabled = features?.medicationEnabled ?? false;
+  const injectionsEnabled = features?.injectionsEnabled ?? false;
 
   // Collapse state with localStorage persistence
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -183,6 +189,32 @@ export function TodayRecap({
     return { taken, total };
   }, [todayMedications, medicationPresets]);
 
+  // Get recent injections (last 3, sorted by timestamp descending)
+  const recentInjections = useMemo(() => {
+    if (!injectionEntries.length || !injectionSettings) return [];
+
+    // Sort by timestamp descending and take last 3
+    const sorted = [...injectionEntries].sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    ).slice(0, 3);
+
+    return sorted.map(entry => {
+      const medication = injectionSettings.medications?.find(m => m.id === entry.medicationId);
+      const date = new Date(entry.timestamp);
+      const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const dateStr = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+
+      return {
+        id: entry.id,
+        medicationName: medication?.name || 'Unknown',
+        dose: entry.dose,
+        unit: medication?.unit || 'mg',
+        timestamp: `${dateStr} ${timeStr}`,
+        color: medication?.color || 'text-teal-500'
+      };
+    });
+  }, [injectionEntries, injectionSettings]);
+
   return (
     <Card className="py-2 shrink-0">
       <CardContent className="py-0">
@@ -209,7 +241,7 @@ export function TodayRecap({
         </div>
         <div className={cn("space-y-4 mt-0 transition-all duration-200", isCollapsed && "hidden")}>
           {/* Row 1: Weight and Water */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className={cn("grid gap-4", waterEnabled ? "grid-cols-2" : "grid-cols-1")}>
             {/* Weight section */}
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-full bg-primary/10">
@@ -250,44 +282,46 @@ export function TodayRecap({
               </div>
             </div>
 
-            {/* Water section */}
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-blue-500/10">
-                <Droplets className="h-5 w-5 text-blue-500" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <div className="text-lg font-semibold">
-                    {formatWaterAmount(waterAmount, waterUnit)}
+            {/* Water section - only if enabled */}
+            {waterEnabled && (
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-blue-500/10">
+                  <Droplets className="h-5 w-5 text-blue-500" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <div className="text-lg font-semibold">
+                      {formatWaterAmount(waterAmount, waterUnit)}
+                    </div>
+                    {dailyWaterGoal && (
+                      <div className="text-xs text-muted-foreground">
+                        / {formatWaterAmount(dailyWaterGoal, waterUnit)}
+                      </div>
+                    )}
                   </div>
+
+                  {/* Progress bar */}
                   {dailyWaterGoal && (
-                    <div className="text-xs text-muted-foreground">
-                      / {formatWaterAmount(dailyWaterGoal, waterUnit)}
+                    <div className="mt-1 h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-blue-500 transition-all duration-300"
+                        style={{ width: `${waterProgress}%` }}
+                      />
                     </div>
                   )}
+
+                  {/* Streak or "water" label */}
+                  {dailyWaterGoal && waterStreak > 0 ? (
+                    <div className="mt-1 flex items-center gap-1 text-xs text-orange-500">
+                      <Flame className="h-3 w-3" />
+                      <span>{waterStreak} day streak</span>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-muted-foreground">water</div>
+                  )}
                 </div>
-
-                {/* Progress bar */}
-                {dailyWaterGoal && (
-                  <div className="mt-1 h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-blue-500 transition-all duration-300"
-                      style={{ width: `${waterProgress}%` }}
-                    />
-                  </div>
-                )}
-
-                {/* Streak or "water" label */}
-                {dailyWaterGoal && waterStreak > 0 ? (
-                  <div className="mt-1 flex items-center gap-1 text-xs text-orange-500">
-                    <Flame className="h-3 w-3" />
-                    <span>{waterStreak} day streak</span>
-                  </div>
-                ) : (
-                  <div className="text-xs text-muted-foreground">water</div>
-                )}
               </div>
-            </div>
+            )}
           </div>
 
           {/* Row 2: Steps (full width) - only if enabled */}
@@ -388,6 +422,43 @@ export function TodayRecap({
                       </>
                     )}
                   </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Row 4: Injections - only if enabled */}
+          {injectionsEnabled && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-full bg-teal-500/10">
+                  <Syringe className="h-5 w-5 text-teal-500" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground">Injections</span>
+              </div>
+              {recentInjections.length > 0 ? (
+                <div className="space-y-1 pl-10">
+                  {recentInjections.map(injection => (
+                    <div key={injection.id} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className={cn("font-medium", injection.color)}>
+                          {injection.medicationName}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {injection.dose} {injection.unit}
+                        </span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {injection.timestamp}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="pl-10 text-sm text-muted-foreground">
+                  {injectionSettings?.medications?.length
+                    ? 'No injections logged'
+                    : 'No medications set'}
                 </div>
               )}
             </div>

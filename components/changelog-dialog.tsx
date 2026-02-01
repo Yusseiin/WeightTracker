@@ -22,6 +22,22 @@ interface ChangelogEntry {
 const changelog: ChangelogEntry[] = [
   {
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
+    date: "2026-01-31",
+    changes: [
+      { type: "added", description: "Added the possibility to enable/disable the water tracking" },
+      { type: "added", description: "Added the possibility to choose what graph to show" },
+      { type: "added", description: "Added the possibility to choose a multy value graph" },
+    ],
+  },
+  {
+    version: "v0.0.7",
+    date: "2026-01-30",
+    changes: [
+      { type: "added", description: "Added Injection tracker" },
+    ],
+  },
+  {
+    version: "v0.0.6",
     date: "2026-01-21",
     changes: [
       { type: "added", description: "Added Steps tracker" },

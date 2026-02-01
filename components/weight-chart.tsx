@@ -15,7 +15,6 @@ import {
   Cell
 } from 'recharts';
 import { subMonths, subDays, isAfter, parseISO, format, eachDayOfInterval, startOfDay } from 'date-fns';
-import { Scale, Droplets, Footprints, HeartPulse, Pill } from 'lucide-react';
 import {
   ChartContainer,
   type ChartConfig
@@ -44,8 +43,13 @@ import type {
   MedicationEntry,
   MedicationPreset,
   FeatureToggles,
-  GoalSettings
+  GoalSettings,
+  InjectionEntry,
+  InjectionSettings,
+  ChartCombination
 } from '@/lib/types';
+import { DEFAULT_CHART_COMBINATIONS } from '@/lib/types';
+import { DynamicIcon } from '@/components/dynamic-icon';
 
 // Color mapping for chart
 const CHART_COLORS: Record<ChartColor, string> = {
@@ -61,8 +65,22 @@ const WATER_COLOR = 'hsl(210, 100%, 50%)';
 const STEPS_COLOR = 'hsl(142, 76%, 36%)';
 const SYSTOLIC_COLOR = 'hsl(0, 84%, 60%)';
 const DIASTOLIC_COLOR = 'hsl(210, 100%, 50%)';
+const INJECTION_COLOR = 'hsl(174, 72%, 40%)'; // teal
 
-type ChartView = 'weight' | 'water' | 'steps' | 'pressure' | 'medication';
+// Mapping from Tailwind color classes to HSL for injection medications
+const MEDICATION_COLOR_MAP: Record<string, string> = {
+  'text-teal-500': 'hsl(174, 72%, 40%)',
+  'text-blue-500': 'hsl(210, 100%, 50%)',
+  'text-purple-500': 'hsl(270, 76%, 55%)',
+  'text-green-500': 'hsl(142, 76%, 36%)',
+  'text-orange-500': 'hsl(25, 95%, 53%)',
+  'text-red-500': 'hsl(0, 84%, 60%)',
+  'text-pink-500': 'hsl(330, 81%, 60%)',
+  'text-indigo-500': 'hsl(239, 84%, 67%)',
+  'text-yellow-500': 'hsl(48, 96%, 53%)',
+  'text-cyan-500': 'hsl(188, 94%, 43%)',
+};
+
 type MedicationTimeFilter = '7d' | '14d' | '30d' | 'all';
 
 interface WeightChartProps {
@@ -78,9 +96,14 @@ interface WeightChartProps {
   pressureEntries?: PressureEntry[];
   medicationEntries?: MedicationEntry[];
   medicationPresets?: MedicationPreset[];
+  // Injection data
+  injectionEntries?: InjectionEntry[];
+  injectionSettings?: InjectionSettings;
   // Feature flags & goals
   features?: FeatureToggles;
   goals?: GoalSettings;
+  // Chart configuration
+  chartCombinations?: ChartCombination[];
 }
 
 export function WeightChart({
@@ -95,18 +118,43 @@ export function WeightChart({
   pressureEntries = [],
   medicationEntries = [],
   medicationPresets = [],
+  injectionEntries = [],
+  injectionSettings,
   features,
-  goals
+  goals,
+  chartCombinations
 }: WeightChartProps) {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [medTimeFilter, setMedTimeFilter] = useState<MedicationTimeFilter>('30d');
-  const [currentView, setCurrentView] = useState<ChartView>('weight');
   const lineColor = CHART_COLORS[chartColor];
 
-  // Feature flags
-  const stepsEnabled = features?.stepsEnabled ?? false;
-  const pressureEnabled = features?.pressureEnabled ?? false;
-  const medicationEnabled = features?.medicationEnabled ?? false;
+  // Get active chart combinations (enabled and sorted by order)
+  const activeCombinations = useMemo(() => {
+    const combinations = chartCombinations || DEFAULT_CHART_COMBINATIONS;
+    return combinations
+      .filter(c => c.enabled)
+      .filter(c => {
+        // Filter based on feature flags
+        const chartsAvailable = c.charts.every(chart => {
+          if (chart === 'weight') return true;
+          if (chart === 'water') return features?.waterEnabled ?? true;
+          if (chart === 'steps') return features?.stepsEnabled ?? false;
+          if (chart === 'pressure') return features?.pressureEnabled ?? false;
+          if (chart === 'medication') return features?.medicationEnabled ?? false;
+          if (chart === 'injections') return features?.injectionsEnabled ?? false;
+          return false;
+        });
+        return chartsAvailable;
+      })
+      .sort((a, b) => a.order - b.order);
+  }, [chartCombinations, features]);
+
+  // Initialize currentView to first enabled combination
+  const [currentView, setCurrentView] = useState<string>(() => {
+    const combinations = chartCombinations || DEFAULT_CHART_COMBINATIONS;
+    const firstEnabled = combinations.find(c => c.enabled);
+    return firstEnabled?.id || 'weight';
+  });
 
   // Goals
   const dailyWaterGoal = goals?.dailyWaterGoal ?? null;
@@ -272,13 +320,172 @@ export function WeightChart({
     });
   }, [medicationEntries, medicationPresets, medTimeFilter, dateFormat]);
 
+  // Injection chart data - restructured to support multiple medications
+  const { injectionChartData, uniqueMedications } = useMemo(() => {
+    if (!injectionSettings?.medications || injectionSettings.medications.length === 0) {
+      return { injectionChartData: [], uniqueMedications: [] };
+    }
+
+    const cutoffDate = getCutoffDate(timeFilter);
+
+    const filteredEntries = cutoffDate
+      ? injectionEntries.filter(e => isAfter(new Date(e.timestamp), cutoffDate))
+      : injectionEntries;
+
+    const sortedEntries = [...filteredEntries].sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    // Get unique medications used in entries
+    const medicationIds = [...new Set(sortedEntries.map(e => e.medicationId))];
+    const uniqueMeds = medicationIds
+      .map(id => injectionSettings.medications.find(m => m.id === id))
+      .filter((m): m is typeof injectionSettings.medications[0] => m !== undefined);
+
+    // Create chart data with ALL medication dose fields in each data point
+    const chartData = sortedEntries.map(entry => {
+      const site = injectionSettings.injectionSites?.find(s => s.id === entry.siteId);
+
+      // Create base entry with null doses for ALL unique medications
+      const dataPoint: Record<string, unknown> = {
+        date: entry.timestamp,
+        formattedDate: formatDateForAxis(entry.timestamp, dateFormat),
+        site: site?.label || 'Unknown',
+      };
+
+      // Initialize ALL medication dose fields to null first
+      uniqueMeds.forEach(med => {
+        dataPoint[`dose_${med.id}`] = null;
+        dataPoint[`name_${med.id}`] = med.name;
+        dataPoint[`unit_${med.id}`] = med.unit;
+      });
+
+      // Set the actual dose for the medication used in this entry
+      const medication = injectionSettings.medications.find(m => m.id === entry.medicationId);
+      if (medication) {
+        dataPoint[`dose_${medication.id}`] = entry.dose;
+      }
+
+      return dataPoint;
+    });
+
+    return { injectionChartData: chartData, uniqueMedications: uniqueMeds };
+  }, [injectionEntries, injectionSettings, timeFilter, dateFormat]);
+
+  // Pre-compute merged line chart data (for combined weight + pressure + injections charts)
+  const mergedLineChartData = useMemo(() => {
+    const dataMap = new Map<string, Record<string, unknown>>();
+
+    // Collect all unique dates from all data sources first
+    const allDates = new Set<string>();
+    weightChartData.forEach(e => allDates.add(e.date.substring(0, 10)));
+    pressureChartData.forEach(e => allDates.add(e.date.substring(0, 10)));
+    injectionChartData.forEach(e => allDates.add(String(e.date).substring(0, 10)));
+
+    // Initialize all dates with null values for all possible fields
+    allDates.forEach(key => {
+      dataMap.set(key, {
+        date: key,
+        formattedDate: '',
+        weight: null,
+        systolic: null,
+        diastolic: null,
+      });
+    });
+
+    // Add weight data
+    weightChartData.forEach(entry => {
+      const key = entry.date.substring(0, 10);
+      const existing = dataMap.get(key) || {};
+      dataMap.set(key, {
+        ...existing,
+        date: entry.date,
+        formattedDate: entry.formattedDate,
+        weight: entry.weight
+      });
+    });
+
+    // Add pressure data
+    pressureChartData.forEach(entry => {
+      const key = entry.date.substring(0, 10);
+      const existing = dataMap.get(key) || {};
+      dataMap.set(key, {
+        ...existing,
+        date: (existing.formattedDate ? existing.date : entry.date),
+        formattedDate: existing.formattedDate || entry.formattedDate,
+        systolic: entry.systolic,
+        diastolic: entry.diastolic
+      });
+    });
+
+    // Add injection data (medication dose fields)
+    injectionChartData.forEach(entry => {
+      const key = String(entry.date).substring(0, 10);
+      const existing = dataMap.get(key) || {};
+      dataMap.set(key, {
+        ...existing,
+        ...entry,
+        date: (existing.formattedDate ? existing.date : entry.date),
+        formattedDate: existing.formattedDate || entry.formattedDate,
+      });
+    });
+
+    return Array.from(dataMap.values()).sort((a, b) =>
+      new Date(a.date as string).getTime() - new Date(b.date as string).getTime()
+    );
+  }, [weightChartData, pressureChartData, injectionChartData]);
+
+  // Pre-compute merged bar chart data (for combined water + steps + medication charts)
+  const mergedBarChartData = useMemo(() => {
+    const dataMap = new Map<string, Record<string, unknown>>();
+
+    // Add water data
+    waterChartData.forEach(entry => {
+      dataMap.set(entry.date, {
+        ...dataMap.get(entry.date),
+        date: entry.date,
+        formattedDate: entry.formattedDate,
+        water: entry.amount
+      });
+    });
+
+    // Add steps data
+    stepsChartData.forEach(entry => {
+      const existing = dataMap.get(entry.date) || {};
+      dataMap.set(entry.date, {
+        ...existing,
+        date: entry.date,
+        formattedDate: entry.formattedDate,
+        steps: entry.steps
+      });
+    });
+
+    // Add medication data
+    medicationChartData.forEach(entry => {
+      const existing = dataMap.get(entry.date) || {};
+      dataMap.set(entry.date, {
+        ...existing,
+        date: entry.date,
+        formattedDate: entry.formattedDate,
+        adherence: entry.adherence,
+        taken: entry.taken,
+        total: entry.total
+      });
+    });
+
+    return Array.from(dataMap.values()).sort((a, b) =>
+      new Date(a.date as string).getTime() - new Date(b.date as string).getTime()
+    );
+  }, [waterChartData, stepsChartData, medicationChartData]);
+
   const chartConfig: ChartConfig = {
     weight: { label: `Weight (${unit})`, color: lineColor },
     water: { label: `Water (${waterUnit})`, color: WATER_COLOR },
     steps: { label: 'Steps', color: STEPS_COLOR },
     systolic: { label: 'Systolic', color: SYSTOLIC_COLOR },
     diastolic: { label: 'Diastolic', color: DIASTOLIC_COLOR },
-    adherence: { label: 'Adherence %', color: 'hsl(270, 76%, 55%)' }
+    adherence: { label: 'Adherence %', color: 'hsl(270, 76%, 55%)' },
+    dose: { label: 'Dose', color: INJECTION_COLOR }
   };
 
   // Calculate Y-axis domain for weight chart
@@ -286,30 +493,6 @@ export function WeightChart({
   if (targetWeight) allWeightValues.push(targetWeight);
   const yMin = Math.floor(Math.min(...allWeightValues) - 2);
   const yMax = Math.ceil(Math.max(...allWeightValues) + 0);
-
-  // Get empty state message
-  const getEmptyMessage = () => {
-    switch (currentView) {
-      case 'weight': return 'No weight entries yet. Add your first weight entry!';
-      case 'water': return 'No water entries yet. Start tracking your water intake!';
-      case 'steps': return 'No step entries yet. Start tracking your daily steps!';
-      case 'pressure': return 'No blood pressure readings yet. Add your first reading!';
-      case 'medication': return medicationPresets.length === 0
-        ? 'No medications configured. Add medications in Settings.'
-        : 'No medication data yet. Start tracking your medications!';
-    }
-  };
-
-  // Check if current view has data
-  const hasData = () => {
-    switch (currentView) {
-      case 'weight': return entries.length > 0;
-      case 'water': return waterEntries.length > 0;
-      case 'steps': return stepsEntries.length > 0;
-      case 'pressure': return pressureEntries.length > 0;
-      case 'medication': return medicationPresets.length > 0;
-    }
-  };
 
   // Render weight chart
   const renderWeightChart = () => (
@@ -625,19 +808,445 @@ export function WeightChart({
     );
   };
 
-  // Render the appropriate chart based on current view
+  // Render injection chart with multiple medication lines and separate Y-axes
+  const renderInjectionChart = () => {
+    // First medication is on left, rest are on right
+    const rightAxesCount = Math.max(0, uniqueMedications.length - 1);
+    // Only add extra margin if more than 1 axis on right side
+    const rightMargin = rightAxesCount > 1 ? 5 : 10;
+
+    return (
+      <LineChart
+        data={injectionChartData}
+        margin={{
+          top: 10,
+          right: rightMargin,
+          left: 0,
+          bottom: 15
+        }}
+      >
+        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+        <XAxis
+          dataKey="formattedDate"
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          fontSize={12}
+          className="fill-muted-foreground"
+        />
+        {/* Render a separate Y-axis for each medication with its own scale */}
+        {uniqueMedications.map((medication, index) => {
+          const color = MEDICATION_COLOR_MAP[medication.color] || INJECTION_COLOR;
+          const isFirst = index === 0;
+          const textAnchor = isFirst ? 'end' : 'start';
+
+          return (
+            <YAxis
+              key={medication.id}
+              yAxisId={medication.id}
+              orientation={isFirst ? 'left' : 'right'}
+              width={35}
+              domain={['auto', 'auto']}
+              tickLine={false}
+              axisLine={false}
+              tickMargin={4}
+              tick={(props: { x: number; y: number; payload: { value: number } }) => (
+                <text x={props.x} y={props.y} style={{ fill: color }} fontSize={10} textAnchor={textAnchor} dominantBaseline="middle">
+                  {props.payload.value}
+                </text>
+              )}
+            />
+          );
+        })}
+        <Tooltip
+          content={({ active, payload }) => {
+            if (active && payload && payload.length > 0) {
+              const data = payload[0].payload;
+
+              return (
+                <div className="rounded-lg border bg-background p-2 shadow-sm">
+                  <div className="text-xs text-muted-foreground mb-1">
+                    {formatDateForTooltip(data.date, dateFormat)}
+                  </div>
+                  {uniqueMedications.map(med => {
+                    const dose = data[`dose_${med.id}`];
+                    if (dose === null || dose === undefined) return null;
+                    const medColor = MEDICATION_COLOR_MAP[med.color] || INJECTION_COLOR;
+                    return (
+                      <div key={med.id} className="font-medium" style={{ color: medColor }}>
+                        {med.name}: {dose} {med.unit}
+                      </div>
+                    );
+                  })}
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Site: {data.site}
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          }}
+        />
+        {uniqueMedications.length > 1 && (
+          <Legend
+            formatter={(value) => {
+              const med = uniqueMedications.find(m => `dose_${m.id}` === value);
+              return med?.name || value;
+            }}
+          />
+        )}
+        {uniqueMedications.map((medication) => {
+          const color = MEDICATION_COLOR_MAP[medication.color] || INJECTION_COLOR;
+          return (
+            <Line
+              key={medication.id}
+              yAxisId={medication.id}
+              type="monotone"
+              dataKey={`dose_${medication.id}`}
+              name={`dose_${medication.id}`}
+              stroke={color}
+              strokeWidth={2}
+              dot={{ r: 0 }}
+              activeDot={{ r: 4 }}
+              connectNulls={true}
+            />
+          );
+        })}
+      </LineChart>
+    );
+  };
+
+  // Render the appropriate chart based on current view (combination id)
   const renderChart = () => {
-    switch (currentView) {
-      case 'weight': return renderWeightChart();
-      case 'water': return renderWaterChart();
-      case 'steps': return renderStepsChart();
-      case 'pressure': return renderPressureChart();
-      case 'medication': return renderMedicationChart();
+    // Find the current combination
+    const combination = activeCombinations.find(c => c.id === currentView);
+    if (!combination) return renderWeightChart(); // Fallback
+
+    // If it's a single chart, render it directly
+    if (combination.charts.length === 1) {
+      const chart = combination.charts[0];
+      switch (chart) {
+        case 'weight': return renderWeightChart();
+        case 'water': return renderWaterChart();
+        case 'steps': return renderStepsChart();
+        case 'pressure': return renderPressureChart();
+        case 'medication': return renderMedicationChart();
+        case 'injections': return renderInjectionChart();
+      }
+    }
+
+    // For combined charts, render based on type
+    if (combination.chartType === 'line') {
+      return renderCombinedLineChart(combination);
+    } else {
+      return renderCombinedBarChart(combination);
     }
   };
 
+  // Render combined line chart (weight, pressure, injections)
+  const renderCombinedLineChart = (combination: ChartCombination) => {
+    const hasWeight = combination.charts.includes('weight');
+    const hasPressure = combination.charts.includes('pressure');
+    const hasInjections = combination.charts.includes('injections');
+
+    // Count right-side axes: pressure (if weight exists) + injections (all if weight/pressure, else all-1)
+    let rightAxisCount = 0;
+    if (hasPressure && hasWeight) rightAxisCount++;
+    if (hasInjections) {
+      // If no weight and no pressure, first injection is on left
+      const injectionsOnRight = (!hasWeight && !hasPressure) ? uniqueMedications.length - 1 : uniqueMedications.length;
+      rightAxisCount += injectionsOnRight;
+    }
+    // Small margin per axis (axes have width=30, so just add a bit of padding)
+    const rightMargin = rightAxisCount > 0 ? 5 : 10;
+
+    return (
+      <LineChart data={mergedLineChartData} margin={{ top: 15, right: rightMargin, left: 0, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+        <XAxis
+          dataKey="formattedDate"
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          fontSize={12}
+          className="fill-muted-foreground"
+        />
+        {hasWeight && (
+          <YAxis
+            yAxisId="weight"
+            orientation="left"
+            width={35}
+            domain={[yMin, yMax]}
+            tickLine={false}
+            axisLine={false}
+            tickMargin={4}
+            tick={(props: { x: number; y: number; payload: { value: number } }) => (
+              <text x={props.x} y={props.y} style={{ fill: lineColor }} fontSize={10} textAnchor="end" dominantBaseline="middle">
+                {props.payload.value}
+              </text>
+            )}
+          />
+        )}
+        {hasPressure && (
+          <YAxis
+            yAxisId="pressure"
+            orientation={hasWeight ? 'right' : 'left'}
+            width={35}
+            domain={['auto', 'auto']}
+            tickLine={false}
+            axisLine={false}
+            tickMargin={4}
+            tick={(props: { x: number; y: number; payload: { value: number } }) => (
+              <text x={props.x} y={props.y} style={{ fill: SYSTOLIC_COLOR }} fontSize={10} textAnchor={hasWeight ? 'start' : 'end'} dominantBaseline="middle">
+                {props.payload.value}
+              </text>
+            )}
+          />
+        )}
+        {/* Injection Y-Axes - one per medication, all visible with colored tick numbers */}
+        {hasInjections && uniqueMedications.map((medication, index) => {
+          const color = MEDICATION_COLOR_MAP[medication.color] || INJECTION_COLOR;
+          // First injection axis: on left if no weight/pressure, otherwise on right
+          const orientation = (!hasWeight && !hasPressure && index === 0) ? 'left' : 'right';
+          const textAnchor = orientation === 'left' ? 'end' : 'start';
+
+          return (
+            <YAxis
+              key={medication.id}
+              yAxisId={`injection_${medication.id}`}
+              orientation={orientation}
+              width={35}
+              domain={['auto', 'auto']}
+              tickLine={false}
+              axisLine={false}
+              tickMargin={4}
+              tick={(props: { x: number; y: number; payload: { value: number } }) => (
+                <text x={props.x} y={props.y} style={{ fill: color }} fontSize={10} textAnchor={textAnchor} dominantBaseline="middle">
+                  {props.payload.value}
+                </text>
+              )}
+            />
+          );
+        })}
+        <Tooltip
+          content={({ active, payload }) => {
+            if (active && payload && payload.length > 0) {
+              const data = payload[0].payload;
+              return (
+                <div className="rounded-lg border bg-background p-2 shadow-sm">
+                  <div className="text-xs text-muted-foreground mb-1">
+                    {formatDateForTooltip(data.date, dateFormat)}
+                  </div>
+                  {hasWeight && data.weight != null && (
+                    <div className="font-medium" style={{ color: lineColor }}>
+                      Weight: {data.weight} {unit}
+                    </div>
+                  )}
+                  {hasPressure && data.systolic != null && (
+                    <div className="font-medium">
+                      <span style={{ color: SYSTOLIC_COLOR }}>{data.systolic}</span>
+                      <span className="text-muted-foreground">/</span>
+                      <span style={{ color: DIASTOLIC_COLOR }}>{data.diastolic}</span>
+                      <span className="text-muted-foreground ml-1">mmHg</span>
+                    </div>
+                  )}
+                  {/* Injection data in tooltip */}
+                  {hasInjections && uniqueMedications.map(med => {
+                    const dose = data[`dose_${med.id}`];
+                    if (dose == null) return null;
+                    const medColor = MEDICATION_COLOR_MAP[med.color] || INJECTION_COLOR;
+                    return (
+                      <div key={med.id} className="font-medium" style={{ color: medColor }}>
+                        {med.name}: {dose} {med.unit}
+                      </div>
+                    );
+                  })}
+                  {data.site && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Site: {data.site}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            return null;
+          }}
+        />
+        <Legend />
+        {hasWeight && (
+          <Line
+            yAxisId="weight"
+            type="monotone"
+            dataKey="weight"
+            name="Weight"
+            stroke={lineColor}
+            strokeWidth={2}
+            dot={{ r: 0 }}
+            activeDot={{ r: 4 }}
+            connectNulls
+          />
+        )}
+        {hasPressure && (
+          <>
+            <Line
+              yAxisId="pressure"
+              type="monotone"
+              dataKey="systolic"
+              name="Systolic"
+              stroke={SYSTOLIC_COLOR}
+              strokeWidth={2}
+              dot={{ r: 0 }}
+              activeDot={{ r: 4 }}
+              connectNulls
+            />
+            <Line
+              yAxisId="pressure"
+              type="monotone"
+              dataKey="diastolic"
+              name="Diastolic"
+              stroke={DIASTOLIC_COLOR}
+              strokeWidth={2}
+              dot={{ r: 0 }}
+              activeDot={{ r: 4 }}
+              connectNulls
+            />
+          </>
+        )}
+        {/* Injection lines - one per medication */}
+        {hasInjections && uniqueMedications.map((medication) => {
+          const color = MEDICATION_COLOR_MAP[medication.color] || INJECTION_COLOR;
+          return (
+            <Line
+              key={medication.id}
+              yAxisId={`injection_${medication.id}`}
+              type="monotone"
+              dataKey={`dose_${medication.id}`}
+              name={medication.name}
+              stroke={color}
+              strokeWidth={2}
+              dot={{ r: 0 }}
+              activeDot={{ r: 4 }}
+              connectNulls
+            />
+          );
+        })}
+      </LineChart>
+    );
+  };
+
+  // Render combined bar chart (water, steps, medication)
+  const renderCombinedBarChart = (combination: ChartCombination) => {
+    const hasWater = combination.charts.includes('water');
+    const hasSteps = combination.charts.includes('steps');
+    const hasMedication = combination.charts.includes('medication');
+
+    return (
+      <BarChart data={mergedBarChartData} margin={{ top: 10, right: 10, left: -10, bottom: 15 }}>
+        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+        <XAxis
+          dataKey="formattedDate"
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          fontSize={12}
+          className="fill-muted-foreground"
+        />
+        <YAxis
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          fontSize={12}
+          className="fill-muted-foreground"
+        />
+        <Tooltip
+          content={({ active, payload }) => {
+            if (active && payload && payload.length > 0) {
+              const data = payload[0].payload;
+              return (
+                <div className="rounded-lg border bg-background p-2 shadow-sm">
+                  <div className="text-xs text-muted-foreground mb-1">
+                    {formatDateForTooltip(data.date, dateFormat)}
+                  </div>
+                  {data.water !== undefined && (
+                    <div className="font-medium text-blue-500">
+                      Water: {formatWaterAmount(data.water, waterUnit)}
+                    </div>
+                  )}
+                  {data.steps !== undefined && (
+                    <div className="font-medium text-green-500">
+                      Steps: {data.steps.toLocaleString()}
+                    </div>
+                  )}
+                  {data.adherence !== undefined && (
+                    <div className="font-medium text-purple-500">
+                      Meds: {data.taken}/{data.total} ({data.adherence}%)
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            return null;
+          }}
+        />
+        <Legend />
+        {hasWater && <Bar dataKey="water" name="Water" fill={WATER_COLOR} radius={[4, 4, 0, 0]} />}
+        {hasSteps && <Bar dataKey="steps" name="Steps" fill={STEPS_COLOR} radius={[4, 4, 0, 0]} />}
+        {hasMedication && <Bar dataKey="adherence" name="Medication %" fill="hsl(270, 76%, 55%)" radius={[4, 4, 0, 0]} />}
+      </BarChart>
+    );
+  };
+
+  // Get empty message for current combination
+  const getEmptyMessageForCombination = () => {
+    const combination = activeCombinations.find(c => c.id === currentView);
+    if (!combination) return 'No data available.';
+
+    // Check each chart in the combination
+    for (const chart of combination.charts) {
+      switch (chart) {
+        case 'weight':
+          if (entries.length === 0) return 'No weight entries yet. Add your first weight entry!';
+          break;
+        case 'water':
+          if (waterEntries.length === 0) return 'No water entries yet. Start tracking your water intake!';
+          break;
+        case 'steps':
+          if (stepsEntries.length === 0) return 'No step entries yet. Start tracking your daily steps!';
+          break;
+        case 'pressure':
+          if (pressureEntries.length === 0) return 'No blood pressure readings yet. Add your first reading!';
+          break;
+        case 'medication':
+          if (medicationPresets.length === 0) return 'No medications configured. Add medications in Settings.';
+          break;
+        case 'injections':
+          if (!injectionSettings?.medications?.length) return 'No injectable medications configured. Add medications in Settings.';
+          break;
+      }
+    }
+    return `No ${combination.name.toLowerCase()} data yet.`;
+  };
+
+  // Check if current combination has data
+  const hasDataForCombination = () => {
+    const combination = activeCombinations.find(c => c.id === currentView);
+    if (!combination) return false;
+
+    return combination.charts.some(chart => {
+      switch (chart) {
+        case 'weight': return entries.length > 0;
+        case 'water': return waterEntries.length > 0;
+        case 'steps': return stepsEntries.length > 0;
+        case 'pressure': return pressureEntries.length > 0;
+        case 'medication': return medicationPresets.length > 0;
+        case 'injections': return injectionSettings?.medications && injectionSettings.medications.length > 0;
+        default: return false;
+      }
+    });
+  };
+
   // Empty state
-  if (!hasData()) {
+  if (!hasDataForCombination()) {
     return (
       <Card className="h-full flex flex-col py-2">
         <CardHeader className="pb-2 py-0 shrink-0">
@@ -645,42 +1254,30 @@ export function WeightChart({
             <ToggleGroup
               type="single"
               value={currentView}
-              onValueChange={(v) => v && setCurrentView(v as ChartView)}
+              onValueChange={(v) => v && setCurrentView(v)}
               variant="outline"
               size="sm"
             >
-              <ToggleGroupItem value="weight" aria-label="Weight">
-                <Scale className="h-4 w-4" />
-              </ToggleGroupItem>
-              <ToggleGroupItem value="water" aria-label="Water">
-                <Droplets className="h-4 w-4" />
-              </ToggleGroupItem>
-              {stepsEnabled && (
-                <ToggleGroupItem value="steps" aria-label="Steps">
-                  <Footprints className="h-4 w-4" />
+              {activeCombinations.map(combination => (
+                <ToggleGroupItem key={combination.id} value={combination.id} aria-label={combination.name}>
+                  <DynamicIcon name={combination.icon} className="h-4 w-4" />
                 </ToggleGroupItem>
-              )}
-              {pressureEnabled && (
-                <ToggleGroupItem value="pressure" aria-label="Pressure">
-                  <HeartPulse className="h-4 w-4" />
-                </ToggleGroupItem>
-              )}
-              {medicationEnabled && (
-                <ToggleGroupItem value="medication" aria-label="Medication">
-                  <Pill className="h-4 w-4" />
-                </ToggleGroupItem>
-              )}
+              ))}
             </ToggleGroup>
           </div>
         </CardHeader>
         <CardContent className="flex-1 flex items-center justify-center py-0">
           <div className="text-muted-foreground text-sm text-center">
-            {getEmptyMessage()}
+            {getEmptyMessageForCombination()}
           </div>
         </CardContent>
       </Card>
     );
   }
+
+  // Check if current combination includes medication chart (for time filter)
+  const currentCombination = activeCombinations.find(c => c.id === currentView);
+  const hasMedicationChart = currentCombination?.charts.includes('medication') ?? false;
 
   return (
     <Card className="h-full flex flex-col py-2">
@@ -689,33 +1286,17 @@ export function WeightChart({
           <ToggleGroup
             type="single"
             value={currentView}
-            onValueChange={(v) => v && setCurrentView(v as ChartView)}
+            onValueChange={(v) => v && setCurrentView(v)}
             variant="outline"
             size="sm"
           >
-            <ToggleGroupItem value="weight" aria-label="Weight">
-              <Scale className="h-4 w-4" />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="water" aria-label="Water">
-              <Droplets className="h-4 w-4" />
-            </ToggleGroupItem>
-            {stepsEnabled && (
-              <ToggleGroupItem value="steps" aria-label="Steps">
-                <Footprints className="h-4 w-4" />
+            {activeCombinations.map(combination => (
+              <ToggleGroupItem key={combination.id} value={combination.id} aria-label={combination.name}>
+                <DynamicIcon name={combination.icon} className="h-4 w-4" />
               </ToggleGroupItem>
-            )}
-            {pressureEnabled && (
-              <ToggleGroupItem value="pressure" aria-label="Pressure">
-                <HeartPulse className="h-4 w-4" />
-              </ToggleGroupItem>
-            )}
-            {medicationEnabled && (
-              <ToggleGroupItem value="medication" aria-label="Medication">
-                <Pill className="h-4 w-4" />
-              </ToggleGroupItem>
-            )}
+            ))}
           </ToggleGroup>
-          {currentView === 'medication' ? (
+          {hasMedicationChart && currentCombination?.charts.length === 1 ? (
             <Select value={medTimeFilter} onValueChange={(v) => setMedTimeFilter(v as MedicationTimeFilter)}>
               <SelectTrigger className="w-17.5 h-8">
                 <SelectValue />

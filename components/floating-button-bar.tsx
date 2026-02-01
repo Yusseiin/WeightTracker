@@ -1,6 +1,6 @@
 "use client";
 
-import { Scale, Droplets, Footprints, HeartPulse, Pill } from 'lucide-react';
+import { Scale, Droplets, Footprints, HeartPulse, Pill, Syringe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { FeatureToggles } from '@/lib/types';
@@ -11,6 +11,7 @@ interface FloatingButtonBarProps {
   onStepsClick?: () => void;
   onPressureClick?: () => void;
   onMedicationClick?: () => void;
+  onInjectionClick?: () => void;
   features?: FeatureToggles;
 }
 
@@ -20,24 +21,29 @@ export function FloatingButtonBar({
   onStepsClick,
   onPressureClick,
   onMedicationClick,
+  onInjectionClick,
   features
 }: FloatingButtonBarProps) {
+  const waterEnabled = features?.waterEnabled ?? true;
   const stepsEnabled = features?.stepsEnabled ?? false;
   const pressureEnabled = features?.pressureEnabled ?? false;
   const medicationEnabled = features?.medicationEnabled ?? false;
+  const injectionsEnabled = features?.injectionsEnabled ?? false;
 
   return (
     <div className="fixed left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-full shadow-lg border px-2 py-2" style={{ bottom: '4px' }}>
-      {/* Water button */}
-      <Button
-        size="lg"
-        variant="outline"
-        onClick={onWaterClick}
-        className="rounded-full h-12 w-12 border-blue-500/50"
-      >
-        <Droplets className="h-5 w-5 text-blue-500" />
-        <span className="sr-only">Add water</span>
-      </Button>
+      {/* Water button - only if enabled */}
+      {waterEnabled && (
+        <Button
+          size="lg"
+          variant="outline"
+          onClick={onWaterClick}
+          className="rounded-full h-12 w-12 border-blue-500/50"
+        >
+          <Droplets className="h-5 w-5 text-blue-500" />
+          <span className="sr-only">Add water</span>
+        </Button>
+      )}
 
       {/* Steps button - only if enabled */}
       {stepsEnabled && onStepsClick && (
@@ -85,6 +91,19 @@ export function FloatingButtonBar({
         >
           <Pill className="h-5 w-5 text-purple-500" />
           <span className="sr-only">Add medication</span>
+        </Button>
+      )}
+
+      {/* Injection button - only if enabled */}
+      {injectionsEnabled && onInjectionClick && (
+        <Button
+          size="lg"
+          variant="outline"
+          onClick={onInjectionClick}
+          className="rounded-full h-12 w-12 border-teal-500/50"
+        >
+          <Syringe className="h-5 w-5 text-teal-500" />
+          <span className="sr-only">Add injection</span>
         </Button>
       )}
     </div>

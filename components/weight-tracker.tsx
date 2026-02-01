@@ -7,6 +7,7 @@ import { AddWaterDialog } from '@/components/add-water-dialog';
 import { AddStepsDialog } from '@/components/add-steps-dialog';
 import { AddPressureDialog } from '@/components/add-pressure-dialog';
 import { AddMedicationDialog } from '@/components/add-medication-dialog';
+import { AddInjectionDialog } from '@/components/add-injection-dialog';
 import { FloatingButtonBar } from '@/components/floating-button-bar';
 import { EntriesTable } from '@/components/entries-table';
 import { EditEntryDialog } from '@/components/edit-entry-dialog';
@@ -17,8 +18,9 @@ import { useWater } from '@/hooks/use-water';
 import { useSteps } from '@/hooks/use-steps';
 import { usePressure } from '@/hooks/use-pressure';
 import { useMedications } from '@/hooks/use-medications';
+import { useInjections } from '@/hooks/use-injections';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { WeightEntry, UserSettings, SessionUser, WaterEntry, StepsEntry, PressureEntry, MedicationEntry } from '@/lib/types';
+import type { WeightEntry, UserSettings, SessionUser, WaterEntry, StepsEntry, PressureEntry, MedicationEntry, InjectionEntry } from '@/lib/types';
 import { ChangelogDialog } from './changelog-dialog';
 import { MotivationalQuote } from './motivational-quote';
 import { Button } from './ui/button';
@@ -35,6 +37,8 @@ interface WeightTrackerProps {
   initialPressureEntries: PressureEntry[];
   initialTodayMedications: MedicationEntry[];
   initialMedicationEntries: MedicationEntry[];
+  initialInjectionEntries: InjectionEntry[];
+  initialLastInjection: InjectionEntry | null;
   session: SessionUser | null;
 }
 
@@ -49,6 +53,8 @@ export function WeightTracker({
   initialPressureEntries,
   initialTodayMedications,
   initialMedicationEntries,
+  initialInjectionEntries,
+  initialLastInjection,
   session
 }: WeightTrackerProps) {
   const {
@@ -56,7 +62,8 @@ export function WeightTracker({
     settings,
     addEntry,
     updateEntry,
-    deleteEntry
+    deleteEntry,
+    updateSettings
   } = useWeightEntries(initialEntries, initialSettings);
 
   const {
@@ -95,8 +102,17 @@ export function WeightTracker({
     deleteMedication
   } = useMedications(initialTodayMedications, initialMedicationEntries);
 
+  const {
+    injectionEntries,
+    lastInjection,
+    isLoading: isInjectionLoading,
+    createInjection,
+    updateInjectionById,
+    deleteInjection
+  } = useInjections(initialInjectionEntries, initialLastInjection);
+
   // Get feature toggles with defaults
-  const features = settings.features || { stepsEnabled: false, pressureEnabled: false, medicationEnabled: false };
+  const features = settings.features || { waterEnabled: true, stepsEnabled: false, pressureEnabled: false, medicationEnabled: false, injectionsEnabled: false };
 
   const [selectedEntry, setSelectedEntry] = useState<WeightEntry | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -109,10 +125,28 @@ export function WeightTracker({
   const [stepsDialogOpen, setStepsDialogOpen] = useState(false);
   const [pressureDialogOpen, setPressureDialogOpen] = useState(false);
   const [medicationDialogOpen, setMedicationDialogOpen] = useState(false);
+  const [injectionDialogOpen, setInjectionDialogOpen] = useState(false);
 
   const handleRowClick = (entry: WeightEntry) => {
     setSelectedEntry(entry);
     setEditDialogOpen(true);
+  };
+
+  const handleUpdateNextRotation = async (medicationId: string, siteId: string) => {
+    const currentInjectionSettings = settings.injectionSettings || {
+      medications: [],
+      injectionSites: [],
+    };
+    const currentOverrides = currentInjectionSettings.nextRotationOverrides || {};
+    await updateSettings({
+      injectionSettings: {
+        ...currentInjectionSettings,
+        nextRotationOverrides: {
+          ...currentOverrides,
+          [medicationId]: siteId,
+        },
+      },
+    });
   };
 
   return (
@@ -167,6 +201,8 @@ export function WeightTracker({
               todayMedications={todayMedications}
               medicationPresets={settings.medicationPresets || []}
               features={features}
+              injectionEntries={injectionEntries}
+              injectionSettings={settings.injectionSettings}
             />
           )}
 
@@ -186,6 +222,9 @@ export function WeightTracker({
               medicationPresets={settings.medicationPresets || []}
               features={features}
               goals={settings.goals}
+              injectionEntries={injectionEntries}
+              injectionSettings={settings.injectionSettings}
+              chartCombinations={settings.chartCombinations}
             />
           </TabsContent>
 
@@ -210,6 +249,10 @@ export function WeightTracker({
               onDeletePressure={features.pressureEnabled ? deletePressure : undefined}
               onUpdateMedication={features.medicationEnabled ? updateMedicationById : undefined}
               onDeleteMedication={features.medicationEnabled ? deleteMedication : undefined}
+              injectionEntries={injectionEntries}
+              injectionSettings={settings.injectionSettings}
+              onUpdateInjection={features.injectionsEnabled ? updateInjectionById : undefined}
+              onDeleteInjection={features.injectionsEnabled ? deleteInjection : undefined}
             />
           </TabsContent>
         </Tabs>
@@ -232,10 +275,11 @@ export function WeightTracker({
       {/* Floating Button Bar */}
       <FloatingButtonBar
         onWeightClick={() => setWeightDialogOpen(true)}
-        onWaterClick={() => setWaterDialogOpen(true)}
+        onWaterClick={features.waterEnabled ? () => setWaterDialogOpen(true) : () => {}}
         onStepsClick={features.stepsEnabled ? () => setStepsDialogOpen(true) : undefined}
         onPressureClick={features.pressureEnabled ? () => setPressureDialogOpen(true) : undefined}
         onMedicationClick={features.medicationEnabled ? () => setMedicationDialogOpen(true) : undefined}
+        onInjectionClick={features.injectionsEnabled ? () => setInjectionDialogOpen(true) : undefined}
         features={features}
       />
 
@@ -248,17 +292,19 @@ export function WeightTracker({
         onOpenChange={setWeightDialogOpen}
       />
 
-      {/* Add Water Dialog/Drawer */}
-      <AddWaterDialog
-        todayWater={todayWater}
-        onAddWater={addWater}
-        onResetWater={resetWater}
-        isLoading={isWaterLoading}
-        waterUnit={settings.waterUnit || 'ml'}
-        waterPresets={settings.waterPresets}
-        open={waterDialogOpen}
-        onOpenChange={setWaterDialogOpen}
-      />
+      {/* Add Water Dialog/Drawer - only show if enabled */}
+      {features.waterEnabled && (
+        <AddWaterDialog
+          todayWater={todayWater}
+          onAddWater={addWater}
+          onResetWater={resetWater}
+          isLoading={isWaterLoading}
+          waterUnit={settings.waterUnit || 'ml'}
+          waterPresets={settings.waterPresets}
+          open={waterDialogOpen}
+          onOpenChange={setWaterDialogOpen}
+        />
+      )}
 
       {/* Add Steps Dialog/Drawer - only show if enabled */}
       {features.stepsEnabled && (
@@ -290,6 +336,21 @@ export function WeightTracker({
           isLoading={isMedicationLoading}
           open={medicationDialogOpen}
           onOpenChange={setMedicationDialogOpen}
+        />
+      )}
+
+      {/* Add Injection Dialog/Drawer - only show if enabled */}
+      {features.injectionsEnabled && (
+        <AddInjectionDialog
+          medications={settings.injectionSettings?.medications || []}
+          injectionSites={settings.injectionSettings?.injectionSites || []}
+          injectionEntries={injectionEntries}
+          onAddInjection={createInjection}
+          isLoading={isInjectionLoading}
+          open={injectionDialogOpen}
+          onOpenChange={setInjectionDialogOpen}
+          onUpdateNextRotation={handleUpdateNextRotation}
+          nextRotationOverrides={settings.injectionSettings?.nextRotationOverrides || {}}
         />
       )}
 

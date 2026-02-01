@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSettings, updateSettings } from '@/lib/data';
 import { getSession } from '@/lib/auth';
-import { ApiResponse, UserSettings, DateFormatSettings, SingleDateFormat, CustomActivity, MAX_ACTIVITIES, GoalSettings, WaterPreset, MAX_WATER_PRESETS, FeatureToggles, MedicationPreset, MAX_MEDICATIONS } from '@/lib/types';
+import { ApiResponse, UserSettings, DateFormatSettings, SingleDateFormat, CustomActivity, MAX_ACTIVITIES, GoalSettings, WaterPreset, MAX_WATER_PRESETS, FeatureToggles, MedicationPreset, MAX_MEDICATIONS, InjectionSettings, InjectableMedication, InjectionSitePreset, MAX_INJECTABLE_MEDICATIONS, MAX_INJECTION_SITES, ChartCombination, ChartView, ChartType } from '@/lib/types';
 import { ALL_ACTIVITY_ICONS, WATER_ICONS, MEDICATION_ICONS } from '@/lib/icons';
 
 // Validation constants
@@ -126,6 +126,9 @@ function isValidFeatureToggles(features: unknown): features is FeatureToggles {
 
   if (typeof f.stepsEnabled !== 'boolean') return false;
   if (typeof f.pressureEnabled !== 'boolean') return false;
+  if (typeof f.medicationEnabled !== 'boolean') return false;
+  if (typeof f.injectionsEnabled !== 'boolean') return false;
+  if (typeof f.waterEnabled !== 'boolean') return false;
 
   return true;
 }
@@ -153,6 +156,101 @@ function isValidMedicationPresetsArray(presets: unknown): presets is MedicationP
 
   // Check for unique IDs
   const ids = presets.map((p) => p.id);
+  if (new Set(ids).size !== ids.length) return false;
+
+  return true;
+}
+
+// Validate a single injectable medication
+function isValidInjectableMedication(med: unknown): med is InjectableMedication {
+  if (!med || typeof med !== 'object') return false;
+  const m = med as Record<string, unknown>;
+
+  if (typeof m.id !== 'string' || m.id.trim() === '') return false;
+  if (typeof m.name !== 'string' || m.name.trim() === '') return false;
+  if (typeof m.color !== 'string') return false;
+  if (typeof m.unit !== 'string' || m.unit.trim() === '') return false;
+  if (!Array.isArray(m.availableDoses) || m.availableDoses.length === 0) return false;
+  if (!m.availableDoses.every((d: unknown) => typeof d === 'number' && d > 0)) return false;
+
+  return true;
+}
+
+// Validate a single injection site preset
+function isValidInjectionSitePreset(site: unknown): site is InjectionSitePreset {
+  if (!site || typeof site !== 'object') return false;
+  const s = site as Record<string, unknown>;
+
+  if (typeof s.id !== 'string' || s.id.trim() === '') return false;
+  if (typeof s.label !== 'string' || s.label.trim() === '') return false;
+  if (typeof s.icon !== 'string') return false;
+
+  return true;
+}
+
+// Validate injection settings
+function isValidInjectionSettings(settings: unknown): settings is InjectionSettings {
+  if (!settings || typeof settings !== 'object') return false;
+  const s = settings as Record<string, unknown>;
+
+  // Validate medications array
+  if (!Array.isArray(s.medications)) return false;
+  if (s.medications.length > MAX_INJECTABLE_MEDICATIONS) return false;
+  if (!s.medications.every(isValidInjectableMedication)) return false;
+
+  // Check for unique medication IDs
+  const medIds = s.medications.map((m: InjectableMedication) => m.id);
+  if (new Set(medIds).size !== medIds.length) return false;
+
+  // Validate injection sites array
+  if (!Array.isArray(s.injectionSites)) return false;
+  if (s.injectionSites.length > MAX_INJECTION_SITES) return false;
+  if (!s.injectionSites.every(isValidInjectionSitePreset)) return false;
+
+  // Check for unique site IDs
+  const siteIds = s.injectionSites.map((site: InjectionSitePreset) => site.id);
+  if (new Set(siteIds).size !== siteIds.length) return false;
+
+  // activeMedicationId can be null or a string
+  if (s.activeMedicationId !== null && typeof s.activeMedicationId !== 'string') return false;
+
+  // currentDose can be null or a positive number
+  if (s.currentDose !== null && (typeof s.currentDose !== 'number' || s.currentDose <= 0)) return false;
+
+  return true;
+}
+
+// Valid chart views and types
+const VALID_CHART_VIEWS: ChartView[] = ['weight', 'water', 'steps', 'pressure', 'medication', 'injections'];
+const VALID_CHART_TYPES: ChartType[] = ['line', 'bar'];
+
+// Validate a single chart combination
+function isValidChartCombination(combo: unknown): combo is ChartCombination {
+  if (!combo || typeof combo !== 'object') return false;
+  const c = combo as Record<string, unknown>;
+
+  if (typeof c.id !== 'string' || c.id.trim() === '') return false;
+  if (typeof c.name !== 'string' || c.name.trim() === '') return false;
+  if (typeof c.icon !== 'string' || c.icon.trim() === '') return false;
+  if (!Array.isArray(c.charts) || c.charts.length === 0) return false;
+  if (!c.charts.every((chart: unknown) => typeof chart === 'string' && VALID_CHART_VIEWS.includes(chart as ChartView))) return false;
+  if (typeof c.chartType !== 'string' || !VALID_CHART_TYPES.includes(c.chartType as ChartType)) return false;
+  if (typeof c.enabled !== 'boolean') return false;
+  if (typeof c.order !== 'number' || c.order < 0) return false;
+
+  return true;
+}
+
+// Validate chart combinations array
+function isValidChartCombinationsArray(combos: unknown): combos is ChartCombination[] {
+  if (!Array.isArray(combos)) return false;
+  if (combos.length === 0) return false;
+
+  // Check all combinations are valid
+  if (!combos.every(isValidChartCombination)) return false;
+
+  // Check for unique IDs
+  const ids = combos.map((c) => c.id);
   if (new Set(ids).size !== ids.length) return false;
 
   return true;
@@ -198,7 +296,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { unit, waterUnit, targetWeight, chartColor, dateFormat, activities, waterPresets, medicationPresets, goals, features, showQuotes } = body;
+    const { unit, waterUnit, targetWeight, chartColor, dateFormat, activities, waterPresets, medicationPresets, injectionSettings, goals, features, showQuotes, chartCombinations } = body;
 
     // Validate unit if provided
     if (unit !== undefined && !['kg', 'lb'].includes(unit)) {
@@ -291,6 +389,22 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    // Validate injectionSettings if provided
+    if (injectionSettings !== undefined && !isValidInjectionSettings(injectionSettings)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid injection settings' },
+        { status: 400 }
+      );
+    }
+
+    // Validate chartCombinations if provided
+    if (chartCombinations !== undefined && !isValidChartCombinationsArray(chartCombinations)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid chart combinations' },
+        { status: 400 }
+      );
+    }
+
     // Only include defined values to avoid overwriting with undefined
     const updateData: Partial<UserSettings> = {};
     if (unit !== undefined) updateData.unit = unit;
@@ -304,6 +418,8 @@ export async function PUT(request: NextRequest) {
     if (goals !== undefined) updateData.goals = goals;
     if (features !== undefined) updateData.features = features;
     if (showQuotes !== undefined) updateData.showQuotes = showQuotes;
+    if (injectionSettings !== undefined) updateData.injectionSettings = injectionSettings;
+    if (chartCombinations !== undefined) updateData.chartCombinations = chartCombinations;
 
     const updated = await updateSettings(
       updateData,
