@@ -495,11 +495,12 @@ export function EntriesTable({
                   {formatDateTimeForTable(entry.timestamp, dateFormat)}
                 </td>
                 <td className="py-2 px-1 whitespace-nowrap">
-                  <div className="flex items-center gap-2">
-                    <span>{medication?.name || 'Unknown'}</span>
+                  <div className="flex items-center gap-1.5">
+                    <Syringe className={cn("h-4 w-4", medication?.color || 'text-teal-500')} />
+                    <span className={medication?.color || 'text-muted-foreground'}>{medication?.name || 'Unknown'}</span>
                   </div>
                 </td>
-                <td className="py-2 px-1 text-right whitespace-nowrap text-teal-500">
+                <td className={cn("py-2 px-1 text-right whitespace-nowrap", medication?.color || 'text-teal-500')}>
                   {entry.dose} {medication?.unit || 'mg'}
                 </td>
                 <td className="py-2 px-1 whitespace-nowrap text-muted-foreground">

@@ -320,7 +320,13 @@ export function WeightChart({
     });
   }, [medicationEntries, medicationPresets, medTimeFilter, dateFormat]);
 
-  // Injection chart data - restructured to support multiple medications
+  // Get medication filter for current view (empty array means show all)
+  const currentMedicationFilter = useMemo(() => {
+    const combination = activeCombinations.find(c => c.id === currentView);
+    return combination?.injectionMedicationIds || [];
+  }, [activeCombinations, currentView]);
+
+  // Injection chart data - restructured to support multiple medications with filtering
   const { injectionChartData, uniqueMedications } = useMemo(() => {
     if (!injectionSettings?.medications || injectionSettings.medications.length === 0) {
       return { injectionChartData: [], uniqueMedications: [] };
@@ -328,19 +334,32 @@ export function WeightChart({
 
     const cutoffDate = getCutoffDate(timeFilter);
 
-    const filteredEntries = cutoffDate
+    // Filter entries by time
+    let filteredEntries = cutoffDate
       ? injectionEntries.filter(e => isAfter(new Date(e.timestamp), cutoffDate))
       : injectionEntries;
+
+    // Filter entries by selected medications (if filter is set)
+    if (currentMedicationFilter.length > 0) {
+      filteredEntries = filteredEntries.filter(e => currentMedicationFilter.includes(e.medicationId));
+    }
 
     const sortedEntries = [...filteredEntries].sort(
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
 
-    // Get unique medications used in entries
+    // Get unique medications used in entries (filtered)
     const medicationIds = [...new Set(sortedEntries.map(e => e.medicationId))];
-    const uniqueMeds = medicationIds
+    let uniqueMeds = medicationIds
       .map(id => injectionSettings.medications.find(m => m.id === id))
       .filter((m): m is typeof injectionSettings.medications[0] => m !== undefined);
+
+    // If filter is set but no entries match, still show the selected medications for reference
+    if (currentMedicationFilter.length > 0 && uniqueMeds.length === 0) {
+      uniqueMeds = currentMedicationFilter
+        .map(id => injectionSettings.medications.find(m => m.id === id))
+        .filter((m): m is typeof injectionSettings.medications[0] => m !== undefined);
+    }
 
     // Create chart data with ALL medication dose fields in each data point
     const chartData = sortedEntries.map(entry => {
@@ -370,7 +389,7 @@ export function WeightChart({
     });
 
     return { injectionChartData: chartData, uniqueMedications: uniqueMeds };
-  }, [injectionEntries, injectionSettings, timeFilter, dateFormat]);
+  }, [injectionEntries, injectionSettings, timeFilter, dateFormat, currentMedicationFilter]);
 
   // Pre-compute merged line chart data (for combined weight + pressure + injections charts)
   const mergedLineChartData = useMemo(() => {

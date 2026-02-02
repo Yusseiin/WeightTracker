@@ -45,7 +45,8 @@ export function IconPicker({ value, onChange, colorClass = 'text-foreground' }: 
     setSearch('');
   };
 
-  const IconGrid = () => (
+  // Inline the icon grid content to avoid focus loss on re-render
+  const iconGridContent = (
     <div className="space-y-4">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -100,7 +101,7 @@ export function IconPicker({ value, onChange, colorClass = 'text-foreground' }: 
             <DrawerTitle>Choose Icon</DrawerTitle>
           </DrawerHeader>
           <div className="px-4 pb-6">
-            <IconGrid />
+            {iconGridContent}
           </div>
         </DrawerContent>
       </Drawer>
@@ -111,7 +112,7 @@ export function IconPicker({ value, onChange, colorClass = 'text-foreground' }: 
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{TriggerButton}</PopoverTrigger>
       <PopoverContent className="w-80 p-4" align="start">
-        <IconGrid />
+        {iconGridContent}
       </PopoverContent>
     </Popover>
   );

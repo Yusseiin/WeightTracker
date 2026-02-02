@@ -43,7 +43,7 @@ import {
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DynamicIcon } from './dynamic-icon';
 import { IconPicker } from './icon-picker';
-import type { ChartCombination, ChartView, ChartType, FeatureToggles } from '@/lib/types';
+import type { ChartCombination, ChartView, ChartType, FeatureToggles, InjectionSettings } from '@/lib/types';
 import { CHART_TYPE_MAP, DEFAULT_CHART_COMBINATIONS } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
@@ -52,6 +52,7 @@ interface ChartCombinationManagerProps {
   combinations: ChartCombination[];
   onSave: (combinations: ChartCombination[]) => Promise<void>;
   features: FeatureToggles;
+  injectionSettings?: InjectionSettings;
 }
 
 // Chart view display names
@@ -80,7 +81,7 @@ function getCompatibleCharts(chartType: ChartType, features: FeatureToggles): Ch
   return getAvailableCharts(features).filter(c => CHART_TYPE_MAP[c] === chartType);
 }
 
-export function ChartCombinationManager({ combinations = [], onSave, features }: ChartCombinationManagerProps) {
+export function ChartCombinationManager({ combinations = [], onSave, features, injectionSettings }: ChartCombinationManagerProps) {
   const [open, setOpen] = useState(false);
   const [localCombinations, setLocalCombinations] = useState<ChartCombination[]>(combinations);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -93,6 +94,7 @@ export function ChartCombinationManager({ combinations = [], onSave, features }:
     charts: [],
     chartType: 'line',
     enabled: true,
+    injectionMedicationIds: [],
   });
   const [deletingCombination, setDeletingCombination] = useState<ChartCombination | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -105,7 +107,7 @@ export function ChartCombinationManager({ combinations = [], onSave, features }:
       setEditingId(null);
       setEditingCombination(null);
       setIsAdding(false);
-      setNewCombination({ name: '', icon: 'LineChart', charts: [], chartType: 'line', enabled: true });
+      setNewCombination({ name: '', icon: 'LineChart', charts: [], chartType: 'line', enabled: true, injectionMedicationIds: [] });
     }
   }, [open, combinations]);
 
@@ -167,7 +169,11 @@ export function ChartCombinationManager({ combinations = [], onSave, features }:
     const charts = editingCombination.charts.includes(chart)
       ? editingCombination.charts.filter(c => c !== chart)
       : [...editingCombination.charts, chart];
-    setEditingCombination({ ...editingCombination, charts });
+    // Clear injection medication IDs if injections is deselected
+    const injectionMedicationIds = chart === 'injections' && editingCombination.charts.includes(chart)
+      ? []
+      : editingCombination.injectionMedicationIds;
+    setEditingCombination({ ...editingCombination, charts, injectionMedicationIds });
   };
 
   // Toggle a chart in the new combination
@@ -175,8 +181,34 @@ export function ChartCombinationManager({ combinations = [], onSave, features }:
     const charts = newCombination.charts.includes(chart)
       ? newCombination.charts.filter(c => c !== chart)
       : [...newCombination.charts, chart];
-    setNewCombination({ ...newCombination, charts });
+    // Clear injection medication IDs if injections is deselected
+    const injectionMedicationIds = chart === 'injections' && newCombination.charts.includes(chart)
+      ? []
+      : newCombination.injectionMedicationIds;
+    setNewCombination({ ...newCombination, charts, injectionMedicationIds });
   };
+
+  // Toggle an injection medication in the editing combination
+  const toggleInjectionMedInEdit = (medId: string) => {
+    if (!editingCombination) return;
+    const ids = editingCombination.injectionMedicationIds || [];
+    const newIds = ids.includes(medId)
+      ? ids.filter(id => id !== medId)
+      : [...ids, medId];
+    setEditingCombination({ ...editingCombination, injectionMedicationIds: newIds });
+  };
+
+  // Toggle an injection medication in the new combination
+  const toggleInjectionMedInNew = (medId: string) => {
+    const ids = newCombination.injectionMedicationIds || [];
+    const newIds = ids.includes(medId)
+      ? ids.filter(id => id !== medId)
+      : [...ids, medId];
+    setNewCombination({ ...newCombination, injectionMedicationIds: newIds });
+  };
+
+  // Get available injection medications
+  const availableInjectionMeds = injectionSettings?.medications || [];
 
   // Add new combination
   const addCombination = () => {
@@ -277,6 +309,28 @@ export function ChartCombinationManager({ combinations = [], onSave, features }:
                     ))}
                   </div>
                 </div>
+                {/* Injection medication selection */}
+                {editingCombination.charts.includes('injections') && availableInjectionMeds.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">
+                      Injection medications to show (leave empty for all):
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {availableInjectionMeds.map(med => (
+                        <div key={med.id} className="flex items-center gap-1">
+                          <Checkbox
+                            id={`edit-inj-${med.id}`}
+                            checked={(editingCombination.injectionMedicationIds || []).includes(med.id)}
+                            onCheckedChange={() => toggleInjectionMedInEdit(med.id)}
+                          />
+                          <Label htmlFor={`edit-inj-${med.id}`} className="text-sm cursor-pointer">
+                            {med.name}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               // Display mode
@@ -351,7 +405,7 @@ export function ChartCombinationManager({ combinations = [], onSave, features }:
           <div className="flex items-center gap-2">
             <Select value={newChartType} onValueChange={(v) => {
               setNewChartType(v as ChartType);
-              setNewCombination({ ...newCombination, chartType: v as ChartType, charts: [], icon: v === 'line' ? 'LineChart' : 'BarChart3' });
+              setNewCombination({ ...newCombination, chartType: v as ChartType, charts: [], icon: v === 'line' ? 'LineChart' : 'BarChart3', injectionMedicationIds: [] });
             }}>
               <SelectTrigger className="w-24">
                 <SelectValue />
@@ -400,6 +454,28 @@ export function ChartCombinationManager({ combinations = [], onSave, features }:
               ))}
             </div>
           </div>
+          {/* Injection medication selection for new combination */}
+          {newCombination.charts.includes('injections') && availableInjectionMeds.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">
+                Injection medications to show (leave empty for all):
+              </Label>
+              <div className="flex flex-wrap gap-2">
+                {availableInjectionMeds.map(med => (
+                  <div key={med.id} className="flex items-center gap-1">
+                    <Checkbox
+                      id={`new-inj-${med.id}`}
+                      checked={(newCombination.injectionMedicationIds || []).includes(med.id)}
+                      onCheckedChange={() => toggleInjectionMedInNew(med.id)}
+                    />
+                    <Label htmlFor={`new-inj-${med.id}`} className="text-sm cursor-pointer">
+                      {med.name}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <Button

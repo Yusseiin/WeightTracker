@@ -322,7 +322,7 @@ export interface InjectionSitePreset {
 
 // Maximum numbers
 export const MAX_INJECTABLE_MEDICATIONS = 15;
-export const MAX_INJECTION_SITES = 8;
+export const MAX_INJECTION_SITES = 15;
 
 // Default injection sites
 export const DEFAULT_INJECTION_SITES: InjectionSitePreset[] = [
@@ -390,6 +390,7 @@ export interface ChartCombination {
   chartType: ChartType;
   enabled: boolean;
   order: number;
+  injectionMedicationIds?: string[];  // Optional: specific injection medications to show (empty = all)
 }
 
 // Available icons for chart customization

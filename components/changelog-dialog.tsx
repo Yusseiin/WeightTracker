@@ -22,6 +22,14 @@ interface ChangelogEntry {
 const changelog: ChangelogEntry[] = [
   {
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
+    date: "2026-02-02",
+    changes: [
+      { type: "added", description: "Added the possibility to choose what injection will be showen in the graph" },
+      { type: "added", description: "Added injection color in the injection table" },
+    ],
+  },
+  {
+    version: "v0.0.10",
     date: "2026-02-01",
     changes: [
       { type: "fixed", description: "Bug with the save settings" },

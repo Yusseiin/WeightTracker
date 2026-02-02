@@ -475,6 +475,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                   combinations={settings.chartCombinations || DEFAULT_CHART_COMBINATIONS}
                   onSave={handleChartCombinationsSave}
                   features={localFeatures}
+                  injectionSettings={settings.injectionSettings}
                 />
               </CardContent>
             </Card>

@@ -239,6 +239,12 @@ function isValidChartCombination(combo: unknown): combo is ChartCombination {
   if (typeof c.enabled !== 'boolean') return false;
   if (typeof c.order !== 'number' || c.order < 0) return false;
 
+  // Optional: validate injectionMedicationIds if present
+  if (c.injectionMedicationIds !== undefined) {
+    if (!Array.isArray(c.injectionMedicationIds)) return false;
+    if (!c.injectionMedicationIds.every((id: unknown) => typeof id === 'string')) return false;
+  }
+
   return true;
 }
 
