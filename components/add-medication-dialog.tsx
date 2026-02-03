@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Pill, Check, X, Minus, Calendar, Clock } from 'lucide-react';
+import { Pill, Check, X, Minus, Calendar, Clock, AlertTriangle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -32,20 +32,27 @@ import { cn } from '@/lib/utils';
 // Three states: 'unselected' (no entry), 'taken', 'not_taken'
 type MedicationState = 'unselected' | 'taken' | 'not_taken';
 
+// Dose selection mode for dosage-mode medications
+type DoseSelectionMode = 'preset' | 'custom';
+
 interface LocalMedicationState {
   state: MedicationState;
   date: string;
   time: string;
+  dose?: number;
+  doseMode: DoseSelectionMode;
+  expanded: boolean;
   existingEntryId?: string;
   originalState: MedicationState;
   originalDate: string;
   originalTime: string;
+  originalDose?: number;
 }
 
 interface AddMedicationDialogProps {
   medicationPresets: MedicationPreset[];
   todayMedications: MedicationEntry[];
-  onToggleMedication: (medicationId: string, taken: boolean, date?: string, timestamp?: string) => Promise<void>;
+  onToggleMedication: (medicationId: string, taken: boolean, date?: string, timestamp?: string, dose?: number | null) => Promise<void>;
   onDeleteMedication?: (id: string) => Promise<void>;
   isLoading?: boolean;
   open?: boolean;
@@ -90,25 +97,38 @@ export function AddMedicationDialog({
             ? format(parseISO(existingEntry.timestamp), 'HH:mm')
             : currentTime;
           const currentState: MedicationState = existingEntry.taken ? 'taken' : 'not_taken';
+          const expectedDose = preset.schedule?.expectedDose;
+          // Determine dose mode based on whether existing dose matches expected
+          const isCustomDose = existingEntry.dose !== undefined && existingEntry.dose !== expectedDose;
 
           initialStates[preset.id] = {
             state: currentState,
             date: existingEntry.date,
             time: entryTime,
+            dose: existingEntry.dose,
+            doseMode: isCustomDose ? 'custom' : 'preset',
+            expanded: true, // Existing entries start expanded
             existingEntryId: existingEntry.id,
             originalState: currentState,
             originalDate: existingEntry.date,
-            originalTime: entryTime
+            originalTime: entryTime,
+            originalDose: existingEntry.dose
           };
         } else {
+          // For dosage mode medications, initialize with expected dose if available
+          const expectedDose = preset.schedule?.expectedDose;
           initialStates[preset.id] = {
             state: 'unselected',
             date: todayDate,
             time: currentTime,
+            dose: expectedDose, // Pre-select preset dose
+            doseMode: 'preset', // Default to preset mode
+            expanded: false, // Start collapsed
             existingEntryId: undefined,
             originalState: 'unselected',
             originalDate: todayDate,
-            originalTime: currentTime
+            originalTime: currentTime,
+            originalDose: undefined
           };
         }
       }
@@ -140,12 +160,40 @@ export function AddMedicationDialog({
     }));
   };
 
+  // Update dose for a medication
+  const handleDoseChange = (medicationId: string, dose: number | undefined) => {
+    setLocalStates(prev => ({
+      ...prev,
+      [medicationId]: { ...prev[medicationId], dose }
+    }));
+  };
+
+  // Toggle expanded state for a medication
+  const handleToggleExpanded = (medicationId: string) => {
+    setLocalStates(prev => ({
+      ...prev,
+      [medicationId]: { ...prev[medicationId], expanded: !prev[medicationId].expanded }
+    }));
+  };
+
+  // Set dose mode (preset or custom)
+  const handleDoseModeChange = (medicationId: string, mode: DoseSelectionMode, preset: MedicationPreset) => {
+    setLocalStates(prev => {
+      const newDose = mode === 'preset' ? preset.schedule?.expectedDose : prev[medicationId].dose;
+      return {
+        ...prev,
+        [medicationId]: { ...prev[medicationId], doseMode: mode, dose: newDose }
+      };
+    });
+  };
+
   // Check if there are any changes to save
   const hasChanges = useMemo(() => {
     return Object.entries(localStates).some(([, state]) => {
       return state.state !== state.originalState ||
              state.date !== state.originalDate ||
-             state.time !== state.originalTime;
+             state.time !== state.originalTime ||
+             state.dose !== state.originalDose;
     });
   }, [localStates]);
 
@@ -156,9 +204,10 @@ export function AddMedicationDialog({
       for (const [medicationId, state] of Object.entries(localStates)) {
         const hasStateChanged = state.state !== state.originalState;
         const hasDateTimeChanged = state.date !== state.originalDate || state.time !== state.originalTime;
+        const hasDoseChanged = state.dose !== state.originalDose;
 
         // Skip if nothing changed
-        if (!hasStateChanged && !hasDateTimeChanged) continue;
+        if (!hasStateChanged && !hasDateTimeChanged && !hasDoseChanged) continue;
 
         if (state.state === 'unselected') {
           // Delete the entry if it was previously set
@@ -175,8 +224,17 @@ export function AddMedicationDialog({
             timestamp = date.toISOString();
           }
 
+          // Get the preset to check if it's dosage mode
+          const preset = medicationPresets.find(p => p.id === medicationId);
+          const isDosageMode = preset?.trackingMode === 'dosage';
+
+          // Pass dose for dosage mode medications (null to clear if not taken)
+          const doseToSave = isDosageMode
+            ? (state.state === 'taken' ? state.dose : null)
+            : undefined;
+
           // Create or update entry
-          await onToggleMedication(medicationId, state.state === 'taken', state.date, timestamp);
+          await onToggleMedication(medicationId, state.state === 'taken', state.date, timestamp, doseToSave);
         }
       }
       setOpen(false);
@@ -198,25 +256,31 @@ export function AddMedicationDialog({
       <p className="text-sm mt-1">Add medications in Settings</p>
     </div>
   ) : (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {medicationPresets.map((preset) => {
         const localState = localStates[preset.id];
         if (!localState) return null;
 
         const state = localState.state;
+        const isExpanded = localState.expanded;
+        const isDosageMode = preset.trackingMode === 'dosage';
+        const expectedDose = preset.schedule?.expectedDose;
 
-        return (
-          <div
-            key={preset.id}
-            className={cn(
-              "p-4 rounded-lg border transition-colors",
-              state === 'taken' && "bg-green-500/10 border-green-500/30",
-              state === 'not_taken' && "bg-red-500/10 border-red-500/30",
-              state === 'unselected' && "bg-muted/50 border-border"
-            )}
-          >
-            {/* Header row with icon, label, and action buttons */}
-            <div className="flex items-center gap-3">
+        // Compact view (not expanded)
+        if (!isExpanded) {
+          return (
+            <button
+              key={preset.id}
+              onClick={() => handleToggleExpanded(preset.id)}
+              disabled={isLoading || isSaving}
+              className={cn(
+                "w-full p-3 rounded-lg border transition-colors flex items-center gap-3",
+                "hover:bg-muted/80",
+                state === 'taken' && "bg-green-500/10 border-green-500/30",
+                state === 'not_taken' && "bg-red-500/10 border-red-500/30",
+                state === 'unselected' && "bg-muted/50 border-border"
+              )}
+            >
               <div className={cn(
                 "p-2 rounded-full",
                 state === 'taken' && "bg-green-500/20",
@@ -233,6 +297,55 @@ export function AddMedicationDialog({
                   )}
                 />
               </div>
+              <span className={cn(
+                "flex-1 font-medium text-left",
+                state === 'taken' && "text-green-600 dark:text-green-400",
+                state === 'not_taken' && "text-red-600 dark:text-red-400"
+              )}>
+                {preset.label}
+              </span>
+              {state === 'taken' && (
+                <Check className="h-5 w-5 text-green-500" />
+              )}
+              {state === 'not_taken' && (
+                <X className="h-5 w-5 text-red-500" />
+              )}
+            </button>
+          );
+        }
+
+        // Expanded view
+        return (
+          <div
+            key={preset.id}
+            className={cn(
+              "p-4 rounded-lg border transition-colors",
+              state === 'taken' && "bg-green-500/10 border-green-500/30",
+              state === 'not_taken' && "bg-red-500/10 border-red-500/30",
+              state === 'unselected' && "bg-muted/50 border-border"
+            )}
+          >
+            {/* Header row with icon, label, and action buttons */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => handleToggleExpanded(preset.id)}
+                className={cn(
+                  "p-2 rounded-full",
+                  state === 'taken' && "bg-green-500/20",
+                  state === 'not_taken' && "bg-red-500/20",
+                  state === 'unselected' && "bg-muted"
+                )}
+              >
+                <DynamicIcon
+                  name={preset.icon}
+                  className={cn(
+                    "h-5 w-5",
+                    state === 'taken' && "text-green-500",
+                    state === 'not_taken' && "text-red-500",
+                    state === 'unselected' && preset.color
+                  )}
+                />
+              </button>
               <span className={cn(
                 "flex-1 font-medium",
                 state === 'taken' && "text-green-600 dark:text-green-400",
@@ -310,6 +423,70 @@ export function AddMedicationDialog({
                 />
               </div>
             </div>
+
+            {/* Dose selection for dosage-mode medications - show when expanded */}
+            {isDosageMode && (
+              <div className="mt-3 space-y-2">
+                <span className="text-sm text-muted-foreground">Dose:</span>
+                <div className="flex items-center gap-2">
+                  {/* Preset dose button */}
+                  {expectedDose !== undefined && (
+                    <Button
+                      type="button"
+                      variant={localState.doseMode === 'preset' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handleDoseModeChange(preset.id, 'preset', preset)}
+                      disabled={isSaving}
+                      className="flex-1"
+                    >
+                      {expectedDose} {preset.unit || 'units'}
+                    </Button>
+                  )}
+                  {/* Custom dose button */}
+                  <Button
+                    type="button"
+                    variant={localState.doseMode === 'custom' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleDoseModeChange(preset.id, 'custom', preset)}
+                    disabled={isSaving}
+                    className={expectedDose !== undefined ? 'flex-1' : 'w-full'}
+                  >
+                    Custom
+                  </Button>
+                </div>
+
+                {/* Custom dose input (only show when custom mode is selected) */}
+                {localState.doseMode === 'custom' && (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min="0"
+                      step="any"
+                      placeholder="Enter dose"
+                      value={localState.dose ?? ''}
+                      onChange={(e) => handleDoseChange(preset.id, e.target.value ? parseFloat(e.target.value) : undefined)}
+                      className="h-8 text-sm flex-1"
+                      disabled={isSaving}
+                      autoFocus
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {preset.unit || 'units'}
+                    </span>
+                  </div>
+                )}
+
+                {/* Warning if custom dose differs from expected */}
+                {localState.doseMode === 'custom' &&
+                 expectedDose !== undefined &&
+                 localState.dose !== undefined &&
+                 localState.dose !== expectedDose && (
+                  <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-1 rounded">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    <span>Dose differs from expected ({expectedDose} {preset.unit || 'units'})</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
       })}

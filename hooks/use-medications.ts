@@ -8,8 +8,8 @@ interface UseMedicationsReturn {
   todayMedications: MedicationEntry[];
   medicationEntries: MedicationEntry[];
   isLoading: boolean;
-  createMedication: (medicationId: string, taken: boolean, date?: string, timestamp?: string) => Promise<void>;
-  updateMedicationById: (id: string, taken: boolean, timestamp?: string, date?: string) => Promise<void>;
+  createMedication: (medicationId: string, taken: boolean, date?: string, timestamp?: string, dose?: number | null) => Promise<void>;
+  updateMedicationById: (id: string, taken: boolean, timestamp?: string, date?: string, dose?: number | null) => Promise<void>;
   deleteMedication: (id: string) => Promise<void>;
   refreshMedications: () => Promise<void>;
 }
@@ -34,7 +34,7 @@ export function useMedications(
     }
   }, []);
 
-  const createMedication = useCallback(async (medicationId: string, taken: boolean, date?: string, timestamp?: string) => {
+  const createMedication = useCallback(async (medicationId: string, taken: boolean, date?: string, timestamp?: string, dose?: number | null) => {
     setIsLoading(true);
 
     const now = new Date().toISOString();
@@ -54,7 +54,8 @@ export function useMedications(
       medicationId,
       taken,
       timestamp: timestamp || now,
-      updatedAt: now
+      updatedAt: now,
+      ...(dose !== undefined && dose !== null && { dose })
     };
 
     // Optimistic update
@@ -82,7 +83,7 @@ export function useMedications(
       const response = await fetch('/api/medications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ medicationId, taken, date, timestamp })
+        body: JSON.stringify({ medicationId, taken, date, timestamp, dose })
       });
 
       const result = await response.json();
@@ -120,7 +121,7 @@ export function useMedications(
     }
   }, [todayMedications, medicationEntries]);
 
-  const updateMedicationById = useCallback(async (id: string, taken: boolean, timestamp?: string, date?: string) => {
+  const updateMedicationById = useCallback(async (id: string, taken: boolean, timestamp?: string, date?: string, dose?: number | null) => {
     setIsLoading(true);
 
     const now = new Date().toISOString();
@@ -131,10 +132,18 @@ export function useMedications(
     const previousEntries = medicationEntries;
 
     const updateEntry = (entries: MedicationEntry[]) =>
-      entries.map(e => e.id === id
-        ? { ...e, taken, timestamp: timestamp || e.timestamp, date: date || e.date, updatedAt: now }
-        : e
-      );
+      entries.map(e => {
+        if (e.id !== id) return e;
+        const updated = { ...e, taken, timestamp: timestamp || e.timestamp, date: date || e.date, updatedAt: now };
+        if (dose !== undefined) {
+          if (dose === null) {
+            delete updated.dose;
+          } else {
+            updated.dose = dose;
+          }
+        }
+        return updated;
+      });
 
     // If date changed, we need to handle todayMedications specially
     const entry = medicationEntries.find(e => e.id === id);
@@ -159,7 +168,7 @@ export function useMedications(
       const response = await fetch('/api/medications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, taken, timestamp, date })
+        body: JSON.stringify({ id, taken, timestamp, date, dose })
       });
 
       const result = await response.json();

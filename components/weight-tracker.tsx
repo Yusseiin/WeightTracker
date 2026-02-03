@@ -23,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { WeightEntry, UserSettings, SessionUser, WaterEntry, StepsEntry, PressureEntry, MedicationEntry, InjectionEntry } from '@/lib/types';
 import { ChangelogDialog } from './changelog-dialog';
 import { MotivationalQuote } from './motivational-quote';
+import { MedicationReminderBanner } from './medication-reminder-banner';
 import { Button } from './ui/button';
 import { Info } from 'lucide-react';
 
@@ -180,6 +181,15 @@ export function WeightTracker({
       {/* Main content */}
       <main className="container px-4 py-1 pb-18 space-y-1 max-w-3xl mx-auto flex-1 overflow-hidden flex flex-col">
         {settings.showQuotes !== false && <MotivationalQuote />}
+
+        {/* Medication Reminder Banner - show if medication feature is enabled */}
+        {features.medicationEnabled && (
+          <MedicationReminderBanner
+            medicationPresets={settings.medicationPresets || []}
+            todayMedications={todayMedications}
+            onOpenMedicationDialog={() => setMedicationDialogOpen(true)}
+          />
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 flex flex-col overflow-hidden">
           <TabsList className="w-full grid grid-cols-2 shrink-0">

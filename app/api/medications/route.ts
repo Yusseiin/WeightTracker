@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { medicationId, taken, date, timestamp } = body;
+    const { medicationId, taken, date, timestamp, dose } = body;
 
     // Validate medicationId
     if (!medicationId || typeof medicationId !== 'string') {
@@ -96,7 +96,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const entry = await createMedicationEntry(user.username, medicationId, taken, date, timestamp);
+    // Validate dose (optional, must be positive number)
+    if (dose !== undefined && dose !== null && (typeof dose !== 'number' || dose < 0)) {
+      return NextResponse.json(
+        { success: false, error: 'Dose must be a positive number' },
+        { status: 400 }
+      );
+    }
+
+    const entry = await createMedicationEntry(user.username, medicationId, taken, date, timestamp, dose);
 
     const response: ApiResponse<MedicationEntry> = {
       success: true,
@@ -128,7 +136,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, taken, timestamp, date } = body;
+    const { id, taken, timestamp, date, dose } = body;
 
     // Validate id
     if (!id || typeof id !== 'string') {
@@ -162,7 +170,15 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const entry = await updateMedicationById(user.username, id, taken, timestamp, date);
+    // Validate dose (optional, must be positive number or null to clear)
+    if (dose !== undefined && dose !== null && (typeof dose !== 'number' || dose < 0)) {
+      return NextResponse.json(
+        { success: false, error: 'Dose must be a positive number' },
+        { status: 400 }
+      );
+    }
+
+    const entry = await updateMedicationById(user.username, id, taken, timestamp, date, dose);
 
     if (!entry) {
       return NextResponse.json(

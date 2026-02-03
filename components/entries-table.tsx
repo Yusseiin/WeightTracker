@@ -40,7 +40,7 @@ interface EntriesTableProps {
   onDeleteSteps?: (id: string) => Promise<void>;
   onUpdatePressure?: (id: string, systolic: number, diastolic: number, timestamp?: string) => Promise<void>;
   onDeletePressure?: (id: string) => Promise<void>;
-  onUpdateMedication?: (id: string, taken: boolean, timestamp?: string, date?: string) => Promise<void>;
+  onUpdateMedication?: (id: string, taken: boolean, timestamp?: string, date?: string, dose?: number | null) => Promise<void>;
   onDeleteMedication?: (id: string) => Promise<void>;
   onUpdateInjection?: (id: string, updates: { dose?: number; siteId?: string; timestamp?: string; date?: string; notes?: string }) => Promise<void>;
   onDeleteInjection?: (id: string) => Promise<void>;
@@ -385,18 +385,24 @@ export function EntriesTable({
       );
     }
     const canEdit = !!onUpdateMedication;
+    // Check if any medication preset uses dosage mode
+    const hasDosageMeds = medicationPresets.some(p => p.trackingMode === 'dosage');
     return (
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-muted-foreground">
             <th className="text-left py-2 px-1 font-medium">Date</th>
             <th className="text-left py-2 px-1 font-medium">Medication</th>
+            {hasDosageMeds && (
+              <th className="text-right py-2 px-1 font-medium">Dose</th>
+            )}
             <th className="text-center py-2 px-1 font-medium">Status</th>
           </tr>
         </thead>
         <tbody>
           {sortedMedicationEntries.map((entry) => {
             const preset = medicationPresets.find(p => p.id === entry.medicationId);
+            const isDosageMode = preset?.trackingMode === 'dosage';
             return (
               <tr
                 key={entry.id}
@@ -417,6 +423,22 @@ export function EntriesTable({
                     <span>{preset?.label || 'Unknown'}</span>
                   </div>
                 </td>
+                {hasDosageMeds && (
+                  <td className="py-2 px-1 text-right whitespace-nowrap">
+                    {isDosageMode && entry.dose !== undefined ? (
+                      <span className={cn(
+                        preset?.schedule?.expectedDose !== undefined &&
+                        entry.dose !== preset.schedule.expectedDose
+                          ? "text-amber-600 dark:text-amber-400 font-medium"
+                          : ""
+                      )}>
+                        {entry.dose} {preset?.unit || 'units'}
+                      </span>
+                    ) : isDosageMode ? (
+                      <span className="text-muted-foreground">-</span>
+                    ) : null}
+                  </td>
+                )}
                 <td className="py-2 px-1 text-center">
                   {entry.taken ? (
                     <span className="inline-flex items-center gap-1 text-green-500">

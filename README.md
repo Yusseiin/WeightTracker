@@ -98,7 +98,13 @@ Enable/disable these features in Settings → Features:
 
 - **Steps Tracking**: Log daily step count with optional daily goal. One entry per day with timestamp for when steps were recorded
 - **Blood Pressure**: Track systolic/diastolic readings multiple times per day with timestamps. View history and trends
-- **Medication Tracking**: Configure custom medication schedules (e.g., morning, afternoon, evening pills) and track whether each medication was taken daily
+- **Medication Tracking**: Configure custom medications with flexible scheduling options:
+  - **Tracking Modes**: Boolean (taken/not taken) or Dosage (track specific amounts)
+  - **Scheduling**: Daily, specific days of week, or every N days (interval-based)
+  - **Dosage Support**: Set expected dose with unit (mg, ml, pills, etc.) and quick-select preset buttons
+  - **Reminder Banner**: Shows due medications at top of screen with expected doses
+  - **Dose Warnings**: Visual highlighting when recorded dose differs from expected (amber color in dialogs and history table)
+  - **Compact UI**: Medications shown as buttons that expand to reveal date/time and dose options
 - **Injection Tracking**: Track injection schedules and log when injections are administered (supports up to 15 injections)
 
 ### Custom Activities
@@ -723,6 +729,15 @@ automation:
   label: string;              // User-defined name (e.g., 'Morning pill')
   icon: string;               // Lucide icon name (e.g., 'Sunrise', 'Pill')
   color: string;              // Tailwind color class (e.g., 'text-purple-500')
+  trackingMode: 'boolean' | 'dosage';  // How to track this medication
+  unit?: string;              // Unit for dosage mode (e.g., 'mg', 'ml', 'pills')
+  schedule?: {
+    type: 'daily' | 'weekly' | 'interval';  // Schedule type
+    daysOfWeek?: number[];    // For 'weekly': 0=Sunday, 1=Monday, etc.
+    intervalDays?: number;    // For 'interval': every N days
+    startDate?: string;       // For 'interval': YYYY-MM-DD when counting starts
+    expectedDose?: number;    // Expected dosage amount
+  };
 }
 ```
 
@@ -735,6 +750,7 @@ automation:
   date: string;               // YYYY-MM-DD
   medicationId: string;       // References MedicationPreset.id
   taken: boolean;             // Whether the medication was taken
+  dose?: number;              // Actual dose taken (for dosage mode)
   timestamp: string;          // ISO 8601 - time when marked
   updatedAt: string;          // ISO 8601
 }
@@ -778,13 +794,30 @@ automation:
 
 ### Default Medication Presets
 
-New users start with these 3 default medication presets:
+New users start with these 3 default medication presets (all use `boolean` tracking mode with `daily` schedule):
 
-| ID | Label | Icon | Color |
-|----|-------|------|-------|
-| `morning` | Morning | Sunrise | `text-orange-500` |
-| `afternoon` | Afternoon | Sun | `text-yellow-500` |
-| `evening` | Evening | Moon | `text-indigo-500` |
+| ID | Label | Icon | Color | Tracking Mode |
+|----|-------|------|-------|---------------|
+| `morning` | Morning | Sunrise | `text-orange-500` | boolean |
+| `afternoon` | Afternoon | Sun | `text-yellow-500` | boolean |
+| `evening` | Evening | Moon | `text-indigo-500` | boolean |
+
+#### Example Dosage Mode Preset
+
+```json
+{
+  "id": "med_abc123",
+  "label": "Aspirin",
+  "icon": "Pill",
+  "color": "text-purple-500",
+  "trackingMode": "dosage",
+  "unit": "mg",
+  "schedule": {
+    "type": "daily",
+    "expectedDose": 100
+  }
+}
+```
 
 ### Default Activities
 

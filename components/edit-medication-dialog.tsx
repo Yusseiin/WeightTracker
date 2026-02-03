@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Pill, Clock, Calendar, Trash2, Check, X } from 'lucide-react';
+import { Pill, Clock, Calendar, Trash2, Check, X, AlertTriangle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -43,7 +43,7 @@ interface EditMedicationDialogProps {
   medicationPresets: MedicationPreset[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (id: string, taken: boolean, timestamp?: string, date?: string) => Promise<void>;
+  onSave: (id: string, taken: boolean, timestamp?: string, date?: string, dose?: number | null) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
 }
 
@@ -58,6 +58,7 @@ export function EditMedicationDialog({
   const [takenInput, setTakenInput] = useState(false);
   const [dateInput, setDateInput] = useState<string>('');
   const [timeInput, setTimeInput] = useState<string>('');
+  const [doseInput, setDoseInput] = useState<number | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const isMobile = useIsMobile();
@@ -81,6 +82,7 @@ export function EditMedicationDialog({
       setTakenInput(entry.taken);
       setDateInput(entry.date);
       setTimeInput(formatTimeFromTimestamp(entry.timestamp) || format(new Date(), 'HH:mm'));
+      setDoseInput(entry.dose);
     }
   }, [entry, open]);
 
@@ -99,9 +101,15 @@ export function EditMedicationDialog({
     // Only pass date if it changed
     const newDate = dateInput !== entry.date ? dateInput : undefined;
 
+    // Determine dose to pass for dosage mode medications
+    const isDosageMode = preset?.trackingMode === 'dosage';
+    const doseToSave = isDosageMode
+      ? (takenInput ? doseInput : null)
+      : undefined;
+
     setIsSubmitting(true);
     try {
-      await onSave(entry.id, takenInput, timestamp, newDate);
+      await onSave(entry.id, takenInput, timestamp, newDate, doseToSave);
       onOpenChange(false);
     } finally {
       setIsSubmitting(false);
@@ -166,6 +174,41 @@ export function EditMedicationDialog({
           </Button>
         </div>
       </div>
+
+      {/* Dose input for dosage-mode medications */}
+      {preset?.trackingMode === 'dosage' && takenInput && (
+        <div className="space-y-2">
+          <Label htmlFor="edit-medication-dose">Dose</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              id="edit-medication-dose"
+              type="number"
+              min="0"
+              step="any"
+              placeholder="Enter dose"
+              value={doseInput ?? ''}
+              onChange={(e) => setDoseInput(e.target.value ? parseFloat(e.target.value) : undefined)}
+              className="text-lg flex-1"
+            />
+            <span className="text-muted-foreground">
+              {preset.unit || 'units'}
+            </span>
+          </div>
+          {preset.schedule?.expectedDose !== undefined && (
+            <p className="text-xs text-muted-foreground">
+              Expected: {preset.schedule.expectedDose} {preset.unit || 'units'}
+            </p>
+          )}
+          {preset.schedule?.expectedDose !== undefined &&
+           doseInput !== undefined &&
+           doseInput !== preset.schedule.expectedDose && (
+            <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-1 rounded">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              <span>Dose differs from expected ({preset.schedule.expectedDose} {preset.unit || 'units'})</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Date and Time inputs */}
       <div className="grid grid-cols-2 gap-4">

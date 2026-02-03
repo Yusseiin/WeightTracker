@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { WeightEntry, UserSettings, DEFAULT_USER_ID, DEFAULT_ACTIVITIES, DEFAULT_GOALS, DEFAULT_WATER_PRESETS, DEFAULT_FEATURE_TOGGLES, DEFAULT_MEDICATION_PRESETS, DEFAULT_INJECTION_SETTINGS } from './types';
+import { WeightEntry, UserSettings, DEFAULT_USER_ID, DEFAULT_ACTIVITIES, DEFAULT_GOALS, DEFAULT_WATER_PRESETS, DEFAULT_FEATURE_TOGGLES, DEFAULT_MEDICATION_PRESETS, DEFAULT_INJECTION_SETTINGS, MedicationPreset } from './types';
 import { DEFAULT_DATE_FORMAT } from './date-utils';
 
 // Config directory - configurable via env for Docker/Unraid
@@ -276,6 +276,20 @@ export async function getSettings(userId: string = DEFAULT_USER_ID): Promise<Use
     if (settings.goals && settings.goals.dailyStepsGoal === undefined) {
       settings.goals.dailyStepsGoal = null;
       needsSave = true;
+    }
+    // Add trackingMode to medication presets if missing (backward compatibility)
+    if (settings.medicationPresets && Array.isArray(settings.medicationPresets)) {
+      let presetsUpdated = false;
+      settings.medicationPresets = settings.medicationPresets.map((preset: MedicationPreset) => {
+        if (preset.trackingMode === undefined) {
+          presetsUpdated = true;
+          return { ...preset, trackingMode: 'boolean' as const };
+        }
+        return preset;
+      });
+      if (presetsUpdated) {
+        needsSave = true;
+      }
     }
 
     // Persist fixes to file

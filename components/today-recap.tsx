@@ -1,16 +1,38 @@
 "use client";
 
 import { useMemo, useState, useEffect } from 'react';
-import { isToday, parseISO } from 'date-fns';
+import { isToday, parseISO, differenceInDays, format } from 'date-fns';
 import { Scale, Droplets, Flame, Footprints, HeartPulse, Pill, Syringe, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import type { WeightEntry, WaterEntry, WaterUnit, GoalSettings, StepsEntry, PressureEntry, FeatureToggles, MedicationEntry, MedicationPreset, InjectionEntry, InjectionSettings } from '@/lib/types';
+import type { WeightEntry, WaterEntry, WaterUnit, GoalSettings, StepsEntry, PressureEntry, FeatureToggles, MedicationEntry, MedicationPreset, MedicationSchedule, InjectionEntry, InjectionSettings } from '@/lib/types';
 import { formatWaterAmount } from '@/lib/water-utils';
 import { formatDateForRecap } from '@/lib/date-utils';
 import { calculateWaterStreak, calculateProgress, getCurrentWeekWeightChange, getCurrentMonthWeightChange } from '@/lib/goals';
 import { getPressureCategory } from '@/lib/pressure-utils';
 import { cn } from '@/lib/utils';
+
+// Check if a medication is due today based on its schedule
+function isMedicationDueToday(schedule: MedicationSchedule | undefined, today: Date): boolean {
+  // No schedule = always due (backward compatibility)
+  if (!schedule) return true;
+
+  switch (schedule.type) {
+    case 'daily':
+      return true;
+    case 'weekly':
+      // Check if today's day of week is in the schedule
+      return schedule.daysOfWeek?.includes(today.getDay()) ?? false;
+    case 'interval':
+      // Check if today is on the interval from start date
+      if (!schedule.startDate || !schedule.intervalDays) return false;
+      const start = parseISO(schedule.startDate);
+      const daysDiff = differenceInDays(today, start);
+      return daysDiff >= 0 && daysDiff % schedule.intervalDays === 0;
+    default:
+      return true;
+  }
+}
 
 interface TodayRecapProps {
   entries: WeightEntry[];
@@ -182,10 +204,24 @@ export function TodayRecap({
     }
   }, [isCollapsed, isHydrated]);
 
-  // Calculate medication status
+  // Calculate medication status (only count medications due today)
   const medicationCount = useMemo(() => {
-    const total = medicationPresets.length;
-    const taken = todayMedications.filter(m => m.taken).length;
+    const today = new Date();
+    const todayDate = format(today, 'yyyy-MM-dd');
+
+    // Filter to only medications due today
+    const dueTodayPresets = medicationPresets.filter(preset =>
+      isMedicationDueToday(preset.schedule, today)
+    );
+
+    const total = dueTodayPresets.length;
+    const taken = dueTodayPresets.filter(preset => {
+      const entry = todayMedications.find(
+        m => m.medicationId === preset.id && m.date === todayDate
+      );
+      return entry?.taken === true;
+    }).length;
+
     return { taken, total };
   }, [todayMedications, medicationPresets]);
 
@@ -395,7 +431,17 @@ export function TodayRecap({
                     <Pill className="h-5 w-5 text-purple-500" />
                   </div>
                   <div className="flex-1">
-                    {medicationPresets.length > 0 ? (
+                    {medicationPresets.length === 0 ? (
+                      <>
+                        <div className="text-sm text-muted-foreground">No meds set</div>
+                        <div className="text-xs text-muted-foreground">medication</div>
+                      </>
+                    ) : medicationCount.total === 0 ? (
+                      <>
+                        <div className="text-sm text-muted-foreground">None due</div>
+                        <div className="text-xs text-muted-foreground">medication</div>
+                      </>
+                    ) : (
                       <>
                         <div className="text-lg font-semibold">
                           {medicationCount.taken}/{medicationCount.total}
@@ -414,11 +460,6 @@ export function TodayRecap({
                             ? "partially taken"
                             : "none taken"}
                         </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="text-sm text-muted-foreground">No meds set</div>
-                        <div className="text-xs text-muted-foreground">medication</div>
                       </>
                     )}
                   </div>

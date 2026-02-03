@@ -1,9 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ChevronUp, ChevronDown, Pencil, Trash2, Plus, X, Check, Loader2, Pill } from 'lucide-react';
+import { ChevronUp, ChevronDown, Pencil, Trash2, Plus, X, Check, Loader2, Pill, Calendar } from 'lucide-react';
+import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -34,10 +44,21 @@ import {
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DynamicIcon } from './dynamic-icon';
 import { IconPicker } from './icon-picker';
-import { MedicationPreset, MAX_MEDICATIONS, MedicationEntry } from '@/lib/types';
+import { MedicationPreset, MAX_MEDICATIONS, MedicationEntry, MedicationSchedule, MedicationScheduleType, MedicationTrackingMode } from '@/lib/types';
 import { ACTIVITY_COLORS } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
+
+// Days of week for schedule picker
+const DAYS_OF_WEEK = [
+  { value: 0, label: 'Sun' },
+  { value: 1, label: 'Mon' },
+  { value: 2, label: 'Tue' },
+  { value: 3, label: 'Wed' },
+  { value: 4, label: 'Thu' },
+  { value: 5, label: 'Fri' },
+  { value: 6, label: 'Sat' },
+];
 
 interface MedicationManagerProps {
   medications: MedicationPreset[];
@@ -55,6 +76,7 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
     label: '',
     icon: 'Pill',
     color: 'text-purple-500',
+    trackingMode: 'boolean',
   });
   const [deletingMedication, setDeletingMedication] = useState<MedicationPreset | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -67,7 +89,7 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
       setEditingId(null);
       setEditingMedication(null);
       setIsAdding(false);
-      setNewMedication({ label: '', icon: 'Pill', color: 'text-purple-500' });
+      setNewMedication({ label: '', icon: 'Pill', color: 'text-purple-500', trackingMode: 'boolean' });
     }
   }, [open, medications]);
 
@@ -126,7 +148,7 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
     };
     setLocalMedications((prev) => [...prev, medication]);
     setIsAdding(false);
-    setNewMedication({ label: '', icon: 'Pill', color: 'text-purple-500' });
+    setNewMedication({ label: '', icon: 'Pill', color: 'text-purple-500', trackingMode: 'boolean' });
   };
 
   // Delete medication (after confirmation)
@@ -174,7 +196,7 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
           >
             {editingId === medication.id && editingMedication ? (
               // Editing mode
-              <div className="flex flex-col gap-2 w-full">
+              <div className="flex flex-col gap-3 w-full">
                 <div className="flex items-center gap-2">
                   <IconPicker
                     value={editingMedication.icon}
@@ -212,6 +234,140 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
                   className="w-full"
                   placeholder="Medication name"
                 />
+
+                {/* Tracking mode */}
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Tracking mode</Label>
+                  <ToggleGroup
+                    type="single"
+                    value={editingMedication.trackingMode || 'boolean'}
+                    onValueChange={(v) => v && setEditingMedication({ ...editingMedication, trackingMode: v as MedicationTrackingMode })}
+                    className="justify-start"
+                  >
+                    <ToggleGroupItem value="boolean" className="text-xs">Taken/Not taken</ToggleGroupItem>
+                    <ToggleGroupItem value="dosage" className="text-xs">Dosage</ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
+
+                {/* Unit and expected dose (for dosage mode) */}
+                {editingMedication.trackingMode === 'dosage' && (
+                  <div className="flex gap-2">
+                    <div className="flex-1 space-y-1">
+                      <Label className="text-xs text-muted-foreground">Unit</Label>
+                      <Input
+                        value={editingMedication.unit || ''}
+                        onChange={(e) => setEditingMedication({ ...editingMedication, unit: e.target.value })}
+                        placeholder="mg, ml, pills..."
+                        className="h-8"
+                      />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <Label className="text-xs text-muted-foreground">Expected dose</Label>
+                      <Input
+                        type="number"
+                        value={editingMedication.schedule?.expectedDose || ''}
+                        onChange={(e) => setEditingMedication({
+                          ...editingMedication,
+                          schedule: {
+                            ...editingMedication.schedule,
+                            type: editingMedication.schedule?.type || 'daily',
+                            expectedDose: e.target.value ? Number(e.target.value) : undefined
+                          }
+                        })}
+                        placeholder="50"
+                        className="h-8"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Schedule type */}
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Schedule</Label>
+                  <Select
+                    value={editingMedication.schedule?.type || 'daily'}
+                    onValueChange={(v) => setEditingMedication({
+                      ...editingMedication,
+                      schedule: {
+                        ...editingMedication.schedule,
+                        type: v as MedicationScheduleType,
+                        daysOfWeek: v === 'weekly' ? (editingMedication.schedule?.daysOfWeek || [1, 3, 5]) : undefined,
+                        intervalDays: v === 'interval' ? (editingMedication.schedule?.intervalDays || 7) : undefined,
+                        startDate: v === 'interval' ? (editingMedication.schedule?.startDate || format(new Date(), 'yyyy-MM-dd')) : undefined,
+                      }
+                    })}
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Specific days</SelectItem>
+                      <SelectItem value="interval">Every N days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Days of week picker (for weekly) */}
+                {editingMedication.schedule?.type === 'weekly' && (
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Days</Label>
+                    <div className="flex gap-1 flex-wrap">
+                      {DAYS_OF_WEEK.map((day) => (
+                        <Button
+                          key={day.value}
+                          type="button"
+                          variant={editingMedication.schedule?.daysOfWeek?.includes(day.value) ? 'default' : 'outline'}
+                          size="sm"
+                          className="h-7 w-9 text-xs"
+                          onClick={() => {
+                            const current = editingMedication.schedule?.daysOfWeek || [];
+                            const newDays = current.includes(day.value)
+                              ? current.filter(d => d !== day.value)
+                              : [...current, day.value].sort((a, b) => a - b);
+                            setEditingMedication({
+                              ...editingMedication,
+                              schedule: { ...editingMedication.schedule!, daysOfWeek: newDays }
+                            });
+                          }}
+                        >
+                          {day.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Interval settings */}
+                {editingMedication.schedule?.type === 'interval' && (
+                  <div className="flex gap-2">
+                    <div className="flex-1 space-y-1">
+                      <Label className="text-xs text-muted-foreground">Every N days</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={editingMedication.schedule?.intervalDays || 7}
+                        onChange={(e) => setEditingMedication({
+                          ...editingMedication,
+                          schedule: { ...editingMedication.schedule!, intervalDays: Number(e.target.value) || 7 }
+                        })}
+                        className="h-8"
+                      />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <Label className="text-xs text-muted-foreground">Starting from</Label>
+                      <Input
+                        type="date"
+                        value={editingMedication.schedule?.startDate || format(new Date(), 'yyyy-MM-dd')}
+                        onChange={(e) => setEditingMedication({
+                          ...editingMedication,
+                          schedule: { ...editingMedication.schedule!, startDate: e.target.value }
+                        })}
+                        className="h-8"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               // Display mode
@@ -263,7 +419,7 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
       {/* Add new medication form */}
       {isAdding ? (
         <div className="p-3 border rounded-lg border-dashed">
-          <div className="flex flex-col gap-2 w-full">
+          <div className="flex flex-col gap-3 w-full">
             <div className="flex items-center gap-2">
               <IconPicker
                 value={newMedication.icon}
@@ -302,6 +458,140 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
               placeholder="Medication name"
               autoFocus
             />
+
+            {/* Tracking mode */}
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Tracking mode</Label>
+              <ToggleGroup
+                type="single"
+                value={newMedication.trackingMode || 'boolean'}
+                onValueChange={(v) => v && setNewMedication({ ...newMedication, trackingMode: v as MedicationTrackingMode })}
+                className="justify-start"
+              >
+                <ToggleGroupItem value="boolean" className="text-xs">Taken/Not taken</ToggleGroupItem>
+                <ToggleGroupItem value="dosage" className="text-xs">Dosage</ToggleGroupItem>
+              </ToggleGroup>
+            </div>
+
+            {/* Unit and expected dose (for dosage mode) */}
+            {newMedication.trackingMode === 'dosage' && (
+              <div className="flex gap-2">
+                <div className="flex-1 space-y-1">
+                  <Label className="text-xs text-muted-foreground">Unit</Label>
+                  <Input
+                    value={newMedication.unit || ''}
+                    onChange={(e) => setNewMedication({ ...newMedication, unit: e.target.value })}
+                    placeholder="mg, ml, pills..."
+                    className="h-8"
+                  />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <Label className="text-xs text-muted-foreground">Expected dose</Label>
+                  <Input
+                    type="number"
+                    value={newMedication.schedule?.expectedDose || ''}
+                    onChange={(e) => setNewMedication({
+                      ...newMedication,
+                      schedule: {
+                        ...newMedication.schedule,
+                        type: newMedication.schedule?.type || 'daily',
+                        expectedDose: e.target.value ? Number(e.target.value) : undefined
+                      }
+                    })}
+                    placeholder="50"
+                    className="h-8"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Schedule type */}
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Schedule</Label>
+              <Select
+                value={newMedication.schedule?.type || 'daily'}
+                onValueChange={(v) => setNewMedication({
+                  ...newMedication,
+                  schedule: {
+                    ...newMedication.schedule,
+                    type: v as MedicationScheduleType,
+                    daysOfWeek: v === 'weekly' ? (newMedication.schedule?.daysOfWeek || [1, 3, 5]) : undefined,
+                    intervalDays: v === 'interval' ? (newMedication.schedule?.intervalDays || 7) : undefined,
+                    startDate: v === 'interval' ? (newMedication.schedule?.startDate || format(new Date(), 'yyyy-MM-dd')) : undefined,
+                  }
+                })}
+              >
+                <SelectTrigger className="h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Specific days</SelectItem>
+                  <SelectItem value="interval">Every N days</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Days of week picker (for weekly) */}
+            {newMedication.schedule?.type === 'weekly' && (
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Days</Label>
+                <div className="flex gap-1 flex-wrap">
+                  {DAYS_OF_WEEK.map((day) => (
+                    <Button
+                      key={day.value}
+                      type="button"
+                      variant={newMedication.schedule?.daysOfWeek?.includes(day.value) ? 'default' : 'outline'}
+                      size="sm"
+                      className="h-7 w-9 text-xs"
+                      onClick={() => {
+                        const current = newMedication.schedule?.daysOfWeek || [];
+                        const newDays = current.includes(day.value)
+                          ? current.filter(d => d !== day.value)
+                          : [...current, day.value].sort((a, b) => a - b);
+                        setNewMedication({
+                          ...newMedication,
+                          schedule: { ...newMedication.schedule!, daysOfWeek: newDays }
+                        });
+                      }}
+                    >
+                      {day.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Interval settings */}
+            {newMedication.schedule?.type === 'interval' && (
+              <div className="flex gap-2">
+                <div className="flex-1 space-y-1">
+                  <Label className="text-xs text-muted-foreground">Every N days</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={newMedication.schedule?.intervalDays || 7}
+                    onChange={(e) => setNewMedication({
+                      ...newMedication,
+                      schedule: { ...newMedication.schedule!, intervalDays: Number(e.target.value) || 7 }
+                    })}
+                    className="h-8"
+                  />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <Label className="text-xs text-muted-foreground">Starting from</Label>
+                  <Input
+                    type="date"
+                    value={newMedication.schedule?.startDate || format(new Date(), 'yyyy-MM-dd')}
+                    onChange={(e) => setNewMedication({
+                      ...newMedication,
+                      schedule: { ...newMedication.schedule!, startDate: e.target.value }
+                    })}
+                    className="h-8"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       ) : (

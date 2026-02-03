@@ -73,7 +73,8 @@ export async function createMedicationEntry(
   medicationId: string,
   taken: boolean,
   date?: string,
-  timestamp?: string
+  timestamp?: string,
+  dose?: number | null
 ): Promise<MedicationEntry> {
   const entries = await getMedicationEntries(userId);
   const entryDate = date || getTodayDate();
@@ -89,6 +90,14 @@ export async function createMedicationEntry(
     entries[existingIndex].taken = taken;
     entries[existingIndex].timestamp = timestamp || now;
     entries[existingIndex].updatedAt = now;
+    // Handle dose: set if provided, remove if null
+    if (dose !== undefined) {
+      if (dose === null) {
+        delete entries[existingIndex].dose;
+      } else {
+        entries[existingIndex].dose = dose;
+      }
+    }
     await saveMedicationEntries(userId, entries);
     return entries[existingIndex];
   }
@@ -103,6 +112,10 @@ export async function createMedicationEntry(
     timestamp: timestamp || now,
     updatedAt: now
   };
+  // Add dose if provided
+  if (dose !== undefined && dose !== null) {
+    newEntry.dose = dose;
+  }
   entries.push(newEntry);
   await saveMedicationEntries(userId, entries);
   return newEntry;
@@ -114,7 +127,8 @@ export async function updateMedicationById(
   id: string,
   taken: boolean,
   timestamp?: string,
-  date?: string
+  date?: string,
+  dose?: number | null
 ): Promise<MedicationEntry | null> {
   const entries = await getMedicationEntries(userId);
   const existingIndex = entries.findIndex(e => e.id === id);
@@ -131,6 +145,14 @@ export async function updateMedicationById(
   }
   if (date) {
     entries[existingIndex].date = date;
+  }
+  // Handle dose: set if provided, remove if null
+  if (dose !== undefined) {
+    if (dose === null) {
+      delete entries[existingIndex].dose;
+    } else {
+      entries[existingIndex].dose = dose;
+    }
   }
   entries[existingIndex].updatedAt = now;
   await saveMedicationEntries(userId, entries);

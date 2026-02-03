@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSettings, updateSettings } from '@/lib/data';
 import { getSession } from '@/lib/auth';
-import { ApiResponse, UserSettings, DateFormatSettings, SingleDateFormat, CustomActivity, MAX_ACTIVITIES, GoalSettings, WaterPreset, MAX_WATER_PRESETS, FeatureToggles, MedicationPreset, MAX_MEDICATIONS, InjectionSettings, InjectableMedication, InjectionSitePreset, MAX_INJECTABLE_MEDICATIONS, MAX_INJECTION_SITES, ChartCombination, ChartView, ChartType } from '@/lib/types';
+import { ApiResponse, UserSettings, DateFormatSettings, SingleDateFormat, CustomActivity, MAX_ACTIVITIES, GoalSettings, WaterPreset, MAX_WATER_PRESETS, FeatureToggles, MedicationPreset, MAX_MEDICATIONS, MedicationSchedule, MedicationScheduleType, MedicationTrackingMode, InjectionSettings, InjectableMedication, InjectionSitePreset, MAX_INJECTABLE_MEDICATIONS, MAX_INJECTION_SITES, ChartCombination, ChartView, ChartType } from '@/lib/types';
 import { ALL_ACTIVITY_ICONS, WATER_ICONS, MEDICATION_ICONS } from '@/lib/icons';
 
 // Validation constants
@@ -134,6 +134,36 @@ function isValidFeatureToggles(features: unknown): features is FeatureToggles {
   return true;
 }
 
+// Valid tracking modes and schedule types
+const VALID_TRACKING_MODES: MedicationTrackingMode[] = ['boolean', 'dosage'];
+const VALID_SCHEDULE_TYPES: MedicationScheduleType[] = ['daily', 'weekly', 'interval'];
+
+// Validate medication schedule
+function isValidMedicationSchedule(schedule: unknown): schedule is MedicationSchedule {
+  if (!schedule || typeof schedule !== 'object') return false;
+  const s = schedule as Record<string, unknown>;
+
+  if (!s.type || !VALID_SCHEDULE_TYPES.includes(s.type as MedicationScheduleType)) return false;
+
+  // Validate based on schedule type
+  if (s.type === 'weekly') {
+    if (s.daysOfWeek !== undefined) {
+      if (!Array.isArray(s.daysOfWeek)) return false;
+      if (!s.daysOfWeek.every((d: unknown) => typeof d === 'number' && d >= 0 && d <= 6)) return false;
+    }
+  }
+
+  if (s.type === 'interval') {
+    if (s.intervalDays !== undefined && (typeof s.intervalDays !== 'number' || s.intervalDays < 1)) return false;
+    if (s.startDate !== undefined && typeof s.startDate !== 'string') return false;
+  }
+
+  // expectedDose is optional but must be a positive number if present
+  if (s.expectedDose !== undefined && (typeof s.expectedDose !== 'number' || s.expectedDose <= 0)) return false;
+
+  return true;
+}
+
 // Validate a single medication preset
 function isValidMedicationPreset(preset: unknown): preset is MedicationPreset {
   if (!preset || typeof preset !== 'object') return false;
@@ -143,6 +173,15 @@ function isValidMedicationPreset(preset: unknown): preset is MedicationPreset {
   if (typeof p.label !== 'string' || p.label.trim() === '') return false;
   if (typeof p.icon !== 'string' || !MEDICATION_ICONS.includes(p.icon)) return false;
   if (typeof p.color !== 'string') return false;
+
+  // Optional: validate trackingMode if present
+  if (p.trackingMode !== undefined && !VALID_TRACKING_MODES.includes(p.trackingMode as MedicationTrackingMode)) return false;
+
+  // Optional: validate unit if present (must be string)
+  if (p.unit !== undefined && typeof p.unit !== 'string') return false;
+
+  // Optional: validate schedule if present
+  if (p.schedule !== undefined && !isValidMedicationSchedule(p.schedule)) return false;
 
   return true;
 }

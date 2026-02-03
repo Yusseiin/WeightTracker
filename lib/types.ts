@@ -37,22 +37,39 @@ export interface WaterPreset {
 // Maximum number of water presets
 export const MAX_WATER_PRESETS = 6;
 
+// Medication schedule configuration
+export type MedicationScheduleType = 'daily' | 'weekly' | 'interval';
+
+export interface MedicationSchedule {
+  type: MedicationScheduleType;
+  daysOfWeek?: number[];     // For 'weekly': 0=Sunday, 1=Monday, ..., 6=Saturday
+  intervalDays?: number;     // For 'interval': every N days
+  startDate?: string;        // For 'interval': YYYY-MM-DD when counting starts
+  expectedDose?: number;     // Expected dosage amount
+}
+
+// Medication tracking mode
+export type MedicationTrackingMode = 'boolean' | 'dosage';
+
 // Medication preset configuration
 export interface MedicationPreset {
   id: string;               // Unique identifier (e.g., 'med_abc123')
   label: string;            // User-defined name (e.g., 'Morning pill', 'Evening vitamin')
   icon: string;             // Lucide icon name (e.g., 'Pill', 'Syringe')
   color: string;            // Tailwind color class (e.g., 'text-purple-500')
+  trackingMode?: MedicationTrackingMode;  // 'boolean' (default) or 'dosage'
+  unit?: string;            // Unit for dosage mode (e.g., 'mg', 'ml', 'pills')
+  schedule?: MedicationSchedule;  // When to take this medication
 }
 
 // Maximum number of medication presets
-export const MAX_MEDICATIONS = 8;
+export const MAX_MEDICATIONS = 15;
 
 // Default medication presets for new users
 export const DEFAULT_MEDICATION_PRESETS: MedicationPreset[] = [
-  { id: 'morning', label: 'Morning', icon: 'Sunrise', color: 'text-orange-500' },
-  { id: 'afternoon', label: 'Afternoon', icon: 'Sun', color: 'text-yellow-500' },
-  { id: 'evening', label: 'Evening', icon: 'Moon', color: 'text-indigo-500' },
+  { id: 'morning', label: 'Morning', icon: 'Sunrise', color: 'text-orange-500', trackingMode: 'boolean' },
+  { id: 'afternoon', label: 'Afternoon', icon: 'Sun', color: 'text-yellow-500', trackingMode: 'boolean' },
+  { id: 'evening', label: 'Evening', icon: 'Moon', color: 'text-indigo-500', trackingMode: 'boolean' },
 ];
 
 // Default water presets for new users
@@ -300,6 +317,7 @@ export interface MedicationEntry {
   date: string;        // YYYY-MM-DD format
   medicationId: string; // References MedicationPreset.id
   taken: boolean;      // Whether the medication was taken
+  dose?: number;       // Actual dose taken (for dosage tracking mode)
   timestamp: string;   // ISO 8601 - time when marked
   updatedAt: string;   // ISO 8601
 }

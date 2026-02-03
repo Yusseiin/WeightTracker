@@ -22,9 +22,29 @@ interface ChangelogEntry {
 const changelog: ChangelogEntry[] = [
   {
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
+    date: "2026-02-03",
+    changes: [
+      { type: "fixed", description: "Today Recap now only shows medications due today based on schedule" },
+    ],
+  },
+  {
+    version: "v0.0.12",
+    date: "2026-02-03",
+    changes: [
+      { type: "added", description: "Added medication scheduling (daily, weekly, or interval-based)" },
+      { type: "added", description: "Added dosage tracking mode for medications with unit and expected dose" },
+      { type: "added", description: "Added medication reminder banner for due medications" },
+      { type: "added", description: "Added dose warning when entered dose differs from expected" },
+      { type: "added", description: "Added dose highlighting in history table when different from expected" },
+      { type: "changed", description: "Improved medication dialog with compact view and quick dose selection buttons" },
+      { type: "fixed", description: "Today Recap now only shows medications due today based on schedule" },
+    ],
+  },
+  {
+    version: "v0.0.11",
     date: "2026-02-02",
     changes: [
-      { type: "added", description: "Added the possibility to choose what injection will be showen in the graph" },
+      { type: "added", description: "Added the possibility to choose what injection will be shown in the graph" },
       { type: "added", description: "Added injection color in the injection table" },
     ],
   },
