@@ -124,6 +124,9 @@ export async function deleteStepsById(userId: string, id: string): Promise<boole
 
   entries.splice(existingIndex, 1);
   await saveStepsEntries(userId, entries);
+  // Clean up associated photo if any
+  const { deletePhoto } = await import('./photos');
+  await deletePhoto(userId, 'steps', id);
   return true;
 }
 

@@ -8,7 +8,7 @@ interface UsePressureReturn {
   todayPressure: PressureEntry[];
   pressureEntries: PressureEntry[];
   isLoading: boolean;
-  createPressure: (systolic: number, diastolic: number, date?: string, timestamp?: string) => Promise<void>;
+  createPressure: (systolic: number, diastolic: number, date?: string, timestamp?: string) => Promise<PressureEntry | undefined>;
   updatePressureById: (id: string, systolic: number, diastolic: number, timestamp?: string) => Promise<void>;
   deletePressure: (id: string) => Promise<void>;
   refreshPressure: () => Promise<void>;
@@ -82,6 +82,8 @@ export function usePressure(
         );
 
         showSuccessToast(`Blood pressure: ${systolic}/${diastolic}`);
+
+        return result.data as PressureEntry;
       } else {
         // Rollback
         setTodayPressure(previousTodayPressure);

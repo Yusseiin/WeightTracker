@@ -34,6 +34,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DynamicIcon } from '@/components/dynamic-icon';
+import { PhotoCapture } from './photo-capture';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { WeightEntry, EntryFormData, WaterEntry, WaterUnit, CustomActivity } from '@/lib/types';
@@ -52,6 +53,7 @@ interface EditEntryDialogProps {
   waterEntries: WaterEntry[];
   onUpdateWater: (date: string, amount: number) => Promise<void>;
   activities: CustomActivity[];
+  photosEnabled?: boolean;
 }
 
 export function EditEntryDialog({
@@ -64,7 +66,8 @@ export function EditEntryDialog({
   waterUnit,
   waterEntries,
   onUpdateWater,
-  activities
+  activities,
+  photosEnabled
 }: EditEntryDialogProps) {
   const [weight, setWeight] = useState<string>('');
   const [training, setTraining] = useState<string>('');
@@ -265,6 +268,15 @@ export function EditEntryDialog({
           </button>
         </div>
       </div>
+
+      {/* Photo capture */}
+      {photosEnabled && entry && (
+        <PhotoCapture
+          entryType="weight"
+          entryId={entry.id}
+          existingPhotoUrl={`/api/photos/weight/${entry.id}`}
+        />
+      )}
     </div>
   );
 

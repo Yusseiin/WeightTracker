@@ -167,5 +167,8 @@ export async function deleteInjectionById(userId: string, id: string): Promise<b
 
   entries.splice(existingIndex, 1);
   await saveInjectionEntries(userId, entries);
+  // Clean up associated photo if any
+  const { deletePhoto } = await import('./photos');
+  await deletePhoto(userId, 'injection', id);
   return true;
 }

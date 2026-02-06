@@ -33,18 +33,20 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { PhotoCapture } from './photo-capture';
 import type { InjectableMedication, InjectionSitePreset, InjectionEntry } from '@/lib/types';
 
 interface AddInjectionDialogProps {
   medications: InjectableMedication[];
   injectionSites: InjectionSitePreset[];
   injectionEntries: InjectionEntry[];
-  onAddInjection: (medicationId: string, dose: number, siteId: string, date?: string, timestamp?: string, notes?: string) => Promise<void>;
+  onAddInjection: (medicationId: string, dose: number, siteId: string, date?: string, timestamp?: string, notes?: string) => Promise<any>;
   isLoading?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onUpdateNextRotation?: (medicationId: string, siteId: string) => void;
   nextRotationOverrides?: Record<string, string>;
+  photosEnabled?: boolean;
 }
 
 export function AddInjectionDialog({
@@ -56,7 +58,8 @@ export function AddInjectionDialog({
   open: controlledOpen,
   onOpenChange,
   onUpdateNextRotation,
-  nextRotationOverrides = {}
+  nextRotationOverrides = {},
+  photosEnabled
 }: AddInjectionDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
 
@@ -73,6 +76,7 @@ export function AddInjectionDialog({
   const [timeInput, setTimeInput] = useState<string>('');
   const [notesInput, setNotesInput] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
   const isMobile = useIsMobile();
 
   // Get selected medication
@@ -128,6 +132,7 @@ export function AddInjectionDialog({
       setDateInput(format(new Date(), 'yyyy-MM-dd'));
       setTimeInput(format(new Date(), 'HH:mm'));
       setNotesInput('');
+      setPendingPhoto(null);
     }
   }, [open, medications]);
 
@@ -158,7 +163,7 @@ export function AddInjectionDialog({
 
     setIsSubmitting(true);
     try {
-      await onAddInjection(
+      const entry = await onAddInjection(
         selectedMedicationId,
         selectedDose,
         selectedSiteId,
@@ -166,6 +171,12 @@ export function AddInjectionDialog({
         timestamp,
         notesInput || undefined
       );
+      // Upload photo if one was captured
+      if (pendingPhoto && entry?.id) {
+        const formData = new FormData();
+        formData.append('photo', pendingPhoto);
+        await fetch(`/api/photos/injection/${entry.id}`, { method: 'POST', body: formData });
+      }
       // Save the next rotation preference if callback provided
       if (onUpdateNextRotation && selectedNextSiteId) {
         onUpdateNextRotation(selectedMedicationId, selectedNextSiteId);
@@ -387,6 +398,15 @@ export function AddInjectionDialog({
           rows={2}
         />
       </div>
+
+      {/* Photo capture */}
+      {photosEnabled && (
+        <PhotoCapture
+          entryType="injection"
+          entryId={null}
+          onPhotoChange={setPendingPhoto}
+        />
+      )}
     </div>
   );
 

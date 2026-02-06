@@ -106,6 +106,11 @@ Enable/disable these features in Settings → Features:
   - **Dose Warnings**: Visual highlighting when recorded dose differs from expected (amber color in dialogs and history table)
   - **Compact UI**: Medications shown as buttons that expand to reveal date/time and dose options
 - **Injection Tracking**: Track injection schedules and log when injections are administered (supports up to 15 injections)
+- **Photo Attachments**: Attach photos to any entry type (weight, steps, pressure, medication, injection)
+  - Camera capture and gallery picker on mobile and desktop
+  - Client-side image compression (max 1200x1200, JPEG quality 0.8) to save storage
+  - Photos displayed in history table via camera icon with popover preview
+  - Photos stored at `/config/photos/{userId}/` and persist across Docker restarts
 
 ### Custom Activities
 
@@ -247,9 +252,11 @@ Each user gets their own data files in separate folders inside the config direct
 │   └── {username}.json         # Daily steps per user
 ├── pressure/
 │   └── {username}.json         # Blood pressure readings per user
-└── medications/
-    └── {username}.json         # Medication tracking per user
-```
+├── medications/
+│   └── {username}.json         # Medication tracking per user
+└── photos/
+    └── {username}/             # Photo attachments per user
+        └── {entryType}-{entryId}.jpg
 
 ### Environment Variables
 

@@ -150,6 +150,7 @@ export interface FeatureToggles {
   medicationEnabled: boolean;       // Show medication tracking button
   injectionsEnabled: boolean;       // Show injections tracking button
   waterEnabled: boolean;            // Show water tracking button
+  photosEnabled: boolean;           // Enable photo attachments on entries
 }
 
 // Default goal settings
@@ -168,6 +169,7 @@ export const DEFAULT_FEATURE_TOGGLES: FeatureToggles = {
   medicationEnabled: false,
   injectionsEnabled: false,
   waterEnabled: true,  // Default to true for backwards compatibility
+  photosEnabled: false,
 };
 
 // User settings model

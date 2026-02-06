@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { WeightEntry, UserSettings, DEFAULT_USER_ID, DEFAULT_ACTIVITIES, DEFAULT_GOALS, DEFAULT_WATER_PRESETS, DEFAULT_FEATURE_TOGGLES, DEFAULT_MEDICATION_PRESETS, DEFAULT_INJECTION_SETTINGS, MedicationPreset } from './types';
 import { DEFAULT_DATE_FORMAT } from './date-utils';
+import { deletePhoto } from './photos';
 
 // Config directory - configurable via env for Docker/Unraid
 const CONFIG_PATH = process.env.CONFIG_PATH || '/config';
@@ -162,6 +163,8 @@ export async function deleteEntry(
   }
 
   await fs.writeFile(filePath, JSON.stringify(filteredEntries, null, 2), 'utf-8');
+  // Clean up associated photo if any
+  await deletePhoto(userId, 'weight', entryId);
   return true;
 }
 

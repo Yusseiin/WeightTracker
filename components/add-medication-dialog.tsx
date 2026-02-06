@@ -26,6 +26,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DynamicIcon } from './dynamic-icon';
+import { PhotoCapture } from './photo-capture';
 import type { MedicationPreset, MedicationEntry } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -52,9 +53,10 @@ interface LocalMedicationState {
 interface AddMedicationDialogProps {
   medicationPresets: MedicationPreset[];
   todayMedications: MedicationEntry[];
-  onToggleMedication: (medicationId: string, taken: boolean, date?: string, timestamp?: string, dose?: number | null) => Promise<void>;
+  onToggleMedication: (medicationId: string, taken: boolean, date?: string, timestamp?: string, dose?: number | null) => Promise<any>;
   onDeleteMedication?: (id: string) => Promise<void>;
   isLoading?: boolean;
+  photosEnabled?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
@@ -65,6 +67,7 @@ export function AddMedicationDialog({
   onToggleMedication,
   onDeleteMedication,
   isLoading = false,
+  photosEnabled,
   open: controlledOpen,
   onOpenChange
 }: AddMedicationDialogProps) {
@@ -79,10 +82,13 @@ export function AddMedicationDialog({
 
   // Local state for all medications (not persisted until Done is pressed)
   const [localStates, setLocalStates] = useState<Record<string, LocalMedicationState>>({});
+  // Pending photos per medication (keyed by medication ID)
+  const [pendingPhotos, setPendingPhotos] = useState<Record<string, File | null>>({});
 
   // Initialize local state when dialog opens
   useEffect(() => {
     if (open) {
+      setPendingPhotos({});
       const now = new Date();
       const todayDate = format(now, 'yyyy-MM-dd');
       const currentTime = format(now, 'HH:mm');
@@ -234,7 +240,15 @@ export function AddMedicationDialog({
             : undefined;
 
           // Create or update entry
-          await onToggleMedication(medicationId, state.state === 'taken', state.date, timestamp, doseToSave);
+          const entry = await onToggleMedication(medicationId, state.state === 'taken', state.date, timestamp, doseToSave);
+
+          // Upload pending photo if any
+          const photo = pendingPhotos[medicationId];
+          if (photo && entry?.id) {
+            const formData = new FormData();
+            formData.append('photo', photo);
+            await fetch(`/api/photos/medication/${entry.id}`, { method: 'POST', body: formData });
+          }
         }
       }
       setOpen(false);
@@ -485,6 +499,17 @@ export function AddMedicationDialog({
                     <span>Dose differs from expected ({expectedDose} {preset.unit || 'units'})</span>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Photo capture */}
+            {photosEnabled && (
+              <div className="mt-3">
+                <PhotoCapture
+                  entryType="medication"
+                  entryId={null}
+                  onPhotoChange={(file) => setPendingPhotos(prev => ({ ...prev, [preset.id]: file }))}
+                />
               </div>
             )}
           </div>

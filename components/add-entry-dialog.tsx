@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DynamicIcon } from '@/components/dynamic-icon';
+import { PhotoCapture } from '@/components/photo-capture';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { EntryFormData, CustomActivity } from '@/lib/types';
@@ -49,16 +50,18 @@ type FormValues = {
 };
 
 interface AddEntryDialogProps {
-  onSubmit: (data: EntryFormData) => Promise<void>;
+  onSubmit: (data: EntryFormData) => Promise<any>;
   unit: 'kg' | 'lb';
   activities: CustomActivity[];
+  photosEnabled?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
 
-export function AddEntryDialog({ onSubmit, unit, activities, open: controlledOpen, onOpenChange }: AddEntryDialogProps) {
+export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, open: controlledOpen, onOpenChange }: AddEntryDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
   const isMobile = useIsMobile();
 
   // Support both controlled and uncontrolled modes
@@ -92,12 +95,18 @@ export function AddEntryDialog({ onSubmit, unit, activities, open: controlledOpe
   const handleFormSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
     try {
-      await onSubmit({
+      const entry = await onSubmit({
         weight: data.weight,
         training: data.training,
         sleep: parseInt(data.sleep) as 0 | 1 | 2,
         timestamp: new Date(data.timestamp).toISOString()
       });
+      if (pendingPhoto && entry?.id) {
+        const formData = new FormData();
+        formData.append('photo', pendingPhoto);
+        await fetch(`/api/photos/weight/${entry.id}`, { method: 'POST', body: formData });
+      }
+      setPendingPhoto(null);
       setOpen(false);
       reset({
         weight: '' as unknown as number,
@@ -209,6 +218,15 @@ export function AddEntryDialog({ onSubmit, unit, activities, open: controlledOpe
           <p className="text-sm text-destructive">{errors.timestamp.message}</p>
         )}
       </div>
+
+      {/* Photo capture */}
+      {photosEnabled && (
+        <PhotoCapture
+          entryType="weight"
+          entryId={null}
+          onPhotoChange={setPendingPhoto}
+        />
+      )}
     </form>
   );
 

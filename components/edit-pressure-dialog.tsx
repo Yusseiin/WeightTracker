@@ -33,6 +33,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { PhotoCapture } from './photo-capture';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { type PressureEntry } from '@/lib/types';
 import { getPressureCategory } from '@/lib/pressure-utils';
@@ -44,6 +45,7 @@ interface EditPressureDialogProps {
   onOpenChange: (open: boolean) => void;
   onSave: (id: string, systolic: number, diastolic: number, timestamp?: string) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
+  photosEnabled?: boolean;
 }
 
 export function EditPressureDialog({
@@ -51,7 +53,8 @@ export function EditPressureDialog({
   open,
   onOpenChange,
   onSave,
-  onDelete
+  onDelete,
+  photosEnabled
 }: EditPressureDialogProps) {
   const [systolicInput, setSystolicInput] = useState<string>('');
   const [diastolicInput, setDiastolicInput] = useState<string>('');
@@ -182,6 +185,15 @@ export function EditPressureDialog({
             onChange={(e) => setTimeInput(e.target.value)}
           />
         </div>
+
+        {/* Photo capture */}
+        {photosEnabled && entry && (
+          <PhotoCapture
+            entryType="pressure"
+            entryId={entry.id}
+            existingPhotoUrl={`/api/photos/pressure/${entry.id}`}
+          />
+        )}
 
         {/* Delete button */}
         {onDelete && (

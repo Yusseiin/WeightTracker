@@ -10,7 +10,7 @@ interface UseWeightEntriesReturn {
   settings: UserSettings;
   isLoading: boolean;
   deletingId: string | null;
-  addEntry: (data: EntryFormData) => Promise<void>;
+  addEntry: (data: EntryFormData) => Promise<WeightEntry | undefined>;
   updateEntry: (id: string, data: Partial<EntryFormData>) => Promise<void>;
   deleteEntry: (id: string) => Promise<void>;
   updateSettings: (data: Partial<UserSettings>) => Promise<void>;
@@ -81,6 +81,8 @@ export function useWeightEntries(
         } else {
           showSuccessToast('Entry added successfully!');
         }
+
+        return newEntry;
       } else {
         showErrorToast(result.error || 'Failed to add entry');
         throw new Error(result.error);

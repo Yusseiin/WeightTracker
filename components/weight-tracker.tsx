@@ -113,7 +113,7 @@ export function WeightTracker({
   } = useInjections(initialInjectionEntries, initialLastInjection);
 
   // Get feature toggles with defaults
-  const features = settings.features || { waterEnabled: true, stepsEnabled: false, pressureEnabled: false, medicationEnabled: false, injectionsEnabled: false };
+  const features = settings.features || { waterEnabled: true, stepsEnabled: false, pressureEnabled: false, medicationEnabled: false, injectionsEnabled: false, photosEnabled: false };
 
   const [selectedEntry, setSelectedEntry] = useState<WeightEntry | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -127,6 +127,7 @@ export function WeightTracker({
   const [pressureDialogOpen, setPressureDialogOpen] = useState(false);
   const [medicationDialogOpen, setMedicationDialogOpen] = useState(false);
   const [injectionDialogOpen, setInjectionDialogOpen] = useState(false);
+  const [photoRefreshKey, setPhotoRefreshKey] = useState(0);
 
   const handleRowClick = (entry: WeightEntry) => {
     setSelectedEntry(entry);
@@ -253,6 +254,8 @@ export function WeightTracker({
               dateFormat={settings.dateFormat}
               activities={settings.activities}
               features={features}
+              photosEnabled={features.photosEnabled}
+              photoRefreshKey={photoRefreshKey}
               onUpdateSteps={features.stepsEnabled ? updateStepsById : undefined}
               onDeleteSteps={features.stepsEnabled ? deleteSteps : undefined}
               onUpdatePressure={features.pressureEnabled ? updatePressureById : undefined}
@@ -272,7 +275,7 @@ export function WeightTracker({
       <EditEntryDialog
         entry={selectedEntry}
         open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
+        onOpenChange={(open) => { setEditDialogOpen(open); if (!open) setPhotoRefreshKey(k => k + 1); }}
         onSave={updateEntry}
         onDelete={deleteEntry}
         unit={settings.unit}
@@ -280,6 +283,7 @@ export function WeightTracker({
         waterEntries={waterEntries}
         onUpdateWater={updateWater}
         activities={settings.activities}
+        photosEnabled={features.photosEnabled}
       />
 
       {/* Floating Button Bar */}
@@ -298,8 +302,9 @@ export function WeightTracker({
         onSubmit={addEntry}
         unit={settings.unit}
         activities={settings.activities}
+        photosEnabled={features.photosEnabled}
         open={weightDialogOpen}
-        onOpenChange={setWeightDialogOpen}
+        onOpenChange={(open) => { setWeightDialogOpen(open); if (!open) setPhotoRefreshKey(k => k + 1); }}
       />
 
       {/* Add Water Dialog/Drawer - only show if enabled */}
@@ -321,8 +326,9 @@ export function WeightTracker({
         <AddStepsDialog
           onAddSteps={createSteps}
           isLoading={isStepsLoading}
+          photosEnabled={features.photosEnabled}
           open={stepsDialogOpen}
-          onOpenChange={setStepsDialogOpen}
+          onOpenChange={(open) => { setStepsDialogOpen(open); if (!open) setPhotoRefreshKey(k => k + 1); }}
         />
       )}
 
@@ -331,8 +337,9 @@ export function WeightTracker({
         <AddPressureDialog
           onAddPressure={createPressure}
           isLoading={isPressureLoading}
+          photosEnabled={features.photosEnabled}
           open={pressureDialogOpen}
-          onOpenChange={setPressureDialogOpen}
+          onOpenChange={(open) => { setPressureDialogOpen(open); if (!open) setPhotoRefreshKey(k => k + 1); }}
         />
       )}
 
@@ -344,8 +351,9 @@ export function WeightTracker({
           onToggleMedication={createMedication}
           onDeleteMedication={deleteMedication}
           isLoading={isMedicationLoading}
+          photosEnabled={features.photosEnabled}
           open={medicationDialogOpen}
-          onOpenChange={setMedicationDialogOpen}
+          onOpenChange={(open) => { setMedicationDialogOpen(open); if (!open) setPhotoRefreshKey(k => k + 1); }}
         />
       )}
 
@@ -357,8 +365,9 @@ export function WeightTracker({
           injectionEntries={injectionEntries}
           onAddInjection={createInjection}
           isLoading={isInjectionLoading}
+          photosEnabled={features.photosEnabled}
           open={injectionDialogOpen}
-          onOpenChange={setInjectionDialogOpen}
+          onOpenChange={(open) => { setInjectionDialogOpen(open); if (!open) setPhotoRefreshKey(k => k + 1); }}
           onUpdateNextRotation={handleUpdateNextRotation}
           nextRotationOverrides={settings.injectionSettings?.nextRotationOverrides || {}}
         />

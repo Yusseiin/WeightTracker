@@ -8,7 +8,7 @@ interface UseStepsReturn {
   todaySteps: StepsEntry[];
   stepsEntries: StepsEntry[];
   isLoading: boolean;
-  createSteps: (steps: number, date?: string, timestamp?: string) => Promise<void>;
+  createSteps: (steps: number, date?: string, timestamp?: string) => Promise<StepsEntry | undefined>;
   updateStepsById: (id: string, steps: number, timestamp?: string) => Promise<void>;
   deleteSteps: (id: string) => Promise<void>;
   refreshSteps: () => Promise<void>;
@@ -81,6 +81,8 @@ export function useSteps(
         );
 
         showSuccessToast(`Steps: ${steps.toLocaleString()}`);
+
+        return result.data as StepsEntry;
       } else {
         // Rollback
         setTodaySteps(previousTodaySteps);

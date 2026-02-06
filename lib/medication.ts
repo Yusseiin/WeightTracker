@@ -170,5 +170,8 @@ export async function deleteMedicationById(userId: string, id: string): Promise<
 
   entries.splice(existingIndex, 1);
   await saveMedicationEntries(userId, entries);
+  // Clean up associated photo if any
+  const { deletePhoto } = await import('./photos');
+  await deletePhoto(userId, 'medication', id);
   return true;
 }

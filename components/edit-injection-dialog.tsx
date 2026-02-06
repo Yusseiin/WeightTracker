@@ -41,6 +41,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { PhotoCapture } from './photo-capture';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { InjectionEntry, InjectionSettings } from '@/lib/types';
 
@@ -51,6 +52,7 @@ interface EditInjectionDialogProps {
   onOpenChange: (open: boolean) => void;
   onSave: (id: string, updates: { dose?: number; siteId?: string; timestamp?: string; date?: string; notes?: string }) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
+  photosEnabled?: boolean;
 }
 
 export function EditInjectionDialog({
@@ -59,7 +61,8 @@ export function EditInjectionDialog({
   open,
   onOpenChange,
   onSave,
-  onDelete
+  onDelete,
+  photosEnabled
 }: EditInjectionDialogProps) {
   const [selectedDose, setSelectedDose] = useState<number | null>(null);
   const [selectedSiteId, setSelectedSiteId] = useState<string>('');
@@ -222,6 +225,15 @@ export function EditInjectionDialog({
           rows={2}
         />
       </div>
+
+      {/* Photo capture */}
+      {photosEnabled && entry && (
+        <PhotoCapture
+          entryType="injection"
+          entryId={entry.id}
+          existingPhotoUrl={`/api/photos/injection/${entry.id}`}
+        />
+      )}
 
       {/* Delete button */}
       {onDelete && (

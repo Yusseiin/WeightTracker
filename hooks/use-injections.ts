@@ -9,7 +9,7 @@ interface UseInjectionsReturn {
   injectionEntries: InjectionEntry[];
   lastInjection: InjectionEntry | null;
   isLoading: boolean;
-  createInjection: (medicationId: string, dose: number, siteId: string, date?: string, timestamp?: string, notes?: string) => Promise<void>;
+  createInjection: (medicationId: string, dose: number, siteId: string, date?: string, timestamp?: string, notes?: string) => Promise<InjectionEntry | undefined>;
   updateInjectionById: (id: string, updates: { dose?: number; siteId?: string; timestamp?: string; date?: string; notes?: string }) => Promise<void>;
   deleteInjection: (id: string) => Promise<void>;
   refreshInjections: () => Promise<void>;
@@ -115,6 +115,8 @@ export function useInjections(
         setInjectionEntries(replaceEntry);
 
         showSuccessToast('Injection logged');
+
+        return result.data as InjectionEntry;
       } else {
         // Rollback
         setTodayInjections(previousTodayInjections);

@@ -33,6 +33,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { PhotoCapture } from './photo-capture';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DynamicIcon } from './dynamic-icon';
 import { type MedicationEntry, type MedicationPreset } from '@/lib/types';
@@ -45,6 +46,7 @@ interface EditMedicationDialogProps {
   onOpenChange: (open: boolean) => void;
   onSave: (id: string, taken: boolean, timestamp?: string, date?: string, dose?: number | null) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
+  photosEnabled?: boolean;
 }
 
 export function EditMedicationDialog({
@@ -53,7 +55,8 @@ export function EditMedicationDialog({
   open,
   onOpenChange,
   onSave,
-  onDelete
+  onDelete,
+  photosEnabled
 }: EditMedicationDialogProps) {
   const [takenInput, setTakenInput] = useState(false);
   const [dateInput, setDateInput] = useState<string>('');
@@ -239,6 +242,15 @@ export function EditMedicationDialog({
           />
         </div>
       </div>
+
+      {/* Photo capture */}
+      {photosEnabled && entry && (
+        <PhotoCapture
+          entryType="medication"
+          entryId={entry.id}
+          existingPhotoUrl={`/api/photos/medication/${entry.id}`}
+        />
+      )}
 
       {/* Delete button */}
       {onDelete && (

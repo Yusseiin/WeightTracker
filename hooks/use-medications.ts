@@ -8,7 +8,7 @@ interface UseMedicationsReturn {
   todayMedications: MedicationEntry[];
   medicationEntries: MedicationEntry[];
   isLoading: boolean;
-  createMedication: (medicationId: string, taken: boolean, date?: string, timestamp?: string, dose?: number | null) => Promise<void>;
+  createMedication: (medicationId: string, taken: boolean, date?: string, timestamp?: string, dose?: number | null) => Promise<MedicationEntry | undefined>;
   updateMedicationById: (id: string, taken: boolean, timestamp?: string, date?: string, dose?: number | null) => Promise<void>;
   deleteMedication: (id: string) => Promise<void>;
   refreshMedications: () => Promise<void>;
@@ -105,6 +105,8 @@ export function useMedications(
         setMedicationEntries(replaceOrAdd);
 
         showSuccessToast(taken ? 'Medication taken' : 'Medication updated');
+
+        return result.data as MedicationEntry;
       } else {
         // Rollback
         setTodayMedications(previousTodayMedications);

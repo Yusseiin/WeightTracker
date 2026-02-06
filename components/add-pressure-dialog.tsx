@@ -28,19 +28,22 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getPressureCategory } from '@/lib/pressure-utils';
 import { cn } from '@/lib/utils';
+import { PhotoCapture } from './photo-capture';
 
 interface AddPressureDialogProps {
-  onAddPressure: (systolic: number, diastolic: number, date?: string, timestamp?: string) => Promise<void>;
+  onAddPressure: (systolic: number, diastolic: number, date?: string, timestamp?: string) => Promise<any>;
   isLoading?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  photosEnabled?: boolean;
 }
 
 export function AddPressureDialog({
   onAddPressure,
   isLoading = false,
   open: controlledOpen,
-  onOpenChange
+  onOpenChange,
+  photosEnabled
 }: AddPressureDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
 
@@ -53,6 +56,7 @@ export function AddPressureDialog({
   const [dateInput, setDateInput] = useState<string>('');
   const [timeInput, setTimeInput] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
   const isMobile = useIsMobile();
 
   // Initialize inputs when dialog opens
@@ -62,6 +66,7 @@ export function AddPressureDialog({
       setDiastolicInput('');
       setDateInput(format(new Date(), 'yyyy-MM-dd'));
       setTimeInput(format(new Date(), 'HH:mm'));
+      setPendingPhoto(null);
     }
   }, [open]);
 
@@ -87,7 +92,13 @@ export function AddPressureDialog({
 
     setIsSubmitting(true);
     try {
-      await onAddPressure(systolic, diastolic, dateInput, timestamp);
+      const entry = await onAddPressure(systolic, diastolic, dateInput, timestamp);
+      if (pendingPhoto && entry?.id) {
+        const formData = new FormData();
+        formData.append('photo', pendingPhoto);
+        await fetch(`/api/photos/pressure/${entry.id}`, { method: 'POST', body: formData });
+      }
+      setPendingPhoto(null);
       setOpen(false);
     } finally {
       setIsSubmitting(false);
@@ -171,6 +182,11 @@ export function AddPressureDialog({
           </div>
         </div>
       </div>
+
+      {/* Photo capture */}
+      {photosEnabled && (
+        <PhotoCapture entryType="pressure" entryId={null} onPhotoChange={setPendingPhoto} />
+      )}
     </div>
   );
 

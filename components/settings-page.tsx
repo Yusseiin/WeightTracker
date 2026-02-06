@@ -560,6 +560,21 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                     Enable injection tracking (GLP-1, insulin, etc.)
                   </Label>
                 </div>
+
+                {/* Photo Attachments */}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="photosEnabled"
+                    checked={localFeatures.photosEnabled}
+                    onCheckedChange={(checked) => setLocalFeatures(prev => ({
+                      ...prev,
+                      photosEnabled: checked === true
+                    }))}
+                  />
+                  <Label htmlFor="photosEnabled" className="cursor-pointer">
+                    Enable photo attachments on entries
+                  </Label>
+                </div>
               </CardContent>
             </Card>
 

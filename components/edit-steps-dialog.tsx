@@ -33,6 +33,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { PhotoCapture } from './photo-capture';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { type StepsEntry } from '@/lib/types';
 
@@ -42,6 +43,7 @@ interface EditStepsDialogProps {
   onOpenChange: (open: boolean) => void;
   onSave: (id: string, steps: number, timestamp?: string) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
+  photosEnabled?: boolean;
 }
 
 export function EditStepsDialog({
@@ -49,7 +51,8 @@ export function EditStepsDialog({
   open,
   onOpenChange,
   onSave,
-  onDelete
+  onDelete,
+  photosEnabled
 }: EditStepsDialogProps) {
   const [stepsInput, setStepsInput] = useState<string>('');
   const [timeInput, setTimeInput] = useState<string>('');
@@ -148,6 +151,15 @@ export function EditStepsDialog({
             onChange={(e) => setTimeInput(e.target.value)}
           />
         </div>
+
+        {/* Photo capture */}
+        {photosEnabled && entry && (
+          <PhotoCapture
+            entryType="steps"
+            entryId={entry.id}
+            existingPhotoUrl={`/api/photos/steps/${entry.id}`}
+          />
+        )}
 
         {/* Delete button */}
         {onDelete && (

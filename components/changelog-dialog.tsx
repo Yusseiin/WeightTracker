@@ -22,6 +22,13 @@ interface ChangelogEntry {
 const changelog: ChangelogEntry[] = [
   {
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
+    date: "2026-02-06",
+    changes: [
+      { type: "added", description: "Added the possibility to add a picture to each record" },
+    ],
+  },
+  {
+    version: "v0.0.13",
     date: "2026-02-03",
     changes: [
       { type: "fixed", description: "Today Recap now only shows medications due today based on schedule" },

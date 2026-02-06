@@ -132,6 +132,9 @@ export async function deletePressureById(userId: string, id: string): Promise<bo
 
   entries.splice(existingIndex, 1);
   await savePressureEntries(userId, entries);
+  // Clean up associated photo if any
+  const { deletePhoto } = await import('./photos');
+  await deletePhoto(userId, 'pressure', id);
   return true;
 }
 
