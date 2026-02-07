@@ -24,6 +24,14 @@ const changelog: ChangelogEntry[] = [
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
     date: "2026-02-06",
     changes: [
+      { type: "added", description: "Added the possibility to add multi picture" },
+      { type: "added", description: "Added the possibility to compare picture" },
+    ],
+  },
+  {
+    version: "v0.0.14",
+    date: "2026-02-06",
+    changes: [
       { type: "added", description: "Added the possibility to add a picture to each record" },
     ],
   },

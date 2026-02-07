@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
-import { HeartPulse, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { HeartPulse, Trash2, ArrowLeftRight } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -61,6 +62,7 @@ export function EditPressureDialog({
   const [timeInput, setTimeInput] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const router = useRouter();
   const isMobile = useIsMobile();
 
   // Format time from ISO timestamp for display
@@ -188,11 +190,22 @@ export function EditPressureDialog({
 
         {/* Photo capture */}
         {photosEnabled && entry && (
-          <PhotoCapture
-            entryType="pressure"
-            entryId={entry.id}
-            existingPhotoUrl={`/api/photos/pressure/${entry.id}`}
-          />
+          <>
+            <PhotoCapture
+              entryType="pressure"
+              entryId={entry.id}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => router.push(`/compare-photos?type=pressure&entry=${entry.id}`)}
+            >
+              <ArrowLeftRight className="h-4 w-4 mr-1" />
+              Compare Photos
+            </Button>
+          </>
         )}
 
         {/* Delete button */}

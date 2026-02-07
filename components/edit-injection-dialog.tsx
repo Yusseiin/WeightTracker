@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Syringe, MapPin, FileText, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Syringe, MapPin, FileText, Trash2, ArrowLeftRight } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -71,6 +72,7 @@ export function EditInjectionDialog({
   const [notesInput, setNotesInput] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const router = useRouter();
   const isMobile = useIsMobile();
 
   // Get the medication for this entry
@@ -228,11 +230,22 @@ export function EditInjectionDialog({
 
       {/* Photo capture */}
       {photosEnabled && entry && (
-        <PhotoCapture
-          entryType="injection"
-          entryId={entry.id}
-          existingPhotoUrl={`/api/photos/injection/${entry.id}`}
-        />
+        <>
+          <PhotoCapture
+            entryType="injection"
+            entryId={entry.id}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={() => router.push(`/compare-photos?type=injection&entry=${entry.id}`)}
+          >
+            <ArrowLeftRight className="h-4 w-4 mr-1" />
+            Compare Photos
+          </Button>
+        </>
       )}
 
       {/* Delete button */}

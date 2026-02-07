@@ -2,10 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Droplets, Scale, Footprints, HeartPulse, Pill, Syringe, Info, Camera, Maximize2, Download } from 'lucide-react';
+import { Droplets, Scale, Footprints, HeartPulse, Pill, Syringe, Info, Camera, Maximize2, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  type CarouselApi,
+} from '@/components/ui/carousel';
 import { DynamicIcon } from '@/components/dynamic-icon';
 import { formatWaterAmount } from '@/lib/water-utils';
 import { formatDateForTable } from '@/lib/date-utils';
@@ -61,6 +67,62 @@ function SleepIndicator({ quality }: { quality: number }) {
   return <span className={`w-3 h-3 rounded-full inline-block ${colors[quality]}`} />;
 }
 
+function PhotoPopover({ entryType, entryId, onFullscreen }: { entryType: string; entryId: string; onFullscreen: (urls: string[], startIndex: number) => void }) {
+  const [indices, setIndices] = useState<number[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  const handleOpen = (open: boolean) => {
+    if (open && !loaded) {
+      fetch(`/api/photos/${entryType}/${entryId}?list=true`)
+        .then(r => r.json())
+        .then(result => {
+          if (result.success) setIndices(result.data);
+        })
+        .catch(() => {})
+        .finally(() => setLoaded(true));
+    }
+  };
+
+  const allUrls = indices.map(idx => `/api/photos/${entryType}/${entryId}?index=${idx}`);
+
+  return (
+    <Popover onOpenChange={handleOpen}>
+      <PopoverTrigger asChild>
+        <span onClick={(e) => e.stopPropagation()} className="inline-flex cursor-pointer">
+          <Camera className="h-4 w-4 text-muted-foreground" />
+        </span>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto max-w-xs p-2" side="right">
+        <div className={indices.length > 1 ? "grid grid-cols-2 gap-1.5" : ""}>
+          {indices.map((idx, i) => {
+            const url = allUrls[i];
+            return (
+              <div key={idx} className="relative">
+                <img
+                  src={url}
+                  alt={`Photo ${idx + 1}`}
+                  className="max-w-36 max-h-36 rounded-md object-contain"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+                <button
+                  type="button"
+                  onClick={() => onFullscreen(allUrls, i)}
+                  className="absolute bottom-1 right-1 bg-black/60 text-white rounded-full p-0.5 h-5 w-5 flex items-center justify-center hover:bg-black/80"
+                >
+                  <Maximize2 className="h-3 w-3" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+        {loaded && indices.length === 0 && (
+          <p className="text-xs text-muted-foreground">No photos</p>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function EntriesTable({
   entries,
   unit,
@@ -92,11 +154,13 @@ export function EntriesTable({
   const [editingPressureEntry, setEditingPressureEntry] = useState<PressureEntry | null>(null);
   const [editingMedicationEntry, setEditingMedicationEntry] = useState<MedicationEntry | null>(null);
   const [editingInjectionEntry, setEditingInjectionEntry] = useState<InjectionEntry | null>(null);
-  const [photoIds, setPhotoIds] = useState<Set<string>>(new Set());
-  const [fullscreenPhoto, setFullscreenPhoto] = useState<string | null>(null);
+  const [photoCounts, setPhotoCounts] = useState<Map<string, number>>(new Map());
+  const [fullscreenPhotos, setFullscreenPhotos] = useState<{ urls: string[]; startIndex: number } | null>(null);
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+  const [carouselCurrent, setCarouselCurrent] = useState(0);
   const [internalRefreshKey, setInternalRefreshKey] = useState(0);
 
-  const fetchPhotoIds = useCallback(() => {
+  const fetchPhotoCounts = useCallback(() => {
     if (!photosEnabled) return;
     const typeMap: Record<TableView, string> = {
       weight: 'weight', steps: 'steps', pressure: 'pressure',
@@ -107,14 +171,14 @@ export function EntriesTable({
     fetch(`/api/photos?type=${entryType}`)
       .then(r => r.json())
       .then(result => {
-        if (result.success) setPhotoIds(new Set(result.data));
+        if (result.success) setPhotoCounts(new Map(Object.entries(result.data as Record<string, number>)));
       })
       .catch(() => {});
   }, [currentView, photosEnabled]);
 
   useEffect(() => {
-    fetchPhotoIds();
-  }, [fetchPhotoIds, photoRefreshKey, internalRefreshKey]);
+    fetchPhotoCounts();
+  }, [fetchPhotoCounts, photoRefreshKey, internalRefreshKey]);
 
   // Create a map of water entries by date for quick lookup
   const waterByDate = useMemo(() => {
@@ -262,31 +326,8 @@ export function EntriesTable({
             >
               {photosEnabled && (
                 <td className="py-2 px-1 text-center w-8">
-                  {photoIds.has(entry.id) && (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <span onClick={(e) => e.stopPropagation()} className="inline-flex cursor-pointer">
-                          <Camera className="h-4 w-4 text-muted-foreground" />
-                        </span>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto max-w-xs p-2" side="right">
-                        <div className="relative">
-                          <img
-                            src={`/api/photos/weight/${entry.id}`}
-                            alt="Entry photo"
-                            className="max-w-62.5 max-h-62.5 rounded-md object-contain"
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setFullscreenPhoto(`/api/photos/weight/${entry.id}`)}
-                            className="absolute bottom-1 right-1 bg-black/60 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-black/80"
-                          >
-                            <Maximize2 className="h-3 w-3" />
-                          </button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                  {(photoCounts.get(entry.id) || 0) > 0 && (
+                    <PhotoPopover entryType="weight" entryId={entry.id} onFullscreen={(urls, startIndex) => { setFullscreenPhotos({ urls, startIndex }); setCarouselCurrent(startIndex); }} />
                   )}
                 </td>
               )}
@@ -363,30 +404,8 @@ export function EntriesTable({
               >
                 {photosEnabled && (
                   <td className="py-2 px-1 text-center w-8">
-                    {photoIds.has(entry.id) && (
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <span onClick={(e) => e.stopPropagation()} className="inline-flex cursor-pointer">
-                            <Camera className="h-4 w-4 text-muted-foreground" />
-                          </span>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto max-w-xs p-2" side="right">
-                          <div className="relative">
-                            <img
-                              src={`/api/photos/steps/${entry.id}`}
-                              alt="Entry photo"
-                              className="max-w-62.5 max-h-62.5 rounded-md object-contain"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setFullscreenPhoto(`/api/photos/steps/${entry.id}`)}
-                              className="absolute bottom-1 right-1 bg-black/60 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-black/80"
-                            >
-                              <Maximize2 className="h-3 w-3" />
-                            </button>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
+                    {(photoCounts.get(entry.id) || 0) > 0 && (
+                      <PhotoPopover entryType="steps" entryId={entry.id} onFullscreen={(urls, startIndex) => { setFullscreenPhotos({ urls, startIndex }); setCarouselCurrent(startIndex); }} />
                     )}
                   </td>
                 )}
@@ -449,30 +468,8 @@ export function EntriesTable({
               >
                 {photosEnabled && (
                   <td className="py-2 px-1 text-center w-8">
-                    {photoIds.has(entry.id) && (
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <span onClick={(e) => e.stopPropagation()} className="inline-flex cursor-pointer">
-                            <Camera className="h-4 w-4 text-muted-foreground" />
-                          </span>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto max-w-xs p-2" side="right">
-                          <div className="relative">
-                            <img
-                              src={`/api/photos/pressure/${entry.id}`}
-                              alt="Entry photo"
-                              className="max-w-62.5 max-h-62.5 rounded-md object-contain"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setFullscreenPhoto(`/api/photos/pressure/${entry.id}`)}
-                              className="absolute bottom-1 right-1 bg-black/60 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-black/80"
-                            >
-                              <Maximize2 className="h-3 w-3" />
-                            </button>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
+                    {(photoCounts.get(entry.id) || 0) > 0 && (
+                      <PhotoPopover entryType="pressure" entryId={entry.id} onFullscreen={(urls, startIndex) => { setFullscreenPhotos({ urls, startIndex }); setCarouselCurrent(startIndex); }} />
                     )}
                   </td>
                 )}
@@ -533,30 +530,8 @@ export function EntriesTable({
               >
                 {photosEnabled && (
                   <td className="py-2 px-1 text-center w-8">
-                    {photoIds.has(entry.id) && (
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <span onClick={(e) => e.stopPropagation()} className="inline-flex cursor-pointer">
-                            <Camera className="h-4 w-4 text-muted-foreground" />
-                          </span>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto max-w-xs p-2" side="right">
-                          <div className="relative">
-                            <img
-                              src={`/api/photos/medication/${entry.id}`}
-                              alt="Entry photo"
-                              className="max-w-62.5 max-h-62.5 rounded-md object-contain"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setFullscreenPhoto(`/api/photos/medication/${entry.id}`)}
-                              className="absolute bottom-1 right-1 bg-black/60 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-black/80"
-                            >
-                              <Maximize2 className="h-3 w-3" />
-                            </button>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
+                    {(photoCounts.get(entry.id) || 0) > 0 && (
+                      <PhotoPopover entryType="medication" entryId={entry.id} onFullscreen={(urls, startIndex) => { setFullscreenPhotos({ urls, startIndex }); setCarouselCurrent(startIndex); }} />
                     )}
                   </td>
                 )}
@@ -664,30 +639,8 @@ export function EntriesTable({
                 </td>
                 {photosEnabled && (
                   <td className="py-2 px-1 text-center w-8">
-                    {photoIds.has(entry.id) && (
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <span onClick={(e) => e.stopPropagation()} className="inline-flex cursor-pointer">
-                            <Camera className="h-4 w-4 text-muted-foreground" />
-                          </span>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto max-w-xs p-2" side="right">
-                          <div className="relative">
-                            <img
-                              src={`/api/photos/injection/${entry.id}`}
-                              alt="Entry photo"
-                              className="max-w-62.5 max-h-62.5 rounded-md object-contain"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setFullscreenPhoto(`/api/photos/injection/${entry.id}`)}
-                              className="absolute bottom-1 right-1 bg-black/60 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-black/80"
-                            >
-                              <Maximize2 className="h-3 w-3" />
-                            </button>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
+                    {(photoCounts.get(entry.id) || 0) > 0 && (
+                      <PhotoPopover entryType="injection" entryId={entry.id} onFullscreen={(urls, startIndex) => { setFullscreenPhotos({ urls, startIndex }); setCarouselCurrent(startIndex); }} />
                     )}
                   </td>
                 )}
@@ -814,49 +767,114 @@ export function EntriesTable({
       )}
 
       {/* Fullscreen Photo Overlay */}
-      {fullscreenPhoto && (
+      {fullscreenPhotos && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
-          onClick={() => setFullscreenPhoto(null)}
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90"
+          onClick={() => setFullscreenPhotos(null)}
         >
-          <div className="absolute top-4 right-4 flex gap-2">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                fetch(fullscreenPhoto)
-                  .then(r => r.blob())
-                  .then(blob => {
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'photo.jpg';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                  })
-                  .catch(() => {});
-              }}
-              className="bg-white/20 text-white rounded-full p-2 hover:bg-white/30"
-            >
-              <Download className="h-6 w-6" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setFullscreenPhoto(null)}
-              className="bg-white/20 text-white rounded-full p-2 hover:bg-white/30"
-            >
-              <X className="h-6 w-6" />
-            </button>
+          {/* Top bar */}
+          <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
+            {fullscreenPhotos.urls.length > 1 ? (
+              <span className="text-white/80 text-sm">
+                {carouselCurrent + 1} / {fullscreenPhotos.urls.length}
+              </span>
+            ) : (
+              <span />
+            )}
+            <div className="flex gap-2">
+              {fullscreenPhotos.urls.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); carouselApi?.scrollPrev(); }}
+                    disabled={!carouselApi?.canScrollPrev()}
+                    className="bg-white/20 text-white rounded-full p-2 hover:bg-white/30 disabled:opacity-30"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); carouselApi?.scrollNext(); }}
+                    disabled={!carouselApi?.canScrollNext()}
+                    className="bg-white/20 text-white rounded-full p-2 hover:bg-white/30 disabled:opacity-30"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </>
+              )}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const url = fullscreenPhotos.urls[carouselCurrent];
+                  if (!url) return;
+                  fetch(url)
+                    .then(r => r.blob())
+                    .then(blob => {
+                      const downloadUrl = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = downloadUrl;
+                      a.download = 'photo.jpg';
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(downloadUrl);
+                    })
+                    .catch(() => {});
+                }}
+                className="bg-white/20 text-white rounded-full p-2 hover:bg-white/30"
+              >
+                <Download className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setFullscreenPhotos(null)}
+                className="bg-white/20 text-white rounded-full p-2 hover:bg-white/30"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </div>
-          <img
-            src={fullscreenPhoto}
-            alt="Full screen photo"
-            className="max-w-[95vw] max-h-[90vh] object-contain rounded-md"
-            onClick={(e) => e.stopPropagation()}
-            onError={() => setFullscreenPhoto(null)}
-          />
+
+          {fullscreenPhotos.urls.length > 1 ? (
+            <div className="w-full max-w-[95vw]" onClick={(e) => e.stopPropagation()}>
+              <Carousel
+                opts={{ startIndex: fullscreenPhotos.startIndex, loop: false }}
+                setApi={(api) => {
+                  setCarouselApi(api);
+                  if (api) {
+                    const onSelect = () => setCarouselCurrent(api.selectedScrollSnap());
+                    api.on('select', onSelect);
+                    onSelect();
+                  }
+                }}
+                className="w-full"
+              >
+                <CarouselContent>
+                  {fullscreenPhotos.urls.map((url, idx) => (
+                    <CarouselItem key={idx}>
+                      <div className="flex items-center justify-center h-[80vh]">
+                        <img
+                          src={url}
+                          alt={`Photo ${idx + 1}`}
+                          className="max-w-full max-h-full object-contain rounded-md"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+              </Carousel>
+            </div>
+          ) : (
+            <img
+              src={fullscreenPhotos.urls[0]}
+              alt="Full screen photo"
+              className="max-w-[95vw] max-h-[90vh] object-contain rounded-md"
+              onClick={(e) => e.stopPropagation()}
+              onError={() => setFullscreenPhotos(null)}
+            />
+          )}
         </div>
       )}
     </Card>

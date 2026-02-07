@@ -56,7 +56,7 @@ export function AddPressureDialog({
   const [dateInput, setDateInput] = useState<string>('');
   const [timeInput, setTimeInput] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
+  const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
   const isMobile = useIsMobile();
 
   // Initialize inputs when dialog opens
@@ -66,7 +66,7 @@ export function AddPressureDialog({
       setDiastolicInput('');
       setDateInput(format(new Date(), 'yyyy-MM-dd'));
       setTimeInput(format(new Date(), 'HH:mm'));
-      setPendingPhoto(null);
+      setPendingPhotos([]);
     }
   }, [open]);
 
@@ -93,12 +93,14 @@ export function AddPressureDialog({
     setIsSubmitting(true);
     try {
       const entry = await onAddPressure(systolic, diastolic, dateInput, timestamp);
-      if (pendingPhoto && entry?.id) {
-        const formData = new FormData();
-        formData.append('photo', pendingPhoto);
-        await fetch(`/api/photos/pressure/${entry.id}`, { method: 'POST', body: formData });
+      if (pendingPhotos.length > 0 && entry?.id) {
+        for (const photo of pendingPhotos) {
+          const formData = new FormData();
+          formData.append('photo', photo);
+          await fetch(`/api/photos/pressure/${entry.id}`, { method: 'POST', body: formData });
+        }
       }
-      setPendingPhoto(null);
+      setPendingPhotos([]);
       setOpen(false);
     } finally {
       setIsSubmitting(false);
@@ -185,7 +187,7 @@ export function AddPressureDialog({
 
       {/* Photo capture */}
       {photosEnabled && (
-        <PhotoCapture entryType="pressure" entryId={null} onPhotoChange={setPendingPhoto} />
+        <PhotoCapture entryType="pressure" entryId={null} onPhotosChange={setPendingPhotos} />
       )}
     </div>
   );

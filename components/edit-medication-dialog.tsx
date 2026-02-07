@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Pill, Clock, Calendar, Trash2, Check, X, AlertTriangle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Pill, Clock, Calendar, Trash2, Check, X, AlertTriangle, ArrowLeftRight } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -64,6 +65,7 @@ export function EditMedicationDialog({
   const [doseInput, setDoseInput] = useState<number | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const router = useRouter();
   const isMobile = useIsMobile();
 
   // Get the medication preset info
@@ -245,11 +247,22 @@ export function EditMedicationDialog({
 
       {/* Photo capture */}
       {photosEnabled && entry && (
-        <PhotoCapture
-          entryType="medication"
-          entryId={entry.id}
-          existingPhotoUrl={`/api/photos/medication/${entry.id}`}
-        />
+        <>
+          <PhotoCapture
+            entryType="medication"
+            entryId={entry.id}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={() => router.push(`/compare-photos?type=medication&entry=${entry.id}`)}
+          >
+            <ArrowLeftRight className="h-4 w-4 mr-1" />
+            Compare Photos
+          </Button>
+        </>
       )}
 
       {/* Delete button */}

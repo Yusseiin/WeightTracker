@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, getApiKeyUser } from '@/lib/auth';
-import { savePhoto, getPhoto, deletePhoto, isValidEntryType } from '@/lib/photos';
+import { savePhoto, getPhoto, deletePhotoByIndex, deletePhotos, listPhotosForEntry, isValidEntryType } from '@/lib/photos';
 import type { PhotoEntryType } from '@/lib/photos';
 
 const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB
@@ -9,7 +9,8 @@ type RouteContext = {
   params: Promise<{ entryType: string; entryId: string }>;
 };
 
-// GET /api/photos/[entryType]/[entryId] -- Serve photo
+// GET /api/photos/[entryType]/[entryId]?index=N -- Serve photo
+// GET /api/photos/[entryType]/[entryId]?list=true -- List photo indices
 export async function GET(request: NextRequest, context: RouteContext) {
   try {
     const session = await getSession();
@@ -23,7 +24,17 @@ export async function GET(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ success: false, error: 'Invalid entry type' }, { status: 400 });
     }
 
-    const photo = await getPhoto(user.username, entryType as PhotoEntryType, entryId);
+    const { searchParams } = new URL(request.url);
+
+    // List mode: return array of available indices
+    if (searchParams.get('list') === 'true') {
+      const indices = await listPhotosForEntry(user.username, entryType as PhotoEntryType, entryId);
+      return NextResponse.json({ success: true, data: indices });
+    }
+
+    // Serve specific photo by index
+    const index = parseInt(searchParams.get('index') || '0');
+    const photo = await getPhoto(user.username, entryType as PhotoEntryType, entryId, index);
     if (!photo) {
       return NextResponse.json({ success: false, error: 'Photo not found' }, { status: 404 });
     }
@@ -42,7 +53,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 }
 
-// POST /api/photos/[entryType]/[entryId] -- Upload photo
+// POST /api/photos/[entryType]/[entryId] -- Upload photo (appends at next index)
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const session = await getSession();
@@ -67,9 +78,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const url = await savePhoto(user.username, entryType as PhotoEntryType, entryId, buffer);
+    const index = await savePhoto(user.username, entryType as PhotoEntryType, entryId, buffer);
 
-    return NextResponse.json({ success: true, data: { url } });
+    return NextResponse.json({ success: true, data: { index } });
   } catch (error) {
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : 'Failed to upload photo' },
@@ -78,7 +89,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 }
 
-// DELETE /api/photos/[entryType]/[entryId] -- Delete photo
+// DELETE /api/photos/[entryType]/[entryId]?index=N -- Delete specific photo
+// DELETE /api/photos/[entryType]/[entryId] -- Delete all photos for entry
 export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
     const session = await getSession();
@@ -92,7 +104,17 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ success: false, error: 'Invalid entry type' }, { status: 400 });
     }
 
-    await deletePhoto(user.username, entryType as PhotoEntryType, entryId);
+    const { searchParams } = new URL(request.url);
+    const indexParam = searchParams.get('index');
+
+    if (indexParam !== null) {
+      // Delete specific photo by index
+      await deletePhotoByIndex(user.username, entryType as PhotoEntryType, entryId, parseInt(indexParam));
+    } else {
+      // Delete all photos for entry
+      await deletePhotos(user.username, entryType as PhotoEntryType, entryId);
+    }
+
     return NextResponse.json({ success: true, data: { deleted: true } });
   } catch (error) {
     return NextResponse.json(

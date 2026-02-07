@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Droplets } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Droplets, ArrowLeftRight } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -77,6 +78,7 @@ export function EditEntryDialog({
   const [water, setWater] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const router = useRouter();
   const isMobile = useIsMobile();
 
   // Reset form when entry changes
@@ -271,11 +273,22 @@ export function EditEntryDialog({
 
       {/* Photo capture */}
       {photosEnabled && entry && (
-        <PhotoCapture
-          entryType="weight"
-          entryId={entry.id}
-          existingPhotoUrl={`/api/photos/weight/${entry.id}`}
-        />
+        <>
+          <PhotoCapture
+            entryType="weight"
+            entryId={entry.id}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={() => router.push(`/compare-photos?type=weight&entry=${entry.id}`)}
+          >
+            <ArrowLeftRight className="h-4 w-4 mr-1" />
+            Compare Photos
+          </Button>
+        </>
       )}
     </div>
   );

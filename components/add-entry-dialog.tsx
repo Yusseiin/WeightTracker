@@ -61,7 +61,7 @@ interface AddEntryDialogProps {
 export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, open: controlledOpen, onOpenChange }: AddEntryDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
+  const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
   const isMobile = useIsMobile();
 
   // Support both controlled and uncontrolled modes
@@ -101,12 +101,14 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, open
         sleep: parseInt(data.sleep) as 0 | 1 | 2,
         timestamp: new Date(data.timestamp).toISOString()
       });
-      if (pendingPhoto && entry?.id) {
-        const formData = new FormData();
-        formData.append('photo', pendingPhoto);
-        await fetch(`/api/photos/weight/${entry.id}`, { method: 'POST', body: formData });
+      if (pendingPhotos.length > 0 && entry?.id) {
+        for (const photo of pendingPhotos) {
+          const formData = new FormData();
+          formData.append('photo', photo);
+          await fetch(`/api/photos/weight/${entry.id}`, { method: 'POST', body: formData });
+        }
       }
-      setPendingPhoto(null);
+      setPendingPhotos([]);
       setOpen(false);
       reset({
         weight: '' as unknown as number,
@@ -224,7 +226,7 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, open
         <PhotoCapture
           entryType="weight"
           entryId={null}
-          onPhotoChange={setPendingPhoto}
+          onPhotosChange={setPendingPhotos}
         />
       )}
     </form>

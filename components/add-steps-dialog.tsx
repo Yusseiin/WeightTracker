@@ -53,7 +53,7 @@ export function AddStepsDialog({
   const [dateInput, setDateInput] = useState<string>('');
   const [timeInput, setTimeInput] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
+  const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
   const isMobile = useIsMobile();
 
   // Initialize inputs when dialog opens
@@ -62,7 +62,7 @@ export function AddStepsDialog({
       setStepsInput('');
       setDateInput(format(new Date(), 'yyyy-MM-dd'));
       setTimeInput(format(new Date(), 'HH:mm'));
-      setPendingPhoto(null);
+      setPendingPhotos([]);
     }
   }, [open]);
 
@@ -87,12 +87,14 @@ export function AddStepsDialog({
     setIsSubmitting(true);
     try {
       const entry = await onAddSteps(steps, dateInput, timestamp);
-      if (pendingPhoto && entry?.id) {
-        const formData = new FormData();
-        formData.append('photo', pendingPhoto);
-        await fetch(`/api/photos/steps/${entry.id}`, { method: 'POST', body: formData });
+      if (pendingPhotos.length > 0 && entry?.id) {
+        for (const photo of pendingPhotos) {
+          const formData = new FormData();
+          formData.append('photo', photo);
+          await fetch(`/api/photos/steps/${entry.id}`, { method: 'POST', body: formData });
+        }
       }
-      setPendingPhoto(null);
+      setPendingPhotos([]);
       setOpen(false);
     } finally {
       setIsSubmitting(false);
@@ -151,7 +153,7 @@ export function AddStepsDialog({
 
       {/* Photo capture */}
       {photosEnabled && (
-        <PhotoCapture entryType="steps" entryId={null} onPhotoChange={setPendingPhoto} />
+        <PhotoCapture entryType="steps" entryId={null} onPhotosChange={setPendingPhotos} />
       )}
     </div>
   );

@@ -117,7 +117,10 @@ export function WeightTracker({
 
   const [selectedEntry, setSelectedEntry] = useState<WeightEntry | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>('chart');
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#history') return 'history';
+    return 'chart';
+  });
   const [changelogOpen, setChangelogOpen] = useState(false);
 
   // Dialog open states for floating button bar

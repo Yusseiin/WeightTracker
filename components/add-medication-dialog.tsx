@@ -83,7 +83,7 @@ export function AddMedicationDialog({
   // Local state for all medications (not persisted until Done is pressed)
   const [localStates, setLocalStates] = useState<Record<string, LocalMedicationState>>({});
   // Pending photos per medication (keyed by medication ID)
-  const [pendingPhotos, setPendingPhotos] = useState<Record<string, File | null>>({});
+  const [pendingPhotos, setPendingPhotos] = useState<Record<string, File[]>>({});
 
   // Initialize local state when dialog opens
   useEffect(() => {
@@ -243,11 +243,13 @@ export function AddMedicationDialog({
           const entry = await onToggleMedication(medicationId, state.state === 'taken', state.date, timestamp, doseToSave);
 
           // Upload pending photo if any
-          const photo = pendingPhotos[medicationId];
-          if (photo && entry?.id) {
-            const formData = new FormData();
-            formData.append('photo', photo);
-            await fetch(`/api/photos/medication/${entry.id}`, { method: 'POST', body: formData });
+          const photos = pendingPhotos[medicationId] || [];
+          if (photos.length > 0 && entry?.id) {
+            for (const photo of photos) {
+              const formData = new FormData();
+              formData.append('photo', photo);
+              await fetch(`/api/photos/medication/${entry.id}`, { method: 'POST', body: formData });
+            }
           }
         }
       }
@@ -508,7 +510,7 @@ export function AddMedicationDialog({
                 <PhotoCapture
                   entryType="medication"
                   entryId={null}
-                  onPhotoChange={(file) => setPendingPhotos(prev => ({ ...prev, [preset.id]: file }))}
+                  onPhotosChange={(files) => setPendingPhotos(prev => ({ ...prev, [preset.id]: files }))}
                 />
               </div>
             )}
