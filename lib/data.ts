@@ -274,6 +274,10 @@ export async function getSettings(userId: string = DEFAULT_USER_ID): Promise<Use
         settings.features.waterEnabled = true;
         needsSave = true;
       }
+      if (settings.features.bodyFatEnabled === undefined) {
+        settings.features.bodyFatEnabled = false;
+        needsSave = true;
+      }
     }
     // Add dailyStepsGoal to goals if missing (backward compatibility)
     if (settings.goals && settings.goals.dailyStepsGoal === undefined) {

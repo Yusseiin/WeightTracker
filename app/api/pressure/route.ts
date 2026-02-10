@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { systolic, diastolic, date, timestamp } = body;
+    const { systolic, diastolic, date, timestamp, notes } = body;
 
     // Validate systolic
     if (typeof systolic !== 'number' || systolic < 50 || systolic > 300) {
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const entry = await createPressureEntry(user.username, systolic, diastolic, date, timestamp);
+    const entry = await createPressureEntry(user.username, systolic, diastolic, date, timestamp, notes);
 
     const response: ApiResponse<PressureEntry> = {
       success: true,
@@ -128,7 +128,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, systolic, diastolic, timestamp } = body;
+    const { id, systolic, diastolic, timestamp, notes } = body;
 
     // Validate id
     if (!id || typeof id !== 'string') {
@@ -162,7 +162,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const entry = await updatePressureById(user.username, id, systolic, diastolic, timestamp);
+    const entry = await updatePressureById(user.username, id, systolic, diastolic, timestamp, notes);
 
     if (!entry) {
       return NextResponse.json(

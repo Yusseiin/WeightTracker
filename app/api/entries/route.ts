@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { weight, training, sleep, timestamp } = body;
+    const { weight, training, sleep, timestamp, notes, bodyFat } = body;
 
     // Validate required fields
     if (typeof weight !== 'number' || weight <= 0) {
@@ -71,13 +71,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (bodyFat !== undefined && bodyFat !== null) {
+      if (typeof bodyFat !== 'number' || bodyFat < 0 || bodyFat > 100) {
+        return NextResponse.json(
+          { success: false, error: 'Body fat must be a number between 0 and 100' },
+          { status: 400 }
+        );
+      }
+    }
+
     const entry = await addEntry(
       {
         author: user.username,
         weight,
         training,
         sleep,
-        timestamp: timestamp || new Date().toISOString()
+        timestamp: timestamp || new Date().toISOString(),
+        ...(notes ? { notes } : {}),
+        ...(bodyFat != null ? { bodyFat } : {})
       },
       user.username
     );

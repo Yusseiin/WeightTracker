@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { medicationId, taken, date, timestamp, dose } = body;
+    const { medicationId, taken, date, timestamp, dose, notes } = body;
 
     // Validate medicationId
     if (!medicationId || typeof medicationId !== 'string') {
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const entry = await createMedicationEntry(user.username, medicationId, taken, date, timestamp, dose);
+    const entry = await createMedicationEntry(user.username, medicationId, taken, date, timestamp, dose, notes);
 
     const response: ApiResponse<MedicationEntry> = {
       success: true,
@@ -136,7 +136,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, taken, timestamp, date, dose } = body;
+    const { id, taken, timestamp, date, dose, notes } = body;
 
     // Validate id
     if (!id || typeof id !== 'string') {
@@ -178,7 +178,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const entry = await updateMedicationById(user.username, id, taken, timestamp, date, dose);
+    const entry = await updateMedicationById(user.username, id, taken, timestamp, date, dose, notes);
 
     if (!entry) {
       return NextResponse.json(

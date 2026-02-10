@@ -8,8 +8,8 @@ interface UseStepsReturn {
   todaySteps: StepsEntry[];
   stepsEntries: StepsEntry[];
   isLoading: boolean;
-  createSteps: (steps: number, date?: string, timestamp?: string) => Promise<StepsEntry | undefined>;
-  updateStepsById: (id: string, steps: number, timestamp?: string) => Promise<void>;
+  createSteps: (steps: number, date?: string, timestamp?: string, notes?: string) => Promise<StepsEntry | undefined>;
+  updateStepsById: (id: string, steps: number, timestamp?: string, notes?: string) => Promise<void>;
   deleteSteps: (id: string) => Promise<void>;
   refreshSteps: () => Promise<void>;
 }
@@ -34,7 +34,7 @@ export function useSteps(
     }
   }, []);
 
-  const createSteps = useCallback(async (steps: number, date?: string, timestamp?: string) => {
+  const createSteps = useCallback(async (steps: number, date?: string, timestamp?: string, notes?: string) => {
     setIsLoading(true);
 
     const now = new Date().toISOString();
@@ -64,7 +64,7 @@ export function useSteps(
       const response = await fetch('/api/steps', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ steps, date, timestamp })
+        body: JSON.stringify({ steps, date, timestamp, notes })
       });
 
       const result = await response.json();
@@ -99,7 +99,7 @@ export function useSteps(
     }
   }, [todaySteps, stepsEntries]);
 
-  const updateStepsById = useCallback(async (id: string, steps: number, timestamp?: string) => {
+  const updateStepsById = useCallback(async (id: string, steps: number, timestamp?: string, notes?: string) => {
     setIsLoading(true);
 
     const now = new Date().toISOString();
@@ -122,7 +122,7 @@ export function useSteps(
       const response = await fetch('/api/steps', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, steps, timestamp })
+        body: JSON.stringify({ id, steps, timestamp, notes })
       });
 
       const result = await response.json();

@@ -261,7 +261,7 @@ function isValidInjectionSettings(settings: unknown): settings is InjectionSetti
 }
 
 // Valid chart views and types
-const VALID_CHART_VIEWS: ChartView[] = ['weight', 'water', 'steps', 'pressure', 'medication', 'injections'];
+const VALID_CHART_VIEWS: ChartView[] = ['weight', 'water', 'steps', 'pressure', 'medication', 'injections', 'bodyfat'];
 const VALID_CHART_TYPES: ChartType[] = ['line', 'bar'];
 
 // Validate a single chart combination

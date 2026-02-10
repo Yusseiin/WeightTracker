@@ -8,8 +8,8 @@ interface UseMedicationsReturn {
   todayMedications: MedicationEntry[];
   medicationEntries: MedicationEntry[];
   isLoading: boolean;
-  createMedication: (medicationId: string, taken: boolean, date?: string, timestamp?: string, dose?: number | null) => Promise<MedicationEntry | undefined>;
-  updateMedicationById: (id: string, taken: boolean, timestamp?: string, date?: string, dose?: number | null) => Promise<void>;
+  createMedication: (medicationId: string, taken: boolean, date?: string, timestamp?: string, dose?: number | null, notes?: string) => Promise<MedicationEntry | undefined>;
+  updateMedicationById: (id: string, taken: boolean, timestamp?: string, date?: string, dose?: number | null, notes?: string) => Promise<void>;
   deleteMedication: (id: string) => Promise<void>;
   refreshMedications: () => Promise<void>;
 }
@@ -34,7 +34,7 @@ export function useMedications(
     }
   }, []);
 
-  const createMedication = useCallback(async (medicationId: string, taken: boolean, date?: string, timestamp?: string, dose?: number | null) => {
+  const createMedication = useCallback(async (medicationId: string, taken: boolean, date?: string, timestamp?: string, dose?: number | null, notes?: string) => {
     setIsLoading(true);
 
     const now = new Date().toISOString();
@@ -83,7 +83,7 @@ export function useMedications(
       const response = await fetch('/api/medications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ medicationId, taken, date, timestamp, dose })
+        body: JSON.stringify({ medicationId, taken, date, timestamp, dose, notes })
       });
 
       const result = await response.json();
@@ -123,7 +123,7 @@ export function useMedications(
     }
   }, [todayMedications, medicationEntries]);
 
-  const updateMedicationById = useCallback(async (id: string, taken: boolean, timestamp?: string, date?: string, dose?: number | null) => {
+  const updateMedicationById = useCallback(async (id: string, taken: boolean, timestamp?: string, date?: string, dose?: number | null, notes?: string) => {
     setIsLoading(true);
 
     const now = new Date().toISOString();
@@ -170,7 +170,7 @@ export function useMedications(
       const response = await fetch('/api/medications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, taken, timestamp, date, dose })
+        body: JSON.stringify({ id, taken, timestamp, date, dose, notes })
       });
 
       const result = await response.json();

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { Droplets, ArrowLeftRight } from 'lucide-react';
+import { Droplets, ArrowLeftRight, FileText } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -34,6 +34,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { DynamicIcon } from '@/components/dynamic-icon';
 import { PhotoCapture } from './photo-capture';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -55,6 +56,8 @@ interface EditEntryDialogProps {
   onUpdateWater: (date: string, amount: number) => Promise<void>;
   activities: CustomActivity[];
   photosEnabled?: boolean;
+  notesEnabled?: boolean;
+  bodyFatEnabled?: boolean;
 }
 
 export function EditEntryDialog({
@@ -68,7 +71,9 @@ export function EditEntryDialog({
   waterEntries,
   onUpdateWater,
   activities,
-  photosEnabled
+  photosEnabled,
+  notesEnabled,
+  bodyFatEnabled
 }: EditEntryDialogProps) {
   const [weight, setWeight] = useState<string>('');
   const [training, setTraining] = useState<string>('');
@@ -76,6 +81,8 @@ export function EditEntryDialog({
   const [date, setDate] = useState<string>('');
   const [time, setTime] = useState<string>('');
   const [water, setWater] = useState<string>('');
+  const [notesInput, setNotesInput] = useState<string>('');
+  const [bodyFatInput, setBodyFatInput] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
@@ -91,6 +98,9 @@ export function EditEntryDialog({
       const entryDateStr = format(entryDate, 'yyyy-MM-dd');
       setDate(entryDateStr);
       setTime(format(entryDate, 'HH:mm'));
+
+      setNotesInput(entry.notes || '');
+      setBodyFatInput(entry.bodyFat?.toString() || '');
 
       // Get water for this date
       const waterEntry = waterEntries.find(w => w.date === entryDateStr);
@@ -116,7 +126,9 @@ export function EditEntryDialog({
         weight: parseFloat(weight),
         training: training,
         sleep: parseInt(sleep) as 0 | 1 | 2,
-        timestamp
+        timestamp,
+        notes: notesInput || undefined,
+        bodyFat: bodyFatInput ? parseFloat(bodyFatInput) : undefined
       });
 
       // Save water if value provided
@@ -202,6 +214,24 @@ export function EditEntryDialog({
         </div>
       </div>
 
+      {/* Body Fat % */}
+      {bodyFatEnabled && (
+        <div className="space-y-2">
+          <Label htmlFor="edit-bodyFat">Body Fat %</Label>
+          <Input
+            id="edit-bodyFat"
+            type="number"
+            step="0.1"
+            min="0"
+            max="100"
+            value={bodyFatInput}
+            onChange={(e) => setBodyFatInput(e.target.value)}
+            placeholder="e.g., 18.5"
+            className="text-lg text-center"
+          />
+        </div>
+      )}
+
       {/* Activity type toggle */}
       <div className="space-y-2">
         <Label>Activity</Label>
@@ -271,6 +301,23 @@ export function EditEntryDialog({
         </div>
       </div>
 
+      {/* Notes */}
+      {notesEnabled && (
+        <div className="space-y-2">
+          <Label htmlFor="edit-notes" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Notes (optional)
+          </Label>
+          <Textarea
+            id="edit-notes"
+            placeholder="Any notes about this entry..."
+            value={notesInput}
+            onChange={(e) => setNotesInput(e.target.value)}
+            rows={2}
+          />
+        </div>
+      )}
+
       {/* Photo capture */}
       {photosEnabled && entry && (
         <>
@@ -333,14 +380,16 @@ export function EditEntryDialog({
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent>
-          <DrawerHeader>
+        <DrawerContent className="max-h-[85vh] flex flex-col">
+          <DrawerHeader className="shrink-0">
             <DrawerTitle>Edit Entry</DrawerTitle>
           </DrawerHeader>
-          <ScrollArea className="flex-1 px-4 max-h-[60vh]">
-            {formContent}
+          <ScrollArea className="flex-1 overflow-auto px-4">
+            <div className="pb-4">
+              {formContent}
+            </div>
           </ScrollArea>
-          <DrawerFooter className="pt-4">
+          <DrawerFooter className="pt-2 border-t shrink-0">
             {footerButtons}
             <DrawerClose asChild>
               <Button variant="outline">Cancel</Button>

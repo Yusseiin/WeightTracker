@@ -66,6 +66,7 @@ const STEPS_COLOR = 'hsl(142, 76%, 36%)';
 const SYSTOLIC_COLOR = 'hsl(0, 84%, 60%)';
 const DIASTOLIC_COLOR = 'hsl(210, 100%, 50%)';
 const INJECTION_COLOR = 'hsl(174, 72%, 40%)'; // teal
+const BODY_FAT_COLOR = 'hsl(330, 81%, 60%)';
 
 // Mapping from Tailwind color classes to HSL for injection medications
 const MEDICATION_COLOR_MAP: Record<string, string> = {
@@ -142,6 +143,7 @@ export function WeightChart({
           if (chart === 'pressure') return features?.pressureEnabled ?? false;
           if (chart === 'medication') return features?.medicationEnabled ?? false;
           if (chart === 'injections') return features?.injectionsEnabled ?? false;
+          if (chart === 'bodyfat') return features?.bodyFatEnabled ?? false;
           return false;
         });
         return chartsAvailable;
@@ -191,7 +193,7 @@ export function WeightChart({
 
     const weights = sortedEntries.map(e => e.weight);
     const avg = weights.length > 0
-      ? Math.round((weights.reduce((a, b) => a + b, 0) / weights.length) * 10) / 10
+      ? Math.round(weights.reduce((a, b) => a + b, 0) / weights.length)
       : 0;
     const min = weights.length > 0 ? Math.min(...weights) : 0;
     const max = weights.length > 0 ? Math.max(...weights) : 0;
@@ -202,6 +204,30 @@ export function WeightChart({
       minWeight: min,
       maxWeight: max
     };
+  }, [entries, timeFilter, dateFormat]);
+
+  // Body fat chart data (from weight entries that have bodyFat)
+  const { bodyFatChartData, bodyFatAverage, minBodyFat, maxBodyFat } = useMemo(() => {
+    const cutoffDate = getCutoffDate(timeFilter);
+    const filteredEntries = cutoffDate
+      ? entries.filter(e => isAfter(new Date(e.timestamp), cutoffDate))
+      : entries;
+    const entriesWithBodyFat = filteredEntries.filter(e => e.bodyFat != null);
+    const sortedEntries = [...entriesWithBodyFat].sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+    const data = sortedEntries.map(entry => ({
+      date: entry.timestamp,
+      bodyFat: entry.bodyFat!,
+      formattedDate: formatDateForAxis(entry.timestamp, dateFormat)
+    }));
+    const values = sortedEntries.map(e => e.bodyFat!);
+    const avg = values.length > 0
+      ? Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10
+      : 0;
+    const min = values.length > 0 ? Math.min(...values) : 0;
+    const max = values.length > 0 ? Math.max(...values) : 0;
+    return { bodyFatChartData: data, bodyFatAverage: avg, minBodyFat: min, maxBodyFat: max };
   }, [entries, timeFilter, dateFormat]);
 
   // Water chart data
@@ -400,6 +426,7 @@ export function WeightChart({
     weightChartData.forEach(e => allDates.add(e.date.substring(0, 10)));
     pressureChartData.forEach(e => allDates.add(e.date.substring(0, 10)));
     injectionChartData.forEach(e => allDates.add(String(e.date).substring(0, 10)));
+    bodyFatChartData.forEach(e => allDates.add(e.date.substring(0, 10)));
 
     // Initialize all dates with null values for all possible fields
     allDates.forEach(key => {
@@ -409,6 +436,7 @@ export function WeightChart({
         weight: null,
         systolic: null,
         diastolic: null,
+        bodyFat: null,
       });
     });
 
@@ -449,10 +477,19 @@ export function WeightChart({
       });
     });
 
+    // Add body fat data
+    bodyFatChartData.forEach(entry => {
+      const key = entry.date.substring(0, 10);
+      if (dataMap.has(key)) {
+        const existing = dataMap.get(key)!;
+        existing.bodyFat = entry.bodyFat;
+      }
+    });
+
     return Array.from(dataMap.values()).sort((a, b) =>
       new Date(a.date as string).getTime() - new Date(b.date as string).getTime()
     );
-  }, [weightChartData, pressureChartData, injectionChartData]);
+  }, [weightChartData, pressureChartData, injectionChartData, bodyFatChartData]);
 
   // Pre-compute merged bar chart data (for combined water + steps + medication charts)
   const mergedBarChartData = useMemo(() => {
@@ -504,7 +541,8 @@ export function WeightChart({
     systolic: { label: 'Systolic', color: SYSTOLIC_COLOR },
     diastolic: { label: 'Diastolic', color: DIASTOLIC_COLOR },
     adherence: { label: 'Adherence %', color: 'hsl(270, 76%, 55%)' },
-    dose: { label: 'Dose', color: INJECTION_COLOR }
+    dose: { label: 'Dose', color: INJECTION_COLOR },
+    bodyFat: { label: 'Body Fat %', color: BODY_FAT_COLOR },
   };
 
   // Calculate Y-axis domain for weight chart
@@ -579,6 +617,69 @@ export function WeightChart({
       )}
     </LineChart>
   );
+
+  // Render standalone body fat chart
+  const renderBodyFatChart = () => {
+    const bfYMin = Math.floor(minBodyFat - 2);
+    const bfYMax = Math.ceil(maxBodyFat + 2);
+
+    return (
+      <LineChart data={bodyFatChartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+        <XAxis
+          dataKey="formattedDate"
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          fontSize={12}
+          className="fill-muted-foreground"
+        />
+        <YAxis
+          domain={[bfYMin, bfYMax]}
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          fontSize={12}
+          className="fill-muted-foreground"
+          tickFormatter={(value) => `${value}%`}
+        />
+        <Tooltip
+          content={({ active, payload }) => {
+            if (active && payload && payload.length > 0) {
+              const data = payload[0].payload;
+              return (
+                <div className="rounded-lg border bg-background p-2 shadow-sm">
+                  <div className="text-xs text-muted-foreground mb-1">
+                    {formatDateForTooltip(data.date, dateFormat)}
+                  </div>
+                  <div className="font-medium" style={{ color: BODY_FAT_COLOR }}>
+                    {data.bodyFat}%
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          }}
+        />
+        <Line
+          type="monotone"
+          dataKey="bodyFat"
+          stroke={BODY_FAT_COLOR}
+          strokeWidth={2}
+          dot={{ r: 0, fill: BODY_FAT_COLOR }}
+          activeDot={{ r: 4, fill: BODY_FAT_COLOR, stroke: 'hsl(var(--background))', strokeWidth: 2 }}
+        />
+        {bodyFatAverage > 0 && (
+          <ReferenceLine
+            y={bodyFatAverage}
+            stroke={BODY_FAT_COLOR}
+            strokeDasharray="5 5"
+            strokeOpacity={0.6}
+          />
+        )}
+      </LineChart>
+    );
+  };
 
   // Render water chart
   const renderWaterChart = () => (
@@ -951,6 +1052,7 @@ export function WeightChart({
         case 'pressure': return renderPressureChart();
         case 'medication': return renderMedicationChart();
         case 'injections': return renderInjectionChart();
+        case 'bodyfat': return renderBodyFatChart();
       }
     }
 
@@ -967,6 +1069,7 @@ export function WeightChart({
     const hasWeight = combination.charts.includes('weight');
     const hasPressure = combination.charts.includes('pressure');
     const hasInjections = combination.charts.includes('injections');
+    const hasBodyFat = combination.charts.includes('bodyfat');
 
     // Count right-side axes: pressure (if weight exists) + injections (all if weight/pressure, else all-1)
     let rightAxisCount = 0;
@@ -1047,6 +1150,22 @@ export function WeightChart({
             />
           );
         })}
+        {hasBodyFat && (
+          <YAxis
+            yAxisId="bodyfat"
+            orientation="right"
+            width={35}
+            domain={['auto', 'auto']}
+            tickLine={false}
+            axisLine={false}
+            tickMargin={4}
+            tick={(props: { x: number; y: number; payload: { value: number } }) => (
+              <text x={props.x} y={props.y} style={{ fill: BODY_FAT_COLOR }} fontSize={10} textAnchor="start" dominantBaseline="middle">
+                {props.payload.value}%
+              </text>
+            )}
+          />
+        )}
         <Tooltip
           content={({ active, payload }) => {
             if (active && payload && payload.length > 0) {
@@ -1080,6 +1199,11 @@ export function WeightChart({
                       </div>
                     );
                   })}
+                  {hasBodyFat && data.bodyFat != null && (
+                    <div className="font-medium" style={{ color: BODY_FAT_COLOR }}>
+                      Body Fat: {data.bodyFat}%
+                    </div>
+                  )}
                   {data.site && (
                     <div className="text-xs text-muted-foreground mt-1">
                       Site: {data.site}
@@ -1149,6 +1273,50 @@ export function WeightChart({
             />
           );
         })}
+        {hasBodyFat && (
+          <Line
+            yAxisId="bodyfat"
+            type="monotone"
+            dataKey="bodyFat"
+            name="Body Fat %"
+            stroke={BODY_FAT_COLOR}
+            strokeWidth={2}
+            dot={{ r: 0 }}
+            activeDot={{ r: 4 }}
+            connectNulls
+          />
+        )}
+        {/* Reference lines for weight average and target */}
+        {hasWeight && weightAverage > 0 && (
+          <ReferenceLine
+            yAxisId="weight"
+            y={weightAverage}
+            stroke={lineColor}
+            strokeDasharray="5 5"
+            strokeOpacity={0.6}
+            label={{ value: `${weightAverage} ${unit}`, position: 'left', fontSize: 11, fill: lineColor }}
+          />
+        )}
+        {hasWeight && targetWeight && (
+          <ReferenceLine
+            yAxisId="weight"
+            y={targetWeight}
+            stroke="hsl(142, 76%, 36%)"
+            strokeDasharray="3 3"
+            label={{ value: `${targetWeight} ${unit}`, position: 'left', fontSize: 11, fill: 'hsl(142, 76%, 36%)' }}
+          />
+        )}
+        {/* Reference line for body fat average */}
+        {hasBodyFat && bodyFatAverage > 0 && (
+          <ReferenceLine
+            yAxisId="bodyfat"
+            y={bodyFatAverage}
+            stroke={BODY_FAT_COLOR}
+            strokeDasharray="5 5"
+            strokeOpacity={0.6}
+            label={{ value: `${bodyFatAverage}%`, position: 'right', fontSize: 11, fill: BODY_FAT_COLOR }}
+          />
+        )}
       </LineChart>
     );
   };
@@ -1241,6 +1409,9 @@ export function WeightChart({
         case 'injections':
           if (!injectionSettings?.medications?.length) return 'No injectable medications configured. Add medications in Settings.';
           break;
+        case 'bodyfat':
+          if (!entries.some(e => e.bodyFat != null)) return 'No body fat entries yet. Add body fat % to your weight entries!';
+          break;
       }
     }
     return `No ${combination.name.toLowerCase()} data yet.`;
@@ -1259,6 +1430,7 @@ export function WeightChart({
         case 'pressure': return pressureEntries.length > 0;
         case 'medication': return medicationPresets.length > 0;
         case 'injections': return injectionSettings?.medications && injectionSettings.medications.length > 0;
+        case 'bodyfat': return entries.some(e => e.bodyFat != null);
         default: return false;
       }
     });

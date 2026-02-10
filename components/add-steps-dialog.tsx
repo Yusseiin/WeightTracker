@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Footprints } from 'lucide-react';
+import { Footprints, FileText } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -24,16 +24,18 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { PhotoCapture } from './photo-capture';
 
 interface AddStepsDialogProps {
-  onAddSteps: (steps: number, date?: string, timestamp?: string) => Promise<any>;
+  onAddSteps: (steps: number, date?: string, timestamp?: string, notes?: string) => Promise<any>;
   isLoading?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   photosEnabled?: boolean;
+  notesEnabled?: boolean;
 }
 
 export function AddStepsDialog({
@@ -41,7 +43,8 @@ export function AddStepsDialog({
   isLoading = false,
   open: controlledOpen,
   onOpenChange,
-  photosEnabled
+  photosEnabled,
+  notesEnabled
 }: AddStepsDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
 
@@ -52,6 +55,7 @@ export function AddStepsDialog({
   const [stepsInput, setStepsInput] = useState<string>('');
   const [dateInput, setDateInput] = useState<string>('');
   const [timeInput, setTimeInput] = useState<string>('');
+  const [notesInput, setNotesInput] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
   const isMobile = useIsMobile();
@@ -62,6 +66,7 @@ export function AddStepsDialog({
       setStepsInput('');
       setDateInput(format(new Date(), 'yyyy-MM-dd'));
       setTimeInput(format(new Date(), 'HH:mm'));
+      setNotesInput('');
       setPendingPhotos([]);
     }
   }, [open]);
@@ -86,7 +91,7 @@ export function AddStepsDialog({
 
     setIsSubmitting(true);
     try {
-      const entry = await onAddSteps(steps, dateInput, timestamp);
+      const entry = await onAddSteps(steps, dateInput, timestamp, notesInput || undefined);
       if (pendingPhotos.length > 0 && entry?.id) {
         for (const photo of pendingPhotos) {
           const formData = new FormData();
@@ -151,6 +156,23 @@ export function AddStepsDialog({
         </div>
       </div>
 
+      {/* Notes input */}
+      {notesEnabled && (
+        <div className="space-y-2">
+          <Label htmlFor="notes" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Notes (optional)
+          </Label>
+          <Textarea
+            id="notes"
+            placeholder="Any notes..."
+            value={notesInput}
+            onChange={(e) => setNotesInput(e.target.value)}
+            rows={2}
+          />
+        </div>
+      )}
+
       {/* Photo capture */}
       {photosEnabled && (
         <PhotoCapture entryType="steps" entryId={null} onPhotosChange={setPendingPhotos} />
@@ -179,17 +201,19 @@ export function AddStepsDialog({
             {TriggerButton}
           </DrawerTrigger>
         )}
-        <DrawerContent>
-          <DrawerHeader>
+        <DrawerContent className="max-h-[85vh] flex flex-col">
+          <DrawerHeader className="shrink-0">
             <DrawerTitle className="flex items-center gap-2 justify-center">
               <Footprints className="h-5 w-5 text-green-500" />
               Add Steps
             </DrawerTitle>
           </DrawerHeader>
-          <ScrollArea className="flex-1 px-4 max-h-[60vh]">
-            {formContent}
+          <ScrollArea className="flex-1 overflow-auto px-4">
+            <div className="pb-4">
+              {formContent}
+            </div>
           </ScrollArea>
-          <DrawerFooter className="pt-4">
+          <DrawerFooter className="pt-2 border-t shrink-0">
             <Button
               onClick={handleSave}
               disabled={isSubmitting || isLoading || !canSave}

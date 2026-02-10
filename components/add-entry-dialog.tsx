@@ -5,7 +5,7 @@ import { useForm, Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod/v4';
 import { format } from 'date-fns';
-import { Plus } from 'lucide-react';
+import { Plus, FileText } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -27,6 +27,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { DynamicIcon } from '@/components/dynamic-icon';
 import { PhotoCapture } from '@/components/photo-capture';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -39,7 +40,9 @@ const entrySchema = z.object({
   weight: z.coerce.number().positive('Weight must be positive'),
   training: z.string().min(1, 'Activity is required'),
   sleep: z.enum(['0', '1', '2']),
-  timestamp: z.string().min(1, 'Date is required')
+  timestamp: z.string().min(1, 'Date is required'),
+  notes: z.string().optional(),
+  bodyFat: z.coerce.number().min(0).max(100).optional().or(z.literal(''))
 });
 
 type FormValues = {
@@ -47,6 +50,8 @@ type FormValues = {
   training: string;
   sleep: '0' | '1' | '2';
   timestamp: string;
+  notes?: string;
+  bodyFat?: number | '';
 };
 
 interface AddEntryDialogProps {
@@ -54,11 +59,13 @@ interface AddEntryDialogProps {
   unit: 'kg' | 'lb';
   activities: CustomActivity[];
   photosEnabled?: boolean;
+  notesEnabled?: boolean;
+  bodyFatEnabled?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
 
-export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, open: controlledOpen, onOpenChange }: AddEntryDialogProps) {
+export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, notesEnabled, bodyFatEnabled, open: controlledOpen, onOpenChange }: AddEntryDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
@@ -85,7 +92,9 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, open
       weight: '' as unknown as number,
       training: defaultActivityId,
       sleep: '0',
-      timestamp: format(new Date(), "yyyy-MM-dd'T'HH:mm")
+      timestamp: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+      notes: '',
+      bodyFat: '' as unknown as number
     }
   });
 
@@ -99,7 +108,9 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, open
         weight: data.weight,
         training: data.training,
         sleep: parseInt(data.sleep) as 0 | 1 | 2,
-        timestamp: new Date(data.timestamp).toISOString()
+        timestamp: new Date(data.timestamp).toISOString(),
+        notes: data.notes || undefined,
+        bodyFat: (data.bodyFat !== '' && data.bodyFat !== undefined) ? Number(data.bodyFat) : undefined
       });
       if (pendingPhotos.length > 0 && entry?.id) {
         for (const photo of pendingPhotos) {
@@ -114,7 +125,9 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, open
         weight: '' as unknown as number,
         training: defaultActivityId,
         sleep: '0',
-        timestamp: format(new Date(), "yyyy-MM-dd'T'HH:mm")
+        timestamp: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+        notes: '',
+        bodyFat: '' as unknown as number
       });
     } finally {
       setIsSubmitting(false);
@@ -138,6 +151,26 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, open
           <p className="text-sm text-destructive">{errors.weight.message}</p>
         )}
       </div>
+
+      {/* Body Fat % input */}
+      {bodyFatEnabled && (
+        <div className="space-y-2">
+          <Label htmlFor="bodyFat">Body Fat %</Label>
+          <Input
+            id="bodyFat"
+            type="number"
+            step="0.1"
+            min="0"
+            max="100"
+            placeholder="e.g., 18.5"
+            {...register('bodyFat')}
+            className="text-lg"
+          />
+          {errors.bodyFat && (
+            <p className="text-sm text-destructive">{errors.bodyFat.message}</p>
+          )}
+        </div>
+      )}
 
       {/* Activity type toggle */}
       <div className="space-y-2">
@@ -221,6 +254,22 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, open
         )}
       </div>
 
+      {/* Notes input */}
+      {notesEnabled && (
+        <div className="space-y-2">
+          <Label htmlFor="notes" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Notes (optional)
+          </Label>
+          <Textarea
+            id="notes"
+            placeholder="Any notes..."
+            {...register('notes')}
+            rows={2}
+          />
+        </div>
+      )}
+
       {/* Photo capture */}
       {photosEnabled && (
         <PhotoCapture
@@ -252,14 +301,16 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, open
             {TriggerButton}
           </DrawerTrigger>
         )}
-        <DrawerContent>
-          <DrawerHeader>
+        <DrawerContent className="max-h-[85vh] flex flex-col">
+          <DrawerHeader className="shrink-0">
             <DrawerTitle>Add Weight Entry</DrawerTitle>
           </DrawerHeader>
-          <ScrollArea className="flex-1 px-4 max-h-[60vh]">
-            {formContent}
+          <ScrollArea className="flex-1 overflow-auto px-4">
+            <div className="pb-4">
+              {formContent}
+            </div>
           </ScrollArea>
-          <DrawerFooter className="pt-4">
+          <DrawerFooter className="pt-2 border-t shrink-0">
             <Button
               type="submit"
               onClick={handleSubmit(handleFormSubmit)}

@@ -47,6 +47,7 @@ interface AddInjectionDialogProps {
   onUpdateNextRotation?: (medicationId: string, siteId: string) => void;
   nextRotationOverrides?: Record<string, string>;
   photosEnabled?: boolean;
+  notesEnabled?: boolean;
 }
 
 export function AddInjectionDialog({
@@ -59,7 +60,8 @@ export function AddInjectionDialog({
   onOpenChange,
   onUpdateNextRotation,
   nextRotationOverrides = {},
-  photosEnabled
+  photosEnabled,
+  notesEnabled
 }: AddInjectionDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
 
@@ -387,19 +389,21 @@ export function AddInjectionDialog({
       </div>
 
       {/* Notes input */}
-      <div className="space-y-2">
-        <Label htmlFor="notes" className="flex items-center gap-2">
-          <FileText className="h-4 w-4" />
-          Notes (optional)
-        </Label>
-        <Textarea
-          id="notes"
-          placeholder="Any notes about this injection..."
-          value={notesInput}
-          onChange={(e) => setNotesInput(e.target.value)}
-          rows={2}
-        />
-      </div>
+      {notesEnabled && (
+        <div className="space-y-2">
+          <Label htmlFor="notes" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Notes (optional)
+          </Label>
+          <Textarea
+            id="notes"
+            placeholder="Any notes about this injection..."
+            value={notesInput}
+            onChange={(e) => setNotesInput(e.target.value)}
+            rows={2}
+          />
+        </div>
+      )}
 
       {/* Photo capture */}
       {photosEnabled && (

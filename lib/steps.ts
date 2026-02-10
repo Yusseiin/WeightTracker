@@ -68,7 +68,7 @@ async function saveStepsEntries(userId: string, entries: StepsEntry[]): Promise<
 }
 
 // Create a new steps entry (always creates new, never updates)
-export async function createStepsEntry(userId: string, steps: number, date?: string, timestamp?: string): Promise<StepsEntry> {
+export async function createStepsEntry(userId: string, steps: number, date?: string, timestamp?: string, notes?: string): Promise<StepsEntry> {
   // Clamp to max 5 digits (99999)
   const clampedSteps = Math.min(Math.max(0, Math.floor(steps)), 99999);
 
@@ -85,13 +85,14 @@ export async function createStepsEntry(userId: string, steps: number, date?: str
     timestamp: timestamp || now,
     updatedAt: now
   };
+  if (notes) { newEntry.notes = notes; }
   entries.push(newEntry);
   await saveStepsEntries(userId, entries);
   return newEntry;
 }
 
 // Update steps entry by ID
-export async function updateStepsById(userId: string, id: string, steps: number, timestamp?: string): Promise<StepsEntry | null> {
+export async function updateStepsById(userId: string, id: string, steps: number, timestamp?: string, notes?: string): Promise<StepsEntry | null> {
   // Clamp to max 5 digits (99999)
   const clampedSteps = Math.min(Math.max(0, Math.floor(steps)), 99999);
 
@@ -107,6 +108,9 @@ export async function updateStepsById(userId: string, id: string, steps: number,
   entries[existingIndex].steps = clampedSteps;
   if (timestamp) {
     entries[existingIndex].timestamp = timestamp;
+  }
+  if (notes !== undefined) {
+    entries[existingIndex].notes = notes || undefined;
   }
   entries[existingIndex].updatedAt = now;
   await saveStepsEntries(userId, entries);

@@ -63,6 +63,7 @@ const CHART_VIEW_NAMES: Record<ChartView, string> = {
   pressure: 'Blood Pressure',
   medication: 'Medication',
   injections: 'Injections',
+  bodyfat: 'Body Fat %',
 };
 
 // Get available charts based on feature toggles
@@ -73,6 +74,7 @@ function getAvailableCharts(features: FeatureToggles): ChartView[] {
   if (features.pressureEnabled) charts.push('pressure');
   if (features.medicationEnabled) charts.push('medication');
   if (features.injectionsEnabled) charts.push('injections');
+  if (features.bodyFatEnabled) charts.push('bodyfat');
   return charts;
 }
 

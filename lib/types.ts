@@ -6,6 +6,8 @@ export interface WeightEntry {
   training: string;         // Activity ID (e.g., 'rest', 'weights', 'cardio', or custom IDs)
   sleep: 0 | 1 | 2;         // 0=good (green), 1=fair (orange), 2=poor (red)
   timestamp: string;        // ISO 8601 format
+  notes?: string;           // Optional notes
+  bodyFat?: number;         // Body fat percentage (0-100)
 }
 
 // Custom activity configuration
@@ -151,6 +153,12 @@ export interface FeatureToggles {
   injectionsEnabled: boolean;       // Show injections tracking button
   waterEnabled: boolean;            // Show water tracking button
   photosEnabled: boolean;           // Enable photo attachments on entries
+  weightNotesEnabled: boolean;      // Show notes on weight entries
+  stepsNotesEnabled: boolean;       // Show notes on steps entries
+  pressureNotesEnabled: boolean;    // Show notes on pressure entries
+  medicationNotesEnabled: boolean;  // Show notes on medication entries
+  injectionNotesEnabled: boolean;   // Show notes on injection entries
+  bodyFatEnabled: boolean;          // Show body fat % input on weight entries
 }
 
 // Default goal settings
@@ -170,6 +178,12 @@ export const DEFAULT_FEATURE_TOGGLES: FeatureToggles = {
   injectionsEnabled: false,
   waterEnabled: true,  // Default to true for backwards compatibility
   photosEnabled: false,
+  weightNotesEnabled: false,
+  stepsNotesEnabled: false,
+  pressureNotesEnabled: false,
+  medicationNotesEnabled: false,
+  injectionNotesEnabled: false,
+  bodyFatEnabled: false,
 };
 
 // User settings model
@@ -222,6 +236,8 @@ export interface EntryFormData {
   training: string;         // Activity ID
   sleep: 0 | 1 | 2;
   timestamp: string;
+  notes?: string;
+  bodyFat?: number;         // Body fat percentage (0-100)
 }
 
 // User roles
@@ -299,6 +315,7 @@ export interface StepsEntry {
   steps: number;       // Max 99999 (5 digits)
   timestamp: string;   // ISO 8601 - time of measurement (can be edited independently)
   updatedAt: string;   // ISO 8601
+  notes?: string;      // Optional notes
 }
 
 // Blood pressure entry (multiple per day)
@@ -310,6 +327,7 @@ export interface PressureEntry {
   diastolic: number;   // Lower value (e.g., 80)
   timestamp: string;   // ISO 8601 - time of measurement (can be edited independently)
   updatedAt: string;   // ISO 8601
+  notes?: string;      // Optional notes
 }
 
 // Medication entry (tracking whether medications were taken)
@@ -322,6 +340,7 @@ export interface MedicationEntry {
   dose?: number;       // Actual dose taken (for dosage tracking mode)
   timestamp: string;   // ISO 8601 - time when marked
   updatedAt: string;   // ISO 8601
+  notes?: string;      // Optional notes
 }
 
 // Injectable medication configuration (for GLP-1, insulin, etc.)
@@ -386,7 +405,7 @@ export interface InjectionEntry {
 }
 
 // Chart view types
-export type ChartView = 'weight' | 'water' | 'steps' | 'pressure' | 'medication' | 'injections';
+export type ChartView = 'weight' | 'water' | 'steps' | 'pressure' | 'medication' | 'injections' | 'bodyfat';
 
 // Chart type (line or bar)
 export type ChartType = 'line' | 'bar';
@@ -396,6 +415,7 @@ export const CHART_TYPE_MAP: Record<ChartView, ChartType> = {
   weight: 'line',
   pressure: 'line',
   injections: 'line',
+  bodyfat: 'line',
   water: 'bar',
   steps: 'bar',
   medication: 'bar',
@@ -415,7 +435,7 @@ export interface ChartCombination {
 
 // Available icons for chart customization
 export const CHART_ICONS = [
-  'Scale', 'Droplets', 'Footprints', 'HeartPulse', 'Pill', 'Syringe',
+  'Scale', 'Droplets', 'Footprints', 'HeartPulse', 'Pill', 'Syringe', 'Percent',
   'Activity', 'TrendingUp', 'BarChart3', 'LineChart', 'Heart', 'Zap',
   'Target', 'Award', 'Star', 'Sun', 'Moon', 'Flame'
 ] as const;
@@ -428,4 +448,5 @@ export const DEFAULT_CHART_COMBINATIONS: ChartCombination[] = [
   { id: 'pressure', name: 'Blood Pressure', icon: 'HeartPulse', charts: ['pressure'], chartType: 'line', enabled: true, order: 3 },
   { id: 'medication', name: 'Medication', icon: 'Pill', charts: ['medication'], chartType: 'bar', enabled: true, order: 4 },
   { id: 'injections', name: 'Injections', icon: 'Syringe', charts: ['injections'], chartType: 'line', enabled: true, order: 5 },
+  { id: 'bodyfat', name: 'Body Fat %', icon: 'Percent', charts: ['bodyfat'], chartType: 'line', enabled: true, order: 6 },
 ];

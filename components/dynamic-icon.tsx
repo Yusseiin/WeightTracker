@@ -1,6 +1,7 @@
 'use client';
 
-import { LucideProps } from 'lucide-react';
+import { LucideProps, Icon, type IconNode } from 'lucide-react';
+import { rugby } from '@lucide/lab';
 import {
   // Fitness
   Dumbbell,
@@ -80,6 +81,7 @@ import {
   Sunrise,
   Sunset,
   AlarmClock,
+  Percent,
   // Fallback
   HelpCircle,
 } from 'lucide-react';
@@ -165,6 +167,12 @@ const iconMap: Record<string, ComponentType<LucideProps>> = {
   Sunrise,
   Sunset,
   AlarmClock,
+  Percent,
+};
+
+// Lab icons (IconNode data, rendered via <Icon>)
+const labIconMap: Record<string, IconNode> = {
+  Rugby: rugby,
 };
 
 interface DynamicIconProps extends LucideProps {
@@ -172,9 +180,13 @@ interface DynamicIconProps extends LucideProps {
 }
 
 export function DynamicIcon({ name, ...props }: DynamicIconProps) {
+  const labIcon = labIconMap[name];
+  if (labIcon) {
+    return <Icon iconNode={labIcon} {...props} />;
+  }
   const IconComponent = iconMap[name] || HelpCircle;
   return <IconComponent {...props} />;
 }
 
-// Export the icon map for use in icon picker
-export { iconMap };
+// Export the icon maps for use in icon picker
+export { iconMap, labIconMap };

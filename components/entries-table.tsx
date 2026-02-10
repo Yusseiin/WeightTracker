@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Droplets, Scale, Footprints, HeartPulse, Pill, Syringe, Info, Camera, Maximize2, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Droplets, Scale, Footprints, HeartPulse, Pill, Syringe, Info, Camera, ImagePlus, Maximize2, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -42,11 +42,11 @@ interface EntriesTableProps {
   dateFormat?: DateFormatSettings;
   activities: CustomActivity[];
   features?: FeatureToggles;
-  onUpdateSteps?: (id: string, steps: number, timestamp?: string) => Promise<void>;
+  onUpdateSteps?: (id: string, steps: number, timestamp?: string, notes?: string) => Promise<void>;
   onDeleteSteps?: (id: string) => Promise<void>;
-  onUpdatePressure?: (id: string, systolic: number, diastolic: number, timestamp?: string) => Promise<void>;
+  onUpdatePressure?: (id: string, systolic: number, diastolic: number, timestamp?: string, notes?: string) => Promise<void>;
   onDeletePressure?: (id: string) => Promise<void>;
-  onUpdateMedication?: (id: string, taken: boolean, timestamp?: string, date?: string, dose?: number | null) => Promise<void>;
+  onUpdateMedication?: (id: string, taken: boolean, timestamp?: string, date?: string, dose?: number | null, notes?: string) => Promise<void>;
   onDeleteMedication?: (id: string) => Promise<void>;
   onUpdateInjection?: (id: string, updates: { dose?: number; siteId?: string; timestamp?: string; date?: string; notes?: string }) => Promise<void>;
   onDeleteInjection?: (id: string) => Promise<void>;
@@ -67,12 +67,18 @@ function SleepIndicator({ quality }: { quality: number }) {
   return <span className={`w-3 h-3 rounded-full inline-block ${colors[quality]}`} />;
 }
 
-function PhotoPopover({ entryType, entryId, onFullscreen }: { entryType: string; entryId: string; onFullscreen: (urls: string[], startIndex: number) => void }) {
+function EntryInfoPopover({ entryType, entryId, notes, hasPhotos, onFullscreen }: {
+  entryType: string;
+  entryId: string;
+  notes?: string;
+  hasPhotos: boolean;
+  onFullscreen: (urls: string[], startIndex: number) => void;
+}) {
   const [indices, setIndices] = useState<number[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   const handleOpen = (open: boolean) => {
-    if (open && !loaded) {
+    if (open && !loaded && hasPhotos) {
       fetch(`/api/photos/${entryType}/${entryId}?list=true`)
         .then(r => r.json())
         .then(result => {
@@ -80,44 +86,59 @@ function PhotoPopover({ entryType, entryId, onFullscreen }: { entryType: string;
         })
         .catch(() => {})
         .finally(() => setLoaded(true));
+    } else if (open) {
+      setLoaded(true);
     }
   };
 
   const allUrls = indices.map(idx => `/api/photos/${entryType}/${entryId}?index=${idx}`);
 
+  // Choose icon based on what's available
+  const IconComponent = notes && hasPhotos ? ImagePlus : hasPhotos ? Camera : Info;
+
   return (
     <Popover onOpenChange={handleOpen}>
       <PopoverTrigger asChild>
         <span onClick={(e) => e.stopPropagation()} className="inline-flex cursor-pointer">
-          <Camera className="h-4 w-4 text-muted-foreground" />
+          <IconComponent className="h-4 w-4 text-muted-foreground" />
         </span>
       </PopoverTrigger>
       <PopoverContent className="w-auto max-w-xs p-2" side="right">
-        <div className={indices.length > 1 ? "grid grid-cols-2 gap-1.5" : ""}>
-          {indices.map((idx, i) => {
-            const url = allUrls[i];
-            return (
-              <div key={idx} className="relative">
-                <img
-                  src={url}
-                  alt={`Photo ${idx + 1}`}
-                  className="max-w-36 max-h-36 rounded-md object-contain"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                />
-                <button
-                  type="button"
-                  onClick={() => onFullscreen(allUrls, i)}
-                  className="absolute bottom-1 right-1 bg-black/60 text-white rounded-full p-0.5 h-5 w-5 flex items-center justify-center hover:bg-black/80"
-                >
-                  <Maximize2 className="h-3 w-3" />
-                </button>
-              </div>
-            );
-          })}
+        <div className="space-y-2">
+          {notes && (
+            <p className="text-sm px-1">{notes}</p>
+          )}
+          {notes && indices.length > 0 && (
+            <hr className="border-border" />
+          )}
+          {indices.length > 0 && (
+            <div className={indices.length > 1 ? "grid grid-cols-2 gap-1.5" : ""}>
+              {indices.map((idx, i) => {
+                const url = allUrls[i];
+                return (
+                  <div key={idx} className="relative">
+                    <img
+                      src={url}
+                      alt={`Photo ${idx + 1}`}
+                      className="max-w-36 max-h-36 rounded-md object-contain"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => onFullscreen(allUrls, i)}
+                      className="absolute bottom-1 right-1 bg-black/60 text-white rounded-full p-0.5 h-5 w-5 flex items-center justify-center hover:bg-black/80"
+                    >
+                      <Maximize2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {hasPhotos && loaded && indices.length === 0 && !notes && (
+            <p className="text-xs text-muted-foreground">No photos</p>
+          )}
         </div>
-        {loaded && indices.length === 0 && (
-          <p className="text-xs text-muted-foreground">No photos</p>
-        )}
       </PopoverContent>
     </Popover>
   );
@@ -304,11 +325,14 @@ export function EntriesTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-muted-foreground">
-            {photosEnabled && <th className="py-2 px-1 w-8"><span className="sr-only">Photo</span></th>}
+            <th className="text-center py-2 px-1 font-medium w-8"><span className="sr-only">Info</span></th>
             <th className="text-left py-2 px-1 font-medium">Date</th>
             <th className="text-center py-2 px-0.5 font-medium w-10">Train</th>
             <th className="text-center py-2 px-0.5 font-medium w-10">Sleep</th>
             <th className="text-right py-2 px-0.5 font-medium">Weight</th>
+            {features?.bodyFatEnabled && (
+              <th className="text-right py-2 px-0.5 font-medium w-14">BF%</th>
+            )}
             <th className="text-right py-2 px-0.5 font-medium w-14">Diff</th>
             {waterEnabled && (
               <th className="text-right py-2 px-1 font-medium w-14">
@@ -324,13 +348,17 @@ export function EntriesTable({
               onClick={() => onRowClick(entry)}
               className="border-b last:border-0 cursor-pointer hover:bg-muted/50 transition-colors"
             >
-              {photosEnabled && (
-                <td className="py-2 px-1 text-center w-8">
-                  {(photoCounts.get(entry.id) || 0) > 0 && (
-                    <PhotoPopover entryType="weight" entryId={entry.id} onFullscreen={(urls, startIndex) => { setFullscreenPhotos({ urls, startIndex }); setCarouselCurrent(startIndex); }} />
-                  )}
-                </td>
-              )}
+              <td className="py-2 px-1 text-center">
+                {(entry.notes || (photosEnabled && (photoCounts.get(entry.id) || 0) > 0)) && (
+                  <EntryInfoPopover
+                    entryType="weight"
+                    entryId={entry.id}
+                    notes={entry.notes}
+                    hasPhotos={photosEnabled ? (photoCounts.get(entry.id) || 0) > 0 : false}
+                    onFullscreen={(urls, startIndex) => { setFullscreenPhotos({ urls, startIndex }); setCarouselCurrent(startIndex); }}
+                  />
+                )}
+              </td>
               <td className="py-2 px-1 whitespace-nowrap">
                 {formatDateForTable(entry.timestamp, dateFormat)}
               </td>
@@ -347,6 +375,11 @@ export function EntriesTable({
               <td className="py-2 px-0.5 text-right whitespace-nowrap">
                 {entry.weight} {unit}
               </td>
+              {features?.bodyFatEnabled && (
+                <td className="py-2 px-0.5 text-right whitespace-nowrap" style={{ color: 'hsl(330, 81%, 60%)' }}>
+                  {entry.bodyFat != null ? `${entry.bodyFat}%` : '-'}
+                </td>
+              )}
               <td className={`py-2 px-0.5 text-right whitespace-nowrap ${
                 entry.diff > 0
                   ? 'text-red-500'
@@ -386,7 +419,7 @@ export function EntriesTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-muted-foreground">
-            {photosEnabled && <th className="py-2 px-1 w-8"><span className="sr-only">Photo</span></th>}
+            <th className="text-center py-2 px-1 font-medium w-8"><span className="sr-only">Info</span></th>
             <th className="text-left py-2 px-1 font-medium">Date</th>
             <th className="text-right py-2 px-1 font-medium">Steps</th>
           </tr>
@@ -402,13 +435,17 @@ export function EntriesTable({
                   canEdit && "cursor-pointer hover:bg-muted/50 transition-colors"
                 )}
               >
-                {photosEnabled && (
-                  <td className="py-2 px-1 text-center w-8">
-                    {(photoCounts.get(entry.id) || 0) > 0 && (
-                      <PhotoPopover entryType="steps" entryId={entry.id} onFullscreen={(urls, startIndex) => { setFullscreenPhotos({ urls, startIndex }); setCarouselCurrent(startIndex); }} />
-                    )}
-                  </td>
-                )}
+                <td className="py-2 px-1 text-center">
+                  {(entry.notes || (photosEnabled && (photoCounts.get(entry.id) || 0) > 0)) && (
+                    <EntryInfoPopover
+                      entryType="steps"
+                      entryId={entry.id}
+                      notes={entry.notes}
+                      hasPhotos={photosEnabled ? (photoCounts.get(entry.id) || 0) > 0 : false}
+                      onFullscreen={(urls, startIndex) => { setFullscreenPhotos({ urls, startIndex }); setCarouselCurrent(startIndex); }}
+                    />
+                  )}
+                </td>
                 <td className="py-2 px-1 whitespace-nowrap">
                   {formatDateTimeForTable(entry.timestamp, dateFormat)}
                 </td>
@@ -448,7 +485,7 @@ export function EntriesTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-muted-foreground">
-            {photosEnabled && <th className="py-2 px-1 w-8"><span className="sr-only">Photo</span></th>}
+            <th className="text-center py-2 px-1 font-medium w-8"><span className="sr-only">Info</span></th>
             <th className="text-left py-2 px-1 font-medium">Date</th>
             <th className="text-right py-2 px-1 font-medium">Pressure</th>
             <th className="text-left py-2 px-1 font-medium">Category</th>
@@ -466,13 +503,17 @@ export function EntriesTable({
                   canEdit && "cursor-pointer hover:bg-muted/50 transition-colors"
                 )}
               >
-                {photosEnabled && (
-                  <td className="py-2 px-1 text-center w-8">
-                    {(photoCounts.get(entry.id) || 0) > 0 && (
-                      <PhotoPopover entryType="pressure" entryId={entry.id} onFullscreen={(urls, startIndex) => { setFullscreenPhotos({ urls, startIndex }); setCarouselCurrent(startIndex); }} />
-                    )}
-                  </td>
-                )}
+                <td className="py-2 px-1 text-center">
+                  {(entry.notes || (photosEnabled && (photoCounts.get(entry.id) || 0) > 0)) && (
+                    <EntryInfoPopover
+                      entryType="pressure"
+                      entryId={entry.id}
+                      notes={entry.notes}
+                      hasPhotos={photosEnabled ? (photoCounts.get(entry.id) || 0) > 0 : false}
+                      onFullscreen={(urls, startIndex) => { setFullscreenPhotos({ urls, startIndex }); setCarouselCurrent(startIndex); }}
+                    />
+                  )}
+                </td>
                 <td className="py-2 px-1 whitespace-nowrap">
                   {formatDateTimeForTable(entry.timestamp, dateFormat)}
                 </td>
@@ -506,7 +547,7 @@ export function EntriesTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-muted-foreground">
-            {photosEnabled && <th className="py-2 px-1 w-8"><span className="sr-only">Photo</span></th>}
+            <th className="text-center py-2 px-1 font-medium w-8"><span className="sr-only">Info</span></th>
             <th className="text-left py-2 px-1 font-medium">Date</th>
             <th className="text-left py-2 px-1 font-medium">Medication</th>
             {hasDosageMeds && (
@@ -528,13 +569,17 @@ export function EntriesTable({
                   canEdit && "cursor-pointer hover:bg-muted/50 transition-colors"
                 )}
               >
-                {photosEnabled && (
-                  <td className="py-2 px-1 text-center w-8">
-                    {(photoCounts.get(entry.id) || 0) > 0 && (
-                      <PhotoPopover entryType="medication" entryId={entry.id} onFullscreen={(urls, startIndex) => { setFullscreenPhotos({ urls, startIndex }); setCarouselCurrent(startIndex); }} />
-                    )}
-                  </td>
-                )}
+                <td className="py-2 px-1 text-center">
+                  {(entry.notes || (photosEnabled && (photoCounts.get(entry.id) || 0) > 0)) && (
+                    <EntryInfoPopover
+                      entryType="medication"
+                      entryId={entry.id}
+                      notes={entry.notes}
+                      hasPhotos={photosEnabled ? (photoCounts.get(entry.id) || 0) > 0 : false}
+                      onFullscreen={(urls, startIndex) => { setFullscreenPhotos({ urls, startIndex }); setCarouselCurrent(startIndex); }}
+                    />
+                  )}
+                </td>
                 <td className="py-2 px-1 whitespace-nowrap">
                   {formatDateTimeForTable(entry.timestamp, dateFormat)}
                 </td>
@@ -598,9 +643,8 @@ export function EntriesTable({
         <thead>
           <tr className="border-b text-muted-foreground">
             <th className="text-center py-2 px-1 font-medium w-8">
-              <span className="sr-only">Notes</span>
+              <span className="sr-only">Info</span>
             </th>
-            {photosEnabled && <th className="py-2 px-1 w-8"><span className="sr-only">Photo</span></th>}
             <th className="text-left py-2 px-1 font-medium">Date</th>
             <th className="text-left py-2 px-1 font-medium">Medication</th>
             <th className="text-right py-2 px-1 font-medium">Dose</th>
@@ -621,29 +665,16 @@ export function EntriesTable({
                 )}
               >
                 <td className="py-2 px-1 text-center">
-                  {entry.notes && (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <span
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex cursor-pointer"
-                        >
-                          <Info className="h-4 w-4 text-muted-foreground" />
-                        </span>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto max-w-xs p-3" side="right">
-                        <p className="text-sm">{entry.notes}</p>
-                      </PopoverContent>
-                    </Popover>
+                  {(entry.notes || (photosEnabled && (photoCounts.get(entry.id) || 0) > 0)) && (
+                    <EntryInfoPopover
+                      entryType="injection"
+                      entryId={entry.id}
+                      notes={entry.notes}
+                      hasPhotos={photosEnabled ? (photoCounts.get(entry.id) || 0) > 0 : false}
+                      onFullscreen={(urls, startIndex) => { setFullscreenPhotos({ urls, startIndex }); setCarouselCurrent(startIndex); }}
+                    />
                   )}
                 </td>
-                {photosEnabled && (
-                  <td className="py-2 px-1 text-center w-8">
-                    {(photoCounts.get(entry.id) || 0) > 0 && (
-                      <PhotoPopover entryType="injection" entryId={entry.id} onFullscreen={(urls, startIndex) => { setFullscreenPhotos({ urls, startIndex }); setCarouselCurrent(startIndex); }} />
-                    )}
-                  </td>
-                )}
                 <td className="py-2 px-1 whitespace-nowrap">
                   {formatDateTimeForTable(entry.timestamp, dateFormat)}
                 </td>
@@ -725,6 +756,7 @@ export function EntriesTable({
           onSave={onUpdateSteps}
           onDelete={onDeleteSteps}
           photosEnabled={photosEnabled}
+          notesEnabled={features?.stepsNotesEnabled}
         />
       )}
 
@@ -737,6 +769,7 @@ export function EntriesTable({
           onSave={onUpdatePressure}
           onDelete={onDeletePressure}
           photosEnabled={photosEnabled}
+          notesEnabled={features?.pressureNotesEnabled}
         />
       )}
 
@@ -750,6 +783,7 @@ export function EntriesTable({
           onSave={onUpdateMedication}
           onDelete={onDeleteMedication}
           photosEnabled={photosEnabled}
+          notesEnabled={features?.medicationNotesEnabled}
         />
       )}
 
@@ -763,6 +797,7 @@ export function EntriesTable({
           onSave={onUpdateInjection}
           onDelete={onDeleteInjection}
           photosEnabled={photosEnabled}
+          notesEnabled={features?.injectionNotesEnabled}
         />
       )}
 

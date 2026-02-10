@@ -24,6 +24,14 @@ const changelog: ChangelogEntry[] = [
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
     date: "2026-02-06",
     changes: [
+      { type: "added", description: "Added the body fat option to the weight" },
+      { type: "added", description: "Added the possibility to toggle the notes for each types" },
+    ],
+  },
+  {
+    version: "v0.0.15",
+    date: "2026-02-06",
+    changes: [
       { type: "added", description: "Added the possibility to add multi picture" },
       { type: "added", description: "Added the possibility to compare picture" },
     ],

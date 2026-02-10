@@ -73,7 +73,8 @@ export async function createPressureEntry(
   systolic: number,
   diastolic: number,
   date?: string,
-  timestamp?: string
+  timestamp?: string,
+  notes?: string
 ): Promise<PressureEntry> {
   const entries = await getPressureEntries(userId);
   const entryDate = date || getTodayDate();
@@ -89,6 +90,7 @@ export async function createPressureEntry(
     timestamp: timestamp || now,
     updatedAt: now
   };
+  if (notes) { newEntry.notes = notes; }
   entries.push(newEntry);
   await savePressureEntries(userId, entries);
   return newEntry;
@@ -100,7 +102,8 @@ export async function updatePressureById(
   id: string,
   systolic: number,
   diastolic: number,
-  timestamp?: string
+  timestamp?: string,
+  notes?: string
 ): Promise<PressureEntry | null> {
   const entries = await getPressureEntries(userId);
   const existingIndex = entries.findIndex(e => e.id === id);
@@ -115,6 +118,9 @@ export async function updatePressureById(
   entries[existingIndex].diastolic = diastolic;
   if (timestamp) {
     entries[existingIndex].timestamp = timestamp;
+  }
+  if (notes !== undefined) {
+    entries[existingIndex].notes = notes || undefined;
   }
   entries[existingIndex].updatedAt = now;
   await savePressureEntries(userId, entries);

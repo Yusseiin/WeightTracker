@@ -74,7 +74,8 @@ export async function createMedicationEntry(
   taken: boolean,
   date?: string,
   timestamp?: string,
-  dose?: number | null
+  dose?: number | null,
+  notes?: string
 ): Promise<MedicationEntry> {
   const entries = await getMedicationEntries(userId);
   const entryDate = date || getTodayDate();
@@ -98,6 +99,9 @@ export async function createMedicationEntry(
         entries[existingIndex].dose = dose;
       }
     }
+    if (notes !== undefined) {
+      entries[existingIndex].notes = notes || undefined;
+    }
     await saveMedicationEntries(userId, entries);
     return entries[existingIndex];
   }
@@ -116,6 +120,7 @@ export async function createMedicationEntry(
   if (dose !== undefined && dose !== null) {
     newEntry.dose = dose;
   }
+  if (notes) { newEntry.notes = notes; }
   entries.push(newEntry);
   await saveMedicationEntries(userId, entries);
   return newEntry;
@@ -128,7 +133,8 @@ export async function updateMedicationById(
   taken: boolean,
   timestamp?: string,
   date?: string,
-  dose?: number | null
+  dose?: number | null,
+  notes?: string
 ): Promise<MedicationEntry | null> {
   const entries = await getMedicationEntries(userId);
   const existingIndex = entries.findIndex(e => e.id === id);
@@ -153,6 +159,9 @@ export async function updateMedicationById(
     } else {
       entries[existingIndex].dose = dose;
     }
+  }
+  if (notes !== undefined) {
+    entries[existingIndex].notes = notes || undefined;
   }
   entries[existingIndex].updatedAt = now;
   await saveMedicationEntries(userId, entries);

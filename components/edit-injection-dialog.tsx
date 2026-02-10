@@ -54,6 +54,7 @@ interface EditInjectionDialogProps {
   onSave: (id: string, updates: { dose?: number; siteId?: string; timestamp?: string; date?: string; notes?: string }) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
   photosEnabled?: boolean;
+  notesEnabled?: boolean;
 }
 
 export function EditInjectionDialog({
@@ -63,7 +64,8 @@ export function EditInjectionDialog({
   onOpenChange,
   onSave,
   onDelete,
-  photosEnabled
+  photosEnabled,
+  notesEnabled
 }: EditInjectionDialogProps) {
   const [selectedDose, setSelectedDose] = useState<number | null>(null);
   const [selectedSiteId, setSelectedSiteId] = useState<string>('');
@@ -214,19 +216,21 @@ export function EditInjectionDialog({
       </div>
 
       {/* Notes input */}
-      <div className="space-y-2">
-        <Label htmlFor="notes" className="flex items-center gap-2">
-          <FileText className="h-4 w-4" />
-          Notes (optional)
-        </Label>
-        <Textarea
-          id="notes"
-          placeholder="Any notes about this injection..."
-          value={notesInput}
-          onChange={(e) => setNotesInput(e.target.value)}
-          rows={2}
-        />
-      </div>
+      {notesEnabled && (
+        <div className="space-y-2">
+          <Label htmlFor="notes" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Notes (optional)
+          </Label>
+          <Textarea
+            id="notes"
+            placeholder="Any notes about this injection..."
+            value={notesInput}
+            onChange={(e) => setNotesInput(e.target.value)}
+            rows={2}
+          />
+        </div>
+      )}
 
       {/* Photo capture */}
       {photosEnabled && entry && (

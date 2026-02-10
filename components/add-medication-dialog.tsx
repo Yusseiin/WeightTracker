@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Pill, Check, X, Minus, Calendar, Clock, AlertTriangle } from 'lucide-react';
+import { Pill, Check, X, Minus, Calendar, Clock, AlertTriangle, FileText } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,8 @@ import {
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DynamicIcon } from './dynamic-icon';
@@ -53,10 +55,11 @@ interface LocalMedicationState {
 interface AddMedicationDialogProps {
   medicationPresets: MedicationPreset[];
   todayMedications: MedicationEntry[];
-  onToggleMedication: (medicationId: string, taken: boolean, date?: string, timestamp?: string, dose?: number | null) => Promise<any>;
+  onToggleMedication: (medicationId: string, taken: boolean, date?: string, timestamp?: string, dose?: number | null, notes?: string) => Promise<any>;
   onDeleteMedication?: (id: string) => Promise<void>;
   isLoading?: boolean;
   photosEnabled?: boolean;
+  notesEnabled?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
@@ -68,6 +71,7 @@ export function AddMedicationDialog({
   onDeleteMedication,
   isLoading = false,
   photosEnabled,
+  notesEnabled,
   open: controlledOpen,
   onOpenChange
 }: AddMedicationDialogProps) {
@@ -82,6 +86,8 @@ export function AddMedicationDialog({
 
   // Local state for all medications (not persisted until Done is pressed)
   const [localStates, setLocalStates] = useState<Record<string, LocalMedicationState>>({});
+  // Notes per medication (keyed by medication ID)
+  const [notesInputs, setNotesInputs] = useState<Record<string, string>>({});
   // Pending photos per medication (keyed by medication ID)
   const [pendingPhotos, setPendingPhotos] = useState<Record<string, File[]>>({});
 
@@ -89,6 +95,7 @@ export function AddMedicationDialog({
   useEffect(() => {
     if (open) {
       setPendingPhotos({});
+      setNotesInputs({});
       const now = new Date();
       const todayDate = format(now, 'yyyy-MM-dd');
       const currentTime = format(now, 'HH:mm');
@@ -240,7 +247,8 @@ export function AddMedicationDialog({
             : undefined;
 
           // Create or update entry
-          const entry = await onToggleMedication(medicationId, state.state === 'taken', state.date, timestamp, doseToSave);
+          const notesValue = notesInputs[medicationId] || undefined;
+          const entry = await onToggleMedication(medicationId, state.state === 'taken', state.date, timestamp, doseToSave, notesValue);
 
           // Upload pending photo if any
           const photos = pendingPhotos[medicationId] || [];
@@ -504,6 +512,24 @@ export function AddMedicationDialog({
               </div>
             )}
 
+            {/* Notes input */}
+            {notesEnabled && (
+              <div className="mt-3 space-y-2">
+                <Label htmlFor={`notes-${preset.id}`} className="flex items-center gap-2 text-sm">
+                  <FileText className="h-4 w-4" />
+                  Notes (optional)
+                </Label>
+                <Textarea
+                  id={`notes-${preset.id}`}
+                  placeholder="Any notes..."
+                  value={notesInputs[preset.id] || ''}
+                  onChange={(e) => setNotesInputs(prev => ({ ...prev, [preset.id]: e.target.value }))}
+                  rows={2}
+                  disabled={isSaving}
+                />
+              </div>
+            )}
+
             {/* Photo capture */}
             {photosEnabled && (
               <div className="mt-3">
@@ -541,8 +567,8 @@ export function AddMedicationDialog({
             {TriggerButton}
           </DrawerTrigger>
         )}
-        <DrawerContent>
-          <DrawerHeader>
+        <DrawerContent className="max-h-[85vh] flex flex-col">
+          <DrawerHeader className="shrink-0">
             <DrawerTitle className="flex items-center gap-2 justify-center">
               <Pill className="h-5 w-5 text-purple-500" />
               Medications
@@ -553,10 +579,12 @@ export function AddMedicationDialog({
               )}
             </DrawerTitle>
           </DrawerHeader>
-          <ScrollArea className="flex-1 px-4 max-h-[60vh]">
-            {formContent}
+          <ScrollArea className="flex-1 overflow-auto px-4">
+            <div className="pb-4">
+              {formContent}
+            </div>
           </ScrollArea>
-          <DrawerFooter className="pt-4">
+          <DrawerFooter className="pt-2 border-t shrink-0">
             <Button
               onClick={handleSave}
               disabled={isSaving || !hasChanges}

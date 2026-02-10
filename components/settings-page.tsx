@@ -575,6 +575,107 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                     Enable photo attachments on entries
                   </Label>
                 </div>
+
+                {/* Body Fat % Tracking */}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="bodyFatEnabled"
+                    checked={localFeatures.bodyFatEnabled}
+                    onCheckedChange={(checked) => setLocalFeatures(prev => ({
+                      ...prev,
+                      bodyFatEnabled: checked === true
+                    }))}
+                  />
+                  <Label htmlFor="bodyFatEnabled" className="cursor-pointer">
+                    Enable body fat % tracking on weight entries
+                  </Label>
+                </div>
+
+                <h3 className="font-medium text-base pt-2">Notes</h3>
+                <p className="text-xs text-muted-foreground">Show a notes text field on entry forms</p>
+
+                {/* Weight Notes */}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="weightNotesEnabled"
+                    checked={localFeatures.weightNotesEnabled}
+                    onCheckedChange={(checked) => setLocalFeatures(prev => ({
+                      ...prev,
+                      weightNotesEnabled: checked === true
+                    }))}
+                  />
+                  <Label htmlFor="weightNotesEnabled" className="cursor-pointer">
+                    Weight entries
+                  </Label>
+                </div>
+
+                {/* Steps Notes */}
+                {localFeatures.stepsEnabled && (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="stepsNotesEnabled"
+                      checked={localFeatures.stepsNotesEnabled}
+                      onCheckedChange={(checked) => setLocalFeatures(prev => ({
+                        ...prev,
+                        stepsNotesEnabled: checked === true
+                      }))}
+                    />
+                    <Label htmlFor="stepsNotesEnabled" className="cursor-pointer">
+                      Steps entries
+                    </Label>
+                  </div>
+                )}
+
+                {/* Pressure Notes */}
+                {localFeatures.pressureEnabled && (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="pressureNotesEnabled"
+                      checked={localFeatures.pressureNotesEnabled}
+                      onCheckedChange={(checked) => setLocalFeatures(prev => ({
+                        ...prev,
+                        pressureNotesEnabled: checked === true
+                      }))}
+                    />
+                    <Label htmlFor="pressureNotesEnabled" className="cursor-pointer">
+                      Blood pressure entries
+                    </Label>
+                  </div>
+                )}
+
+                {/* Medication Notes */}
+                {localFeatures.medicationEnabled && (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="medicationNotesEnabled"
+                      checked={localFeatures.medicationNotesEnabled}
+                      onCheckedChange={(checked) => setLocalFeatures(prev => ({
+                        ...prev,
+                        medicationNotesEnabled: checked === true
+                      }))}
+                    />
+                    <Label htmlFor="medicationNotesEnabled" className="cursor-pointer">
+                      Medication entries
+                    </Label>
+                  </div>
+                )}
+
+                {/* Injection Notes */}
+                {localFeatures.injectionsEnabled && (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="injectionNotesEnabled"
+                      checked={localFeatures.injectionNotesEnabled}
+                      onCheckedChange={(checked) => setLocalFeatures(prev => ({
+                        ...prev,
+                        injectionNotesEnabled: checked === true
+                      }))}
+                    />
+                    <Label htmlFor="injectionNotesEnabled" className="cursor-pointer">
+                      Injection entries
+                    </Label>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

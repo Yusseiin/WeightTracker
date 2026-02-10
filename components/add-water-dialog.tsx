@@ -215,17 +215,19 @@ export function AddWaterDialog({
             {TriggerButton}
           </DrawerTrigger>
         )}
-        <DrawerContent>
-          <DrawerHeader>
+        <DrawerContent className="max-h-[85vh] flex flex-col">
+          <DrawerHeader className="shrink-0">
             <DrawerTitle className="flex items-center gap-2 justify-center">
               <Droplets className="h-5 w-5 text-primary" />
               Add Water
             </DrawerTitle>
           </DrawerHeader>
-          <ScrollArea className="flex-1 px-4 max-h-[60vh]">
-            {formContent}
+          <ScrollArea className="flex-1 overflow-auto px-4">
+            <div className="pb-4">
+              {formContent}
+            </div>
           </ScrollArea>
-          <DrawerFooter className="pt-4">
+          <DrawerFooter className="pt-2 border-t shrink-0">
             <Button
               onClick={handleAdd}
               disabled={isSubmitting || isLoading || !canAdd}

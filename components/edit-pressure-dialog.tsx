@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { HeartPulse, Trash2, ArrowLeftRight } from 'lucide-react';
+import { HeartPulse, Trash2, ArrowLeftRight, FileText } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -33,6 +33,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PhotoCapture } from './photo-capture';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -44,9 +45,10 @@ interface EditPressureDialogProps {
   entry: PressureEntry | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (id: string, systolic: number, diastolic: number, timestamp?: string) => Promise<void>;
+  onSave: (id: string, systolic: number, diastolic: number, timestamp?: string, notes?: string) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
   photosEnabled?: boolean;
+  notesEnabled?: boolean;
 }
 
 export function EditPressureDialog({
@@ -55,11 +57,13 @@ export function EditPressureDialog({
   onOpenChange,
   onSave,
   onDelete,
-  photosEnabled
+  photosEnabled,
+  notesEnabled
 }: EditPressureDialogProps) {
   const [systolicInput, setSystolicInput] = useState<string>('');
   const [diastolicInput, setDiastolicInput] = useState<string>('');
   const [timeInput, setTimeInput] = useState<string>('');
+  const [notesInput, setNotesInput] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const router = useRouter();
@@ -81,6 +85,7 @@ export function EditPressureDialog({
       setSystolicInput(entry.systolic.toString());
       setDiastolicInput(entry.diastolic.toString());
       setTimeInput(formatTimeFromTimestamp(entry.timestamp) || format(new Date(), 'HH:mm'));
+      setNotesInput(entry.notes || '');
     }
   }, [entry, open]);
 
@@ -103,7 +108,7 @@ export function EditPressureDialog({
 
     setIsSubmitting(true);
     try {
-      await onSave(entry.id, systolic, diastolic, timestamp);
+      await onSave(entry.id, systolic, diastolic, timestamp, notesInput || undefined);
       onOpenChange(false);
     } finally {
       setIsSubmitting(false);
@@ -188,6 +193,23 @@ export function EditPressureDialog({
           />
         </div>
 
+        {/* Notes */}
+        {notesEnabled && (
+          <div className="space-y-2">
+            <Label htmlFor="edit-pressure-notes" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Notes (optional)
+            </Label>
+            <Textarea
+              id="edit-pressure-notes"
+              placeholder="Any notes about this entry..."
+              value={notesInput}
+              onChange={(e) => setNotesInput(e.target.value)}
+              rows={2}
+            />
+          </div>
+        )}
+
         {/* Photo capture */}
         {photosEnabled && entry && (
           <>
@@ -248,17 +270,19 @@ export function EditPressureDialog({
       <>
         {deleteConfirmDialog}
         <Drawer open={open} onOpenChange={onOpenChange}>
-          <DrawerContent>
-            <DrawerHeader>
+          <DrawerContent className="max-h-[85vh] flex flex-col">
+            <DrawerHeader className="shrink-0">
               <DrawerTitle className="flex items-center gap-2 justify-center">
                 <HeartPulse className="h-5 w-5 text-red-500" />
                 Edit Blood Pressure
               </DrawerTitle>
             </DrawerHeader>
-            <ScrollArea className="flex-1 px-4 max-h-[60vh]">
-              {formContent}
+            <ScrollArea className="flex-1 overflow-auto px-4">
+              <div className="pb-4">
+                {formContent}
+              </div>
             </ScrollArea>
-            <DrawerFooter className="pt-4">
+            <DrawerFooter className="pt-2 border-t shrink-0">
               <Button
                 onClick={handleSave}
                 disabled={isSubmitting || !canSave}

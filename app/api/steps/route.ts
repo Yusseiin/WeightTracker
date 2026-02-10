@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { steps, date, timestamp } = body;
+    const { steps, date, timestamp, notes } = body;
 
     // Validate steps
     if (typeof steps !== 'number' || steps < 0 || steps > 99999) {
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const entry = await createStepsEntry(user.username, steps, date, timestamp);
+    const entry = await createStepsEntry(user.username, steps, date, timestamp, notes);
 
     const response: ApiResponse<StepsEntry> = {
       success: true,
@@ -120,7 +120,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, steps, timestamp } = body;
+    const { id, steps, timestamp, notes } = body;
 
     // Validate id
     if (!id || typeof id !== 'string') {
@@ -146,7 +146,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const entry = await updateStepsById(user.username, id, steps, timestamp);
+    const entry = await updateStepsById(user.username, id, steps, timestamp, notes);
 
     if (!entry) {
       return NextResponse.json(

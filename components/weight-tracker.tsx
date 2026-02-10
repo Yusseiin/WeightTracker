@@ -113,7 +113,7 @@ export function WeightTracker({
   } = useInjections(initialInjectionEntries, initialLastInjection);
 
   // Get feature toggles with defaults
-  const features = settings.features || { waterEnabled: true, stepsEnabled: false, pressureEnabled: false, medicationEnabled: false, injectionsEnabled: false, photosEnabled: false };
+  const features = settings.features || { waterEnabled: true, stepsEnabled: false, pressureEnabled: false, medicationEnabled: false, injectionsEnabled: false, photosEnabled: false, bodyFatEnabled: false };
 
   const [selectedEntry, setSelectedEntry] = useState<WeightEntry | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -287,6 +287,8 @@ export function WeightTracker({
         onUpdateWater={updateWater}
         activities={settings.activities}
         photosEnabled={features.photosEnabled}
+        notesEnabled={features.weightNotesEnabled}
+        bodyFatEnabled={features.bodyFatEnabled}
       />
 
       {/* Floating Button Bar */}
@@ -306,6 +308,8 @@ export function WeightTracker({
         unit={settings.unit}
         activities={settings.activities}
         photosEnabled={features.photosEnabled}
+        notesEnabled={features.weightNotesEnabled}
+        bodyFatEnabled={features.bodyFatEnabled}
         open={weightDialogOpen}
         onOpenChange={(open) => { setWeightDialogOpen(open); if (!open) setPhotoRefreshKey(k => k + 1); }}
       />
@@ -330,6 +334,7 @@ export function WeightTracker({
           onAddSteps={createSteps}
           isLoading={isStepsLoading}
           photosEnabled={features.photosEnabled}
+          notesEnabled={features.stepsNotesEnabled}
           open={stepsDialogOpen}
           onOpenChange={(open) => { setStepsDialogOpen(open); if (!open) setPhotoRefreshKey(k => k + 1); }}
         />
@@ -341,6 +346,7 @@ export function WeightTracker({
           onAddPressure={createPressure}
           isLoading={isPressureLoading}
           photosEnabled={features.photosEnabled}
+          notesEnabled={features.pressureNotesEnabled}
           open={pressureDialogOpen}
           onOpenChange={(open) => { setPressureDialogOpen(open); if (!open) setPhotoRefreshKey(k => k + 1); }}
         />
@@ -355,6 +361,7 @@ export function WeightTracker({
           onDeleteMedication={deleteMedication}
           isLoading={isMedicationLoading}
           photosEnabled={features.photosEnabled}
+          notesEnabled={features.medicationNotesEnabled}
           open={medicationDialogOpen}
           onOpenChange={(open) => { setMedicationDialogOpen(open); if (!open) setPhotoRefreshKey(k => k + 1); }}
         />
@@ -369,6 +376,7 @@ export function WeightTracker({
           onAddInjection={createInjection}
           isLoading={isInjectionLoading}
           photosEnabled={features.photosEnabled}
+          notesEnabled={features.injectionNotesEnabled}
           open={injectionDialogOpen}
           onOpenChange={(open) => { setInjectionDialogOpen(open); if (!open) setPhotoRefreshKey(k => k + 1); }}
           onUpdateNextRotation={handleUpdateNextRotation}

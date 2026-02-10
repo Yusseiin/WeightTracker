@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { Footprints, Trash2, ArrowLeftRight } from 'lucide-react';
+import { Footprints, Trash2, ArrowLeftRight, FileText } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -33,6 +33,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PhotoCapture } from './photo-capture';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -42,9 +43,10 @@ interface EditStepsDialogProps {
   entry: StepsEntry | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (id: string, steps: number, timestamp?: string) => Promise<void>;
+  onSave: (id: string, steps: number, timestamp?: string, notes?: string) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
   photosEnabled?: boolean;
+  notesEnabled?: boolean;
 }
 
 export function EditStepsDialog({
@@ -53,10 +55,12 @@ export function EditStepsDialog({
   onOpenChange,
   onSave,
   onDelete,
-  photosEnabled
+  photosEnabled,
+  notesEnabled
 }: EditStepsDialogProps) {
   const [stepsInput, setStepsInput] = useState<string>('');
   const [timeInput, setTimeInput] = useState<string>('');
+  const [notesInput, setNotesInput] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const router = useRouter();
@@ -77,6 +81,7 @@ export function EditStepsDialog({
     if (entry && open) {
       setStepsInput(entry.steps.toString());
       setTimeInput(formatTimeFromTimestamp(entry.timestamp) || format(new Date(), 'HH:mm'));
+      setNotesInput(entry.notes || '');
     }
   }, [entry, open]);
 
@@ -97,7 +102,7 @@ export function EditStepsDialog({
 
     setIsSubmitting(true);
     try {
-      await onSave(entry.id, steps, timestamp);
+      await onSave(entry.id, steps, timestamp, notesInput || undefined);
       onOpenChange(false);
     } finally {
       setIsSubmitting(false);
@@ -153,6 +158,23 @@ export function EditStepsDialog({
             onChange={(e) => setTimeInput(e.target.value)}
           />
         </div>
+
+        {/* Notes */}
+        {notesEnabled && (
+          <div className="space-y-2">
+            <Label htmlFor="edit-steps-notes" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Notes (optional)
+            </Label>
+            <Textarea
+              id="edit-steps-notes"
+              placeholder="Any notes about this entry..."
+              value={notesInput}
+              onChange={(e) => setNotesInput(e.target.value)}
+              rows={2}
+            />
+          </div>
+        )}
 
         {/* Photo capture */}
         {photosEnabled && entry && (
@@ -214,17 +236,19 @@ export function EditStepsDialog({
       <>
         {deleteConfirmDialog}
         <Drawer open={open} onOpenChange={onOpenChange}>
-          <DrawerContent>
-            <DrawerHeader>
+          <DrawerContent className="max-h-[85vh] flex flex-col">
+            <DrawerHeader className="shrink-0">
               <DrawerTitle className="flex items-center gap-2 justify-center">
                 <Footprints className="h-5 w-5 text-green-500" />
                 Edit Steps
               </DrawerTitle>
             </DrawerHeader>
-            <ScrollArea className="flex-1 px-4 max-h-[60vh]">
-              {formContent}
+            <ScrollArea className="flex-1 overflow-auto px-4">
+              <div className="pb-4">
+                {formContent}
+              </div>
             </ScrollArea>
-            <DrawerFooter className="pt-4">
+            <DrawerFooter className="pt-2 border-t shrink-0">
               <Button
                 onClick={handleSave}
                 disabled={isSubmitting || !canSave}

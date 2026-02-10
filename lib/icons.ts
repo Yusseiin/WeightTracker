@@ -36,6 +36,7 @@ export const ACTIVITY_ICON_CATEGORIES: IconCategory[] = [
       'Compass',
       'Map',
       'Volleyball',
+      'Rugby',
       'FishingHook',
       'HandFist',
       'WavesLadder',

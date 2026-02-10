@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { Pill, Clock, Calendar, Trash2, Check, X, AlertTriangle, ArrowLeftRight } from 'lucide-react';
+import { Pill, Clock, Calendar, Trash2, Check, X, AlertTriangle, ArrowLeftRight, FileText } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -33,6 +33,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PhotoCapture } from './photo-capture';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -45,9 +46,10 @@ interface EditMedicationDialogProps {
   medicationPresets: MedicationPreset[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (id: string, taken: boolean, timestamp?: string, date?: string, dose?: number | null) => Promise<void>;
+  onSave: (id: string, taken: boolean, timestamp?: string, date?: string, dose?: number | null, notes?: string) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
   photosEnabled?: boolean;
+  notesEnabled?: boolean;
 }
 
 export function EditMedicationDialog({
@@ -57,12 +59,14 @@ export function EditMedicationDialog({
   onOpenChange,
   onSave,
   onDelete,
-  photosEnabled
+  photosEnabled,
+  notesEnabled
 }: EditMedicationDialogProps) {
   const [takenInput, setTakenInput] = useState(false);
   const [dateInput, setDateInput] = useState<string>('');
   const [timeInput, setTimeInput] = useState<string>('');
   const [doseInput, setDoseInput] = useState<number | undefined>(undefined);
+  const [notesInput, setNotesInput] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const router = useRouter();
@@ -88,6 +92,7 @@ export function EditMedicationDialog({
       setDateInput(entry.date);
       setTimeInput(formatTimeFromTimestamp(entry.timestamp) || format(new Date(), 'HH:mm'));
       setDoseInput(entry.dose);
+      setNotesInput(entry.notes || '');
     }
   }, [entry, open]);
 
@@ -114,7 +119,7 @@ export function EditMedicationDialog({
 
     setIsSubmitting(true);
     try {
-      await onSave(entry.id, takenInput, timestamp, newDate, doseToSave);
+      await onSave(entry.id, takenInput, timestamp, newDate, doseToSave, notesInput || undefined);
       onOpenChange(false);
     } finally {
       setIsSubmitting(false);
@@ -245,6 +250,23 @@ export function EditMedicationDialog({
         </div>
       </div>
 
+      {/* Notes */}
+      {notesEnabled && (
+        <div className="space-y-2">
+          <Label htmlFor="edit-medication-notes" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Notes (optional)
+          </Label>
+          <Textarea
+            id="edit-medication-notes"
+            placeholder="Any notes about this entry..."
+            value={notesInput}
+            onChange={(e) => setNotesInput(e.target.value)}
+            rows={2}
+          />
+        </div>
+      )}
+
       {/* Photo capture */}
       {photosEnabled && entry && (
         <>
@@ -304,17 +326,19 @@ export function EditMedicationDialog({
       <>
         {deleteConfirmDialog}
         <Drawer open={open} onOpenChange={onOpenChange}>
-          <DrawerContent>
-            <DrawerHeader>
+          <DrawerContent className="max-h-[85vh] flex flex-col">
+            <DrawerHeader className="shrink-0">
               <DrawerTitle className="flex items-center gap-2 justify-center">
                 <Pill className="h-5 w-5 text-purple-500" />
                 Edit Medication Entry
               </DrawerTitle>
             </DrawerHeader>
-            <ScrollArea className="flex-1 px-4 max-h-[60vh]">
-              {formContent}
+            <ScrollArea className="flex-1 overflow-auto px-4">
+              <div className="pb-4">
+                {formContent}
+              </div>
             </ScrollArea>
-            <DrawerFooter className="pt-4">
+            <DrawerFooter className="pt-2 border-t shrink-0">
               <Button
                 onClick={handleSave}
                 disabled={isSubmitting}
