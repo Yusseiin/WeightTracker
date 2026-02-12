@@ -1204,7 +1204,7 @@ export function WeightChart({
                       Body Fat: {data.bodyFat}%
                     </div>
                   )}
-                  {data.site && (
+                  {hasInjections && data.site && (
                     <div className="text-xs text-muted-foreground mt-1">
                       Site: {data.site}
                     </div>

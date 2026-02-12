@@ -24,6 +24,13 @@ const changelog: ChangelogEntry[] = [
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
     date: "2026-02-06",
     changes: [
+      { type: "fixed", description: "Fixed multivalue graph tooltip" },
+    ],
+  },
+  {
+    version: "v0.0.16",
+    date: "2026-02-06",
+    changes: [
       { type: "added", description: "Added the body fat option to the weight" },
       { type: "added", description: "Added the possibility to toggle the notes for each types" },
     ],
