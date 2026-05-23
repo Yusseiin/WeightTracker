@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { WeightChart } from '@/components/weight-chart';
 import { AddEntryDialog } from '@/components/add-entry-dialog';
 import { AddWaterDialog } from '@/components/add-water-dialog';
@@ -112,8 +113,10 @@ export function WeightTracker({
     deleteInjection
   } = useInjections(initialInjectionEntries, initialLastInjection);
 
+  const router = useRouter();
+
   // Get feature toggles with defaults
-  const features = settings.features || { waterEnabled: true, stepsEnabled: false, pressureEnabled: false, medicationEnabled: false, injectionsEnabled: false, photosEnabled: false, bodyFatEnabled: false };
+  const features = settings.features || { waterEnabled: true, stepsEnabled: false, pressureEnabled: false, medicationEnabled: false, injectionsEnabled: false, photosEnabled: false, bodyFatEnabled: false, bodyMeasurementsEnabled: false };
 
   const [selectedEntry, setSelectedEntry] = useState<WeightEntry | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -299,6 +302,7 @@ export function WeightTracker({
         onPressureClick={features.pressureEnabled ? () => setPressureDialogOpen(true) : undefined}
         onMedicationClick={features.medicationEnabled ? () => setMedicationDialogOpen(true) : undefined}
         onInjectionClick={features.injectionsEnabled ? () => setInjectionDialogOpen(true) : undefined}
+        onBodyMeasurementsClick={features.bodyMeasurementsEnabled ? () => router.push('/body-measurements') : undefined}
         features={features}
       />
 

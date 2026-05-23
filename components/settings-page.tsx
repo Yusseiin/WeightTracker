@@ -27,9 +27,10 @@ import { MedicationManager } from '@/components/medication-manager';
 import { InjectionSettingsManager } from '@/components/injection-settings-manager';
 import { DateFormatEditor } from '@/components/date-format-editor';
 import { DEFAULT_DATE_FORMAT } from '@/lib/date-utils';
-import type { SessionUser, UserSettings, ChartColor, WaterUnit, DateFormatSettings, DateLocale, SingleDateFormat, CustomActivity, WeightEntry, GoalSettings, WeekStartsOn, WaterPreset, FeatureToggles, MedicationPreset, MedicationEntry, InjectionSettings, InjectionEntry, ChartCombination } from '@/lib/types';
-import { DEFAULT_GOALS, WEEK_DAYS, DEFAULT_FEATURE_TOGGLES, DEFAULT_INJECTION_SETTINGS, DEFAULT_CHART_COMBINATIONS } from '@/lib/types';
+import type { SessionUser, UserSettings, ChartColor, WaterUnit, DateFormatSettings, DateLocale, SingleDateFormat, CustomActivity, WeightEntry, GoalSettings, WeekStartsOn, WaterPreset, FeatureToggles, MedicationPreset, MedicationEntry, InjectionSettings, InjectionEntry, ChartCombination, BodyMeasurementPreset, MeasurementUnit } from '@/lib/types';
+import { DEFAULT_GOALS, WEEK_DAYS, DEFAULT_FEATURE_TOGGLES, DEFAULT_INJECTION_SETTINGS, DEFAULT_CHART_COMBINATIONS, DEFAULT_BODY_MEASUREMENT_PRESETS } from '@/lib/types';
 import { ChartCombinationManager } from '@/components/chart-combination-manager';
+import { BodyMeasurementPresetManager } from '@/components/body-measurement-preset-manager';
 
 interface SettingsPageProps {
   session: SessionUser;
@@ -91,6 +92,9 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
     settings.features || DEFAULT_FEATURE_TOGGLES
   );
   const [localShowQuotes, setLocalShowQuotes] = useState(settings.showQuotes ?? true);
+  const [localMeasurementUnit, setLocalMeasurementUnit] = useState<MeasurementUnit>(
+    settings.measurementUnit || 'cm'
+  );
 
   // Fetch entries for activity usage check
   const fetchEntries = useCallback(async () => {
@@ -146,7 +150,8 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
     JSON.stringify(localDateFormat) !== JSON.stringify(ensureValidDateFormat(settings.dateFormat)) ||
     JSON.stringify(localGoals) !== JSON.stringify(settings.goals || DEFAULT_GOALS) ||
     JSON.stringify(localFeatures) !== JSON.stringify(settings.features || DEFAULT_FEATURE_TOGGLES) ||
-    localShowQuotes !== (settings.showQuotes ?? true);
+    localShowQuotes !== (settings.showQuotes ?? true) ||
+    localMeasurementUnit !== (settings.measurementUnit || 'cm');
 
   // Reset local state when settings change externally
   useEffect(() => {
@@ -158,6 +163,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
     setLocalGoals(settings.goals || DEFAULT_GOALS);
     setLocalFeatures(settings.features || DEFAULT_FEATURE_TOGGLES);
     setLocalShowQuotes(settings.showQuotes ?? true);
+    setLocalMeasurementUnit(settings.measurementUnit || 'cm');
   }, [settings]);
 
   const handleGoBack = () => {
@@ -200,7 +206,8 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
           dateFormat: localDateFormat,
           goals: localGoals,
           features: localFeatures,
-          showQuotes: localShowQuotes
+          showQuotes: localShowQuotes,
+          measurementUnit: localMeasurementUnit
         })
       });
 
@@ -321,6 +328,39 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
     }
   };
 
+  const handleBodyMeasurementPresetsSave = async (
+    bodyMeasurementPresets: BodyMeasurementPreset[]
+  ) => {
+    const response = await fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bodyMeasurementPresets })
+    });
+    const result = await response.json();
+    if (result.success) {
+      setSettings(result.data);
+    } else {
+      throw new Error(result.error || 'Failed to save body measurement presets');
+    }
+  };
+
+  const handleMeasurementUnitChange = (value: string) => {
+    if (value === 'cm' || value === 'in') {
+      setLocalMeasurementUnit(value);
+    }
+  };
+
+  const handleBodyMeasurementsToggle = (enabled: boolean) => {
+    setLocalFeatures(prev => ({ ...prev, bodyMeasurementsEnabled: enabled }));
+    // Seed defaults on first enable if none configured yet
+    if (enabled && (settings.bodyMeasurementPresets?.length ?? 0) === 0) {
+      // Fire-and-forget seed via the same save path
+      handleBodyMeasurementPresetsSave(DEFAULT_BODY_MEASUREMENT_PRESETS).catch(() => {
+        // Error already toasted by the caller path
+      });
+    }
+  };
+
   const handleChartCombinationsSave = async (chartCombinations: ChartCombination[]) => {
     const response = await fetch('/api/settings', {
       method: 'PUT',
@@ -406,6 +446,25 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                     </ToggleGroupItem>
                     <ToggleGroupItem value="oz" className="min-w-16">
                       oz
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
+
+                {/* Measurement Unit (body measurements) */}
+                <div className="space-y-2">
+                  <Label>Measurement Unit</Label>
+                  <ToggleGroup
+                    type="single"
+                    value={localMeasurementUnit}
+                    onValueChange={handleMeasurementUnitChange}
+                    className="justify-start"
+                    variant="outline"
+                  >
+                    <ToggleGroupItem value="cm" className="min-w-16">
+                      cm
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="in" className="min-w-16">
+                      in
                     </ToggleGroupItem>
                   </ToggleGroup>
                 </div>
@@ -588,6 +647,20 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                   />
                   <Label htmlFor="bodyFatEnabled" className="cursor-pointer">
                     Enable body fat % tracking on weight entries
+                  </Label>
+                </div>
+
+                {/* Body Measurements Tracking */}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="bodyMeasurementsEnabled"
+                    checked={localFeatures.bodyMeasurementsEnabled}
+                    onCheckedChange={(checked) =>
+                      handleBodyMeasurementsToggle(checked === true)
+                    }
+                  />
+                  <Label htmlFor="bodyMeasurementsEnabled" className="cursor-pointer">
+                    Enable body measurements tracking
                   </Label>
                 </div>
 
@@ -845,6 +918,20 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                       injectionEntries={injectionEntries}
                     />
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Body Measurements Presets Card - only show if body measurements feature is enabled */}
+            {localFeatures.bodyMeasurementsEnabled && (
+              <Card className="py-4">
+                <CardContent className="space-y-4">
+                  <h3 className="font-medium text-base">Body Measurements</h3>
+                  <p className="text-xs text-muted-foreground">Configure the body parts you want to track</p>
+                  <BodyMeasurementPresetManager
+                    presets={settings.bodyMeasurementPresets || []}
+                    onSave={handleBodyMeasurementPresetsSave}
+                  />
                 </CardContent>
               </Card>
             )}

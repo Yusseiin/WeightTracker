@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSettings, updateSettings } from '@/lib/data';
 import { getSession } from '@/lib/auth';
-import { ApiResponse, UserSettings, DateFormatSettings, SingleDateFormat, CustomActivity, MAX_ACTIVITIES, GoalSettings, WaterPreset, MAX_WATER_PRESETS, FeatureToggles, MedicationPreset, MAX_MEDICATIONS, MedicationSchedule, MedicationScheduleType, MedicationTrackingMode, InjectionSettings, InjectableMedication, InjectionSitePreset, MAX_INJECTABLE_MEDICATIONS, MAX_INJECTION_SITES, ChartCombination, ChartView, ChartType } from '@/lib/types';
+import { ApiResponse, UserSettings, DateFormatSettings, SingleDateFormat, CustomActivity, MAX_ACTIVITIES, GoalSettings, WaterPreset, MAX_WATER_PRESETS, FeatureToggles, MedicationPreset, MAX_MEDICATIONS, MedicationSchedule, MedicationScheduleType, MedicationTrackingMode, InjectionSettings, InjectableMedication, InjectionSitePreset, MAX_INJECTABLE_MEDICATIONS, MAX_INJECTION_SITES, ChartCombination, ChartView, ChartType, BodyMeasurementPreset, MAX_BODY_MEASUREMENT_PRESETS, MeasurementUnit } from '@/lib/types';
 import { ALL_ACTIVITY_ICONS, WATER_ICONS, MEDICATION_ICONS } from '@/lib/icons';
 
 // Validation constants
@@ -130,6 +130,8 @@ function isValidFeatureToggles(features: unknown): features is FeatureToggles {
   if (f.medicationEnabled !== undefined && typeof f.medicationEnabled !== 'boolean') return false;
   if (f.injectionsEnabled !== undefined && typeof f.injectionsEnabled !== 'boolean') return false;
   if (f.waterEnabled !== undefined && typeof f.waterEnabled !== 'boolean') return false;
+  if (f.bodyFatEnabled !== undefined && typeof f.bodyFatEnabled !== 'boolean') return false;
+  if (f.bodyMeasurementsEnabled !== undefined && typeof f.bodyMeasurementsEnabled !== 'boolean') return false;
 
   return true;
 }
@@ -287,6 +289,38 @@ function isValidChartCombination(combo: unknown): combo is ChartCombination {
   return true;
 }
 
+// Validate a single body measurement preset
+function isValidBodyMeasurementPreset(preset: unknown): preset is BodyMeasurementPreset {
+  if (!preset || typeof preset !== 'object') return false;
+  const p = preset as Record<string, unknown>;
+
+  if (typeof p.id !== 'string' || p.id.trim() === '') return false;
+  if (typeof p.label !== 'string' || p.label.trim() === '') return false;
+  if (typeof p.color !== 'string' || p.color.trim() === '') return false;
+  if (typeof p.order !== 'number' || p.order < 0) return false;
+
+  return true;
+}
+
+// Validate body measurement presets array
+function isValidBodyMeasurementPresetsArray(presets: unknown): presets is BodyMeasurementPreset[] {
+  if (!Array.isArray(presets)) return false;
+  if (presets.length > MAX_BODY_MEASUREMENT_PRESETS) return false;
+
+  if (!presets.every(isValidBodyMeasurementPreset)) return false;
+
+  // Unique IDs
+  const ids = presets.map((p) => p.id);
+  if (new Set(ids).size !== ids.length) return false;
+
+  return true;
+}
+
+// Validate measurement unit
+function isValidMeasurementUnit(unit: unknown): unit is MeasurementUnit {
+  return unit === 'cm' || unit === 'in';
+}
+
 // Validate chart combinations array
 function isValidChartCombinationsArray(combos: unknown): combos is ChartCombination[] {
   if (!Array.isArray(combos)) return false;
@@ -342,7 +376,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { unit, waterUnit, targetWeight, chartColor, dateFormat, activities, waterPresets, medicationPresets, injectionSettings, goals, features, showQuotes, chartCombinations } = body;
+    const { unit, waterUnit, targetWeight, chartColor, dateFormat, activities, waterPresets, medicationPresets, injectionSettings, goals, features, showQuotes, chartCombinations, bodyMeasurementPresets, measurementUnit } = body;
 
     // Validate unit if provided
     if (unit !== undefined && !['kg', 'lb'].includes(unit)) {
@@ -451,6 +485,22 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    // Validate bodyMeasurementPresets if provided
+    if (bodyMeasurementPresets !== undefined && !isValidBodyMeasurementPresetsArray(bodyMeasurementPresets)) {
+      return NextResponse.json(
+        { success: false, error: `Invalid body measurement presets. Max ${MAX_BODY_MEASUREMENT_PRESETS}, unique IDs, non-empty labels.` },
+        { status: 400 }
+      );
+    }
+
+    // Validate measurementUnit if provided
+    if (measurementUnit !== undefined && !isValidMeasurementUnit(measurementUnit)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid measurement unit. Must be "cm" or "in"' },
+        { status: 400 }
+      );
+    }
+
     // Only include defined values to avoid overwriting with undefined
     const updateData: Partial<UserSettings> = {};
     if (unit !== undefined) updateData.unit = unit;
@@ -466,6 +516,8 @@ export async function PUT(request: NextRequest) {
     if (showQuotes !== undefined) updateData.showQuotes = showQuotes;
     if (injectionSettings !== undefined) updateData.injectionSettings = injectionSettings;
     if (chartCombinations !== undefined) updateData.chartCombinations = chartCombinations;
+    if (bodyMeasurementPresets !== undefined) updateData.bodyMeasurementPresets = bodyMeasurementPresets;
+    if (measurementUnit !== undefined) updateData.measurementUnit = measurementUnit;
 
     const updated = await updateSettings(
       updateData,

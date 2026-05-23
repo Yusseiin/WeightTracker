@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/carousel';
 import { compressImage } from '@/lib/image-utils';
 
-export type PhotoEntryType = 'weight' | 'medication' | 'injection' | 'steps' | 'pressure';
+export type PhotoEntryType = 'weight' | 'medication' | 'injection' | 'steps' | 'pressure' | 'body-measurement';
 
 interface PhotoItem {
   url: string;

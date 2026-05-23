@@ -159,7 +159,46 @@ export interface FeatureToggles {
   medicationNotesEnabled: boolean;  // Show notes on medication entries
   injectionNotesEnabled: boolean;   // Show notes on injection entries
   bodyFatEnabled: boolean;          // Show body fat % input on weight entries
+  bodyMeasurementsEnabled: boolean; // Show body measurements tracking
 }
+
+// Per-user measurement preset (Neck, Left Bicep, ...)
+export interface BodyMeasurementPreset {
+  id: string;        // 'neck', 'bicep_l', or 'bm_<rand>' for user-added
+  label: string;     // e.g. 'Left Bicep'
+  color: string;     // Tailwind color class, e.g. 'text-cyan-500'
+  order: number;     // user-defined display order
+}
+
+// One measurement session: many values for a single point in time
+export interface BodyMeasurementEntry {
+  id: string;
+  author: string;
+  timestamp: string;                     // ISO 8601
+  measurements: Record<string, number>;  // presetId -> value in cm (canonical)
+  notes?: string;
+  updatedAt: string;                     // ISO 8601
+}
+
+export const MAX_BODY_MEASUREMENT_PRESETS = 20;
+
+export const DEFAULT_BODY_MEASUREMENT_PRESETS: BodyMeasurementPreset[] = [
+  { id: 'neck',      label: 'Neck',        color: 'text-slate-500',   order: 0 },
+  { id: 'shoulders', label: 'Shoulders',   color: 'text-blue-500',    order: 1 },
+  { id: 'chest',     label: 'Chest',       color: 'text-red-500',     order: 2 },
+  { id: 'bicep_l',   label: 'Left Bicep',  color: 'text-purple-500',  order: 3 },
+  { id: 'bicep_r',   label: 'Right Bicep', color: 'text-pink-500',    order: 4 },
+  { id: 'waist',     label: 'Waist',       color: 'text-orange-500',  order: 5 },
+  { id: 'thigh_l',   label: 'Left Thigh',  color: 'text-green-500',   order: 6 },
+  { id: 'thigh_r',   label: 'Right Thigh', color: 'text-emerald-500', order: 7 },
+  { id: 'calf_l',    label: 'Left Calf',   color: 'text-cyan-500',    order: 8 },
+  { id: 'calf_r',    label: 'Right Calf',  color: 'text-teal-500',    order: 9 },
+];
+
+export type MeasurementUnit = 'cm' | 'in';
+
+// Conversion factor: 1 inch = 2.54 cm
+export const CM_PER_INCH = 2.54;
 
 // Default goal settings
 export const DEFAULT_GOALS: GoalSettings = {
@@ -184,6 +223,7 @@ export const DEFAULT_FEATURE_TOGGLES: FeatureToggles = {
   medicationNotesEnabled: false,
   injectionNotesEnabled: false,
   bodyFatEnabled: false,
+  bodyMeasurementsEnabled: false,
 };
 
 // User settings model
@@ -202,6 +242,8 @@ export interface UserSettings {
   features: FeatureToggles;       // Optional feature toggles
   showQuotes: boolean;            // Show motivational quotes
   chartCombinations?: ChartCombination[]; // Custom chart configurations
+  bodyMeasurementPresets: BodyMeasurementPreset[]; // User's custom body measurement presets
+  measurementUnit: MeasurementUnit;                // Display unit for body measurements (cm/in)
   createdAt: string;
   updatedAt: string;
 }

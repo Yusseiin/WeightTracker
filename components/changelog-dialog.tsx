@@ -22,6 +22,13 @@ interface ChangelogEntry {
 const changelog: ChangelogEntry[] = [
   {
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
+    date: "2026-05-23",
+    changes: [
+      { type: "fixed", description: "Added body measurement tracking" },
+    ],
+  },
+   {
+    version: "v0.0.17",
     date: "2026-02-06",
     changes: [
       { type: "fixed", description: "Fixed multivalue graph tooltip" },

@@ -5,9 +5,9 @@ const CONFIG_PATH = process.env.CONFIG_PATH || '/config';
 const PHOTOS_DIR = path.join(CONFIG_PATH, 'photos');
 
 // Entry types that support photos
-export type PhotoEntryType = 'weight' | 'medication' | 'injection' | 'steps' | 'pressure';
+export type PhotoEntryType = 'weight' | 'medication' | 'injection' | 'steps' | 'pressure' | 'body-measurement';
 
-const VALID_ENTRY_TYPES: PhotoEntryType[] = ['weight', 'medication', 'injection', 'steps', 'pressure'];
+const VALID_ENTRY_TYPES: PhotoEntryType[] = ['weight', 'medication', 'injection', 'steps', 'pressure', 'body-measurement'];
 
 // Get the directory for a user's photos
 const getUserPhotosDir = (userId: string) => path.join(PHOTOS_DIR, userId);

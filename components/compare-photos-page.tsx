@@ -43,6 +43,7 @@ const ENTRY_API_MAP: Record<PhotoEntryType, string> = {
   pressure: '/api/pressure',
   medication: '/api/medications',
   injection: '/api/injections',
+  'body-measurement': '/api/body-measurements',
 };
 
 function formatEntryLabel(entryType: PhotoEntryType, entry: Record<string, unknown>): string {
@@ -65,6 +66,11 @@ function formatEntryLabel(entryType: PhotoEntryType, entry: Record<string, unkno
       return `${date} — ${entry.medicationId}`;
     case 'injection':
       return `${date} — ${entry.dose} ${(entry as Record<string, unknown>).unit || 'mg'}`;
+    case 'body-measurement': {
+      const measurements = entry.measurements as Record<string, number> | undefined;
+      const count = measurements ? Object.keys(measurements).length : 0;
+      return `${date} — ${count} measurement${count === 1 ? '' : 's'}`;
+    }
     default:
       return date;
   }

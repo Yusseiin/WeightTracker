@@ -184,6 +184,8 @@ const defaultSettings = (userId: string): UserSettings => ({
   goals: DEFAULT_GOALS,
   features: DEFAULT_FEATURE_TOGGLES,
   showQuotes: true,
+  bodyMeasurementPresets: [],
+  measurementUnit: 'cm',
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString()
 });
@@ -278,6 +280,20 @@ export async function getSettings(userId: string = DEFAULT_USER_ID): Promise<Use
         settings.features.bodyFatEnabled = false;
         needsSave = true;
       }
+      if (settings.features.bodyMeasurementsEnabled === undefined) {
+        settings.features.bodyMeasurementsEnabled = false;
+        needsSave = true;
+      }
+    }
+    // Add bodyMeasurementPresets if missing (backward compatibility)
+    if (!Array.isArray(settings.bodyMeasurementPresets)) {
+      settings.bodyMeasurementPresets = [];
+      needsSave = true;
+    }
+    // Add measurementUnit if missing (backward compatibility)
+    if (settings.measurementUnit !== 'cm' && settings.measurementUnit !== 'in') {
+      settings.measurementUnit = 'cm';
+      needsSave = true;
     }
     // Add dailyStepsGoal to goals if missing (backward compatibility)
     if (settings.goals && settings.goals.dailyStepsGoal === undefined) {

@@ -1,8 +1,7 @@
 "use client";
 
-import { Scale, Droplets, Footprints, HeartPulse, Pill, Syringe } from 'lucide-react';
+import { Scale, Droplets, Footprints, HeartPulse, Pill, Syringe, Ruler } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import type { FeatureToggles } from '@/lib/types';
 
 interface FloatingButtonBarProps {
@@ -12,6 +11,7 @@ interface FloatingButtonBarProps {
   onPressureClick?: () => void;
   onMedicationClick?: () => void;
   onInjectionClick?: () => void;
+  onBodyMeasurementsClick?: () => void;
   features?: FeatureToggles;
 }
 
@@ -22,6 +22,7 @@ export function FloatingButtonBar({
   onPressureClick,
   onMedicationClick,
   onInjectionClick,
+  onBodyMeasurementsClick,
   features
 }: FloatingButtonBarProps) {
   const waterEnabled = features?.waterEnabled ?? true;
@@ -29,6 +30,7 @@ export function FloatingButtonBar({
   const pressureEnabled = features?.pressureEnabled ?? false;
   const medicationEnabled = features?.medicationEnabled ?? false;
   const injectionsEnabled = features?.injectionsEnabled ?? false;
+  const bodyMeasurementsEnabled = features?.bodyMeasurementsEnabled ?? false;
 
   return (
     <div className="fixed left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-full shadow-lg border px-2 py-2" style={{ bottom: '4px' }}>
@@ -104,6 +106,19 @@ export function FloatingButtonBar({
         >
           <Syringe className="h-5 w-5 text-teal-500" />
           <span className="sr-only">Add injection</span>
+        </Button>
+      )}
+
+      {/* Body measurements button - only if enabled */}
+      {bodyMeasurementsEnabled && onBodyMeasurementsClick && (
+        <Button
+          size="lg"
+          variant="outline"
+          onClick={onBodyMeasurementsClick}
+          className="rounded-full h-12 w-12 border-cyan-500/50"
+        >
+          <Ruler className="h-5 w-5 text-cyan-500" />
+          <span className="sr-only">Body measurements</span>
         </Button>
       )}
     </div>

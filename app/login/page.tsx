@@ -70,7 +70,14 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <Image src="/logo.svg" alt="Weight Tracker" width={120} height={120} />
+            <Image
+              src="/logo.svg"
+              alt="Weight Tracker"
+              width={120}
+              height={120}
+              priority
+              style={{ height: 'auto' }}
+            />
           </div>
           <CardTitle className="text-2xl">Weight Tracker</CardTitle>
           <CardDescription>Sign in to track your progress</CardDescription>
