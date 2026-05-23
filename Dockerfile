@@ -10,10 +10,10 @@ RUN corepack enable
 WORKDIR /app
 
 # Copy package definitions first for better caching
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Install dependencies --frozen-lockfile
-RUN pnpm install 
+RUN pnpm install
 
 # Copy all source code
 COPY . .
