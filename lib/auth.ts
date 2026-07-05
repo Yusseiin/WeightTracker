@@ -4,6 +4,8 @@ import { cookies } from 'next/headers';
 import bcrypt from 'bcryptjs';
 import { NextRequest } from 'next/server';
 import { User, SessionUser, SESSION_COOKIE_NAME, CreateUserRequest, UserRole } from './types';
+import { renameUserData } from './user-rename';
+import { withFileLock, writeJsonAtomic } from './storage';
 
 // Bcrypt salt rounds (10 is recommended - good balance of security and performance)
 const SALT_ROUNDS = 10;
@@ -75,7 +77,7 @@ async function migrateUsersIfNeeded(): Promise<void> {
       createdAt: user.createdAt || new Date().toISOString()
     }));
 
-    await fs.writeFile(USERS_FILE, JSON.stringify(migratedUsers, null, 2), 'utf-8');
+    await writeJsonAtomic(USERS_FILE, migratedUsers);
 
     // Delete legacy file after successful migration
     await fs.unlink(LEGACY_USERS_FILE);
@@ -115,9 +117,9 @@ export async function getUsers(): Promise<User[]> {
       }
     }
 
-    // Save if we migrated any passwords
+    // Save if we migrated any passwords (atomic; read path stays lock-free)
     if (needsSave) {
-      await fs.writeFile(USERS_FILE, JSON.stringify(normalizedUsers, null, 2), 'utf-8');
+      await writeJsonAtomic(USERS_FILE, normalizedUsers);
     }
 
     return normalizedUsers;
@@ -133,15 +135,14 @@ export async function getUsers(): Promise<User[]> {
         createdAt: new Date().toISOString()
       }
     ];
-    await fs.writeFile(USERS_FILE, JSON.stringify(defaultUsers, null, 2), 'utf-8');
+    await writeJsonAtomic(USERS_FILE, defaultUsers);
     return defaultUsers;
   }
 }
 
-// Save users to file
+// Save users to file (atomic write; mutating callers hold the USERS_FILE lock)
 async function saveUsers(users: User[]): Promise<void> {
-  await ensureDataDir();
-  await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2), 'utf-8');
+  await writeJsonAtomic(USERS_FILE, users);
 }
 
 // Validate user credentials
@@ -199,38 +200,40 @@ export function createSessionValue(user: User): string {
 
 // Create a new user (admin only)
 export async function createUser(data: CreateUserRequest): Promise<User> {
-  const users = await getUsers();
+  return withFileLock(USERS_FILE, async () => {
+    const users = await getUsers();
 
-  // Check if username already exists
-  if (users.some(u => u.username === data.username)) {
-    throw new Error('Username already exists');
-  }
+    // Check if username already exists
+    if (users.some(u => u.username === data.username)) {
+      throw new Error('Username already exists');
+    }
 
-  // Validate username format (alphanumeric, 3-20 chars)
-  if (!/^[a-zA-Z0-9_]{3,20}$/.test(data.username)) {
-    throw new Error('Username must be 3-20 alphanumeric characters');
-  }
+    // Validate username format (alphanumeric, 3-20 chars)
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(data.username)) {
+      throw new Error('Username must be 3-20 alphanumeric characters');
+    }
 
-  // Validate password length
-  if (data.password.length < 6) {
-    throw new Error('Password must be at least 6 characters');
-  }
+    // Validate password length
+    if (data.password.length < 6) {
+      throw new Error('Password must be at least 6 characters');
+    }
 
-  // Hash the password before storing
-  const hashedPassword = await hashPassword(data.password);
+    // Hash the password before storing
+    const hashedPassword = await hashPassword(data.password);
 
-  const newUser: User = {
-    username: data.username,
-    password: hashedPassword,
-    nickname: data.nickname || data.username,
-    role: data.role,
-    createdAt: new Date().toISOString()
-  };
+    const newUser: User = {
+      username: data.username,
+      password: hashedPassword,
+      nickname: data.nickname || data.username,
+      role: data.role,
+      createdAt: new Date().toISOString()
+    };
 
-  users.push(newUser);
-  await saveUsers(users);
+    users.push(newUser);
+    await saveUsers(users);
 
-  return newUser;
+    return newUser;
+  });
 }
 
 // Update user password
@@ -239,26 +242,28 @@ export async function updateUserPassword(
   currentPassword: string,
   newPassword: string
 ): Promise<void> {
-  const users = await getUsers();
-  const userIndex = users.findIndex(u => u.username === username);
+  await withFileLock(USERS_FILE, async () => {
+    const users = await getUsers();
+    const userIndex = users.findIndex(u => u.username === username);
 
-  if (userIndex === -1) {
-    throw new Error('User not found');
-  }
+    if (userIndex === -1) {
+      throw new Error('User not found');
+    }
 
-  // Verify current password using bcrypt
-  const isCurrentValid = await comparePassword(currentPassword, users[userIndex].password);
-  if (!isCurrentValid) {
-    throw new Error('Current password is incorrect');
-  }
+    // Verify current password using bcrypt
+    const isCurrentValid = await comparePassword(currentPassword, users[userIndex].password);
+    if (!isCurrentValid) {
+      throw new Error('Current password is incorrect');
+    }
 
-  if (newPassword.length < 6) {
-    throw new Error('New password must be at least 6 characters');
-  }
+    if (newPassword.length < 6) {
+      throw new Error('New password must be at least 6 characters');
+    }
 
-  // Hash the new password before storing
-  users[userIndex].password = await hashPassword(newPassword);
-  await saveUsers(users);
+    // Hash the new password before storing
+    users[userIndex].password = await hashPassword(newPassword);
+    await saveUsers(users);
+  });
 }
 
 // Update user (admin only)
@@ -266,36 +271,80 @@ export async function updateUser(
   username: string,
   data: { nickname?: string; role?: UserRole }
 ): Promise<User> {
-  const users = await getUsers();
-  const userIndex = users.findIndex(u => u.username === username);
+  return withFileLock(USERS_FILE, async () => {
+    const users = await getUsers();
+    const userIndex = users.findIndex(u => u.username === username);
 
-  if (userIndex === -1) {
-    throw new Error('User not found');
+    if (userIndex === -1) {
+      throw new Error('User not found');
+    }
+
+    if (data.nickname !== undefined) {
+      users[userIndex].nickname = data.nickname;
+    }
+
+    if (data.role !== undefined) {
+      users[userIndex].role = data.role;
+    }
+
+    await saveUsers(users);
+    return users[userIndex];
+  });
+}
+
+// Rename a user, migrating all of their stored data to the new username.
+// The username is the primary key for every per-user file/dir, so this moves
+// the data on disk before updating the users record.
+export async function renameUser(oldUsername: string, newUsername: string): Promise<User> {
+  const trimmed = newUsername.trim();
+
+  // Validate format (same rule as user creation)
+  if (!/^[a-zA-Z0-9_]{3,20}$/.test(trimmed)) {
+    throw new Error('Username must be 3-20 alphanumeric characters');
   }
 
-  if (data.nickname !== undefined) {
-    users[userIndex].nickname = data.nickname;
-  }
+  return withFileLock(USERS_FILE, async () => {
+    const users = await getUsers();
+    const userIndex = users.findIndex(u => u.username === oldUsername);
+    if (userIndex === -1) {
+      throw new Error('User not found');
+    }
 
-  if (data.role !== undefined) {
-    users[userIndex].role = data.role;
-  }
+    // No-op if unchanged
+    if (trimmed === oldUsername) {
+      return users[userIndex];
+    }
 
-  await saveUsers(users);
-  return users[userIndex];
+    // Reject collisions (case-insensitive, since file paths can collide on some
+    // filesystems); exclude the user being renamed so a case-only change is allowed.
+    if (users.some((u, i) => i !== userIndex && u.username.toLowerCase() === trimmed.toLowerCase())) {
+      throw new Error('Username already exists');
+    }
+
+    // Migrate all per-user data first. If this throws (e.g. a target already
+    // exists), users.json is left untouched so nothing is half-renamed.
+    await renameUserData(oldUsername, trimmed);
+
+    users[userIndex].username = trimmed;
+    await saveUsers(users);
+
+    return users[userIndex];
+  });
 }
 
 // Delete user (admin only)
 export async function deleteUser(username: string): Promise<void> {
-  const users = await getUsers();
-  const userIndex = users.findIndex(u => u.username === username);
+  await withFileLock(USERS_FILE, async () => {
+    const users = await getUsers();
+    const userIndex = users.findIndex(u => u.username === username);
 
-  if (userIndex === -1) {
-    throw new Error('User not found');
-  }
+    if (userIndex === -1) {
+      throw new Error('User not found');
+    }
 
-  users.splice(userIndex, 1);
-  await saveUsers(users);
+    users.splice(userIndex, 1);
+    await saveUsers(users);
+  });
 }
 
 // Get all users without passwords (for admin listing)

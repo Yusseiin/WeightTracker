@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { format } from 'date-fns';
 import { MedicationEntry } from './types';
+import { withFileLock, writeJsonAtomic } from './storage';
 
 // Config directory - configurable via env for Docker/Unraid
 const CONFIG_PATH = process.env.CONFIG_PATH || '/config';
@@ -60,11 +61,9 @@ export async function getMedicationEntryById(userId: string, id: string): Promis
   return entries.find(e => e.id === id) || null;
 }
 
-// Save all medication entries
+// Save all medication entries (atomic write; callers hold the per-file lock)
 async function saveMedicationEntries(userId: string, entries: MedicationEntry[]): Promise<void> {
-  await ensureMedicationDir();
-  const filePath = getMedicationPath(userId);
-  await fs.writeFile(filePath, JSON.stringify(entries, null, 2), 'utf-8');
+  await writeJsonAtomic(getMedicationPath(userId), entries);
 }
 
 // Create a new medication entry
@@ -77,53 +76,55 @@ export async function createMedicationEntry(
   dose?: number | null,
   notes?: string
 ): Promise<MedicationEntry> {
-  const entries = await getMedicationEntries(userId);
-  const entryDate = date || getTodayDate();
-  const now = new Date().toISOString();
+  return withFileLock(getMedicationPath(userId), async () => {
+    const entries = await getMedicationEntries(userId);
+    const entryDate = date || getTodayDate();
+    const now = new Date().toISOString();
 
-  // Check if entry already exists for this medication on this date
-  const existingIndex = entries.findIndex(
-    e => e.date === entryDate && e.medicationId === medicationId
-  );
+    // Check if entry already exists for this medication on this date
+    const existingIndex = entries.findIndex(
+      e => e.date === entryDate && e.medicationId === medicationId
+    );
 
-  if (existingIndex !== -1) {
-    // Update existing entry
-    entries[existingIndex].taken = taken;
-    entries[existingIndex].timestamp = timestamp || now;
-    entries[existingIndex].updatedAt = now;
-    // Handle dose: set if provided, remove if null
-    if (dose !== undefined) {
-      if (dose === null) {
-        delete entries[existingIndex].dose;
-      } else {
-        entries[existingIndex].dose = dose;
+    if (existingIndex !== -1) {
+      // Update existing entry
+      entries[existingIndex].taken = taken;
+      entries[existingIndex].timestamp = timestamp || now;
+      entries[existingIndex].updatedAt = now;
+      // Handle dose: set if provided, remove if null
+      if (dose !== undefined) {
+        if (dose === null) {
+          delete entries[existingIndex].dose;
+        } else {
+          entries[existingIndex].dose = dose;
+        }
       }
+      if (notes !== undefined) {
+        entries[existingIndex].notes = notes || undefined;
+      }
+      await saveMedicationEntries(userId, entries);
+      return entries[existingIndex];
     }
-    if (notes !== undefined) {
-      entries[existingIndex].notes = notes || undefined;
-    }
-    await saveMedicationEntries(userId, entries);
-    return entries[existingIndex];
-  }
 
-  // Create new entry
-  const newEntry: MedicationEntry = {
-    id: generateId(),
-    author: userId,
-    date: entryDate,
-    medicationId,
-    taken,
-    timestamp: timestamp || now,
-    updatedAt: now
-  };
-  // Add dose if provided
-  if (dose !== undefined && dose !== null) {
-    newEntry.dose = dose;
-  }
-  if (notes) { newEntry.notes = notes; }
-  entries.push(newEntry);
-  await saveMedicationEntries(userId, entries);
-  return newEntry;
+    // Create new entry
+    const newEntry: MedicationEntry = {
+      id: generateId(),
+      author: userId,
+      date: entryDate,
+      medicationId,
+      taken,
+      timestamp: timestamp || now,
+      updatedAt: now
+    };
+    // Add dose if provided
+    if (dose !== undefined && dose !== null) {
+      newEntry.dose = dose;
+    }
+    if (notes) { newEntry.notes = notes; }
+    entries.push(newEntry);
+    await saveMedicationEntries(userId, entries);
+    return newEntry;
+  });
 }
 
 // Update medication entry by ID
@@ -136,51 +137,55 @@ export async function updateMedicationById(
   dose?: number | null,
   notes?: string
 ): Promise<MedicationEntry | null> {
-  const entries = await getMedicationEntries(userId);
-  const existingIndex = entries.findIndex(e => e.id === id);
-  const now = new Date().toISOString();
+  return withFileLock(getMedicationPath(userId), async () => {
+    const entries = await getMedicationEntries(userId);
+    const existingIndex = entries.findIndex(e => e.id === id);
+    const now = new Date().toISOString();
 
-  if (existingIndex === -1) {
-    return null; // Entry not found
-  }
-
-  // Update existing entry
-  entries[existingIndex].taken = taken;
-  if (timestamp) {
-    entries[existingIndex].timestamp = timestamp;
-  }
-  if (date) {
-    entries[existingIndex].date = date;
-  }
-  // Handle dose: set if provided, remove if null
-  if (dose !== undefined) {
-    if (dose === null) {
-      delete entries[existingIndex].dose;
-    } else {
-      entries[existingIndex].dose = dose;
+    if (existingIndex === -1) {
+      return null; // Entry not found
     }
-  }
-  if (notes !== undefined) {
-    entries[existingIndex].notes = notes || undefined;
-  }
-  entries[existingIndex].updatedAt = now;
-  await saveMedicationEntries(userId, entries);
-  return entries[existingIndex];
+
+    // Update existing entry
+    entries[existingIndex].taken = taken;
+    if (timestamp) {
+      entries[existingIndex].timestamp = timestamp;
+    }
+    if (date) {
+      entries[existingIndex].date = date;
+    }
+    // Handle dose: set if provided, remove if null
+    if (dose !== undefined) {
+      if (dose === null) {
+        delete entries[existingIndex].dose;
+      } else {
+        entries[existingIndex].dose = dose;
+      }
+    }
+    if (notes !== undefined) {
+      entries[existingIndex].notes = notes || undefined;
+    }
+    entries[existingIndex].updatedAt = now;
+    await saveMedicationEntries(userId, entries);
+    return entries[existingIndex];
+  });
 }
 
 // Delete medication entry by ID
 export async function deleteMedicationById(userId: string, id: string): Promise<boolean> {
-  const entries = await getMedicationEntries(userId);
-  const existingIndex = entries.findIndex(e => e.id === id);
+  return withFileLock(getMedicationPath(userId), async () => {
+    const entries = await getMedicationEntries(userId);
+    const existingIndex = entries.findIndex(e => e.id === id);
 
-  if (existingIndex === -1) {
-    return false; // Entry not found
-  }
+    if (existingIndex === -1) {
+      return false; // Entry not found
+    }
 
-  entries.splice(existingIndex, 1);
-  await saveMedicationEntries(userId, entries);
-  // Clean up associated photo if any
-  const { deletePhoto } = await import('./photos');
-  await deletePhoto(userId, 'medication', id);
-  return true;
+    entries.splice(existingIndex, 1);
+    await saveMedicationEntries(userId, entries);
+    // Clean up associated photo if any
+    const { deletePhoto } = await import('./photos');
+    await deletePhoto(userId, 'medication', id);
+    return true;
+  });
 }

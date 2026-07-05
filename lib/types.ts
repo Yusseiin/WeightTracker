@@ -152,6 +152,7 @@ export interface FeatureToggles {
   medicationEnabled: boolean;       // Show medication tracking button
   injectionsEnabled: boolean;       // Show injections tracking button
   waterEnabled: boolean;            // Show water tracking button
+  waterHistoryEnabled: boolean;     // Store water as individual timestamped entries with an editable history table
   photosEnabled: boolean;           // Enable photo attachments on entries
   weightNotesEnabled: boolean;      // Show notes on weight entries
   stepsNotesEnabled: boolean;       // Show notes on steps entries
@@ -216,6 +217,7 @@ export const DEFAULT_FEATURE_TOGGLES: FeatureToggles = {
   medicationEnabled: false,
   injectionsEnabled: false,
   waterEnabled: true,  // Default to true for backwards compatibility
+  waterHistoryEnabled: false,
   photosEnabled: false,
   weightNotesEnabled: false,
   stepsNotesEnabled: false,
@@ -321,13 +323,22 @@ export const SESSION_COOKIE_NAME = 'weight-tracker-session';
 // Default user ID for single-user mode (deprecated, kept for backwards compatibility)
 export const DEFAULT_USER_ID = 'default';
 
-// Water consumption entry (one per day)
+// Water consumption entry - one row per individual insert (like pressure/steps).
+// Multiple entries can share a date; the daily total is the sum of that date's rows.
 export interface WaterEntry {
   id: string;
   author: string;
-  date: string;        // YYYY-MM-DD format (one entry per day)
-  amount: number;      // Total ml for the day
+  date: string;        // YYYY-MM-DD - the day this insert counts toward
+  amount: number;      // ml for THIS insert
+  timestamp: string;   // ISO 8601 - when it was logged
   updatedAt: string;   // ISO 8601
+}
+
+// Aggregated water total for a single day. This is the shape the daily-recap
+// view, chart, history table, and goals consume (the sum of a day's WaterEntry rows).
+export interface WaterDayTotal {
+  date: string;        // YYYY-MM-DD
+  amount: number;      // total ml for the day
 }
 
 // Water amount options in ml (stored internally always in ml)

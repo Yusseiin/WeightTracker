@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { WeightTracker } from '@/components/weight-tracker';
 import { getEntries, getSettings } from '@/lib/data';
-import { getTodayWater, getWaterEntries } from '@/lib/water';
+import { getTodayWater, getWaterDailyTotals, getWaterInserts } from '@/lib/water';
 import { getTodaySteps, getStepsEntries } from '@/lib/steps';
 import { getTodayPressure, getPressureEntries } from '@/lib/pressure';
 import { getTodayMedications, getMedicationEntries } from '@/lib/medication';
@@ -29,7 +29,8 @@ export default async function Home() {
   const entries = await getEntries(userId);
   const settings = await getSettings(userId);
   const todayWater = await getTodayWater(userId);
-  const waterEntries = await getWaterEntries(userId);
+  const waterEntries = await getWaterDailyTotals(userId);
+  const waterInserts = await getWaterInserts(userId);
   const todaySteps = await getTodaySteps(userId);
   const stepsEntries = await getStepsEntries(userId);
   const todayPressure = await getTodayPressure(userId);
@@ -46,6 +47,7 @@ export default async function Home() {
         initialSettings={settings}
         initialWater={todayWater}
         initialWaterEntries={waterEntries}
+        initialWaterInserts={waterInserts}
         initialTodaySteps={todaySteps}
         initialStepsEntries={stepsEntries}
         initialTodayPressure={todayPressure}

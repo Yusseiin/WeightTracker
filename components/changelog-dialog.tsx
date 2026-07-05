@@ -2,12 +2,15 @@
 
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface ChangelogEntry {
   version: string;
@@ -22,6 +25,34 @@ interface ChangelogEntry {
 const changelog: ChangelogEntry[] = [
   {
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
+    date: "2026-07-05",
+    changes: [
+      { type: "added", description: "Optional water history (Settings → Features → 'Log water as individual entries'): when on, the Add Water dialog lets you pick a date/time and a History tab shows every water entry to edit or delete individually. When off, water works exactly as before (simple daily total)" },
+      { type: "changed", description: "Water is now stored internally as individual logged entries (like blood pressure and the other trackers) instead of a single daily total. The daily-recap view is unchanged - it shows the sum of the day's entries. Existing water history is preserved automatically" },
+      { type: "added", description: "You can now change your username from Settings → Account. Renaming migrates all of your existing data (weight, water, photos, etc.) to the new username" },
+      { type: "added", description: "Added a TZ environment variable to set the server timezone. Set e.g. TZ=America/Los_Angeles so daily totals (water, steps, blood pressure, medications, injections) roll over at your local midnight instead of midnight UTC" },
+      { type: "fixed", description: "Daily totals appearing to reset in the afternoon for users in non-UTC timezones (the container defaulted to UTC)" },
+      { type: "fixed", description: "Possible data loss when several updates hit the same record at once (e.g. the app and a Home Assistant automation writing together) - writes to each file are now serialized and saved atomically" },
+    ],
+  },
+  {
+    version: "v0.0.20",
+    date: "2026-07-03",
+    changes: [
+      { type: "changed", description: "Unit measure stored in the db now handle floating point, this will cause strange behaviour on old oz data but in the future oz value it will handle decimal point" },
+      { type: "added", description: "Possibility to use decimal point in preset and in custom water input" },
+      { type: "fixed", description: "Water progression not showing oz correctly" },
+    ],
+  },
+  {
+    version: "v0.0.19",
+    date: "2026-06-11",
+    changes: [
+      { type: "fixed", description: "Unit measure in photo comparison" },
+    ],
+  },
+  {
+    version: "v0.0.18",
     date: "2026-05-23",
     changes: [
       { type: "fixed", description: "Added body measurement tracking" },
@@ -232,6 +263,12 @@ export function ChangelogDialog({ open, onOpenChange }: ChangelogDialogProps) {
             ))}
           </div>
         </div>
+
+        <DialogFooter className="shrink-0">
+          <DialogClose asChild>
+            <Button type="button">OK</Button>
+          </DialogClose>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

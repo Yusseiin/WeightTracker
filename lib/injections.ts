@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { format } from 'date-fns';
 import { InjectionEntry } from './types';
+import { withFileLock, writeJsonAtomic } from './storage';
 
 // Config directory - configurable via env for Docker/Unraid
 const CONFIG_PATH = process.env.CONFIG_PATH || '/config';
@@ -72,11 +73,9 @@ export async function getLastInjection(userId: string): Promise<InjectionEntry |
   return sorted[0];
 }
 
-// Save all injection entries
+// Save all injection entries (atomic write; callers hold the per-file lock)
 async function saveInjectionEntries(userId: string, entries: InjectionEntry[]): Promise<void> {
-  await ensureInjectionsDir();
-  const filePath = getInjectionsPath(userId);
-  await fs.writeFile(filePath, JSON.stringify(entries, null, 2), 'utf-8');
+  await writeJsonAtomic(getInjectionsPath(userId), entries);
 }
 
 // Create a new injection entry
@@ -89,29 +88,31 @@ export async function createInjectionEntry(
   timestamp?: string,
   notes?: string
 ): Promise<InjectionEntry> {
-  const entries = await getInjectionEntries(userId);
-  const entryDate = date || getTodayDate();
-  const now = new Date().toISOString();
+  return withFileLock(getInjectionsPath(userId), async () => {
+    const entries = await getInjectionEntries(userId);
+    const entryDate = date || getTodayDate();
+    const now = new Date().toISOString();
 
-  // Create new entry (injections are not one-per-day, each is unique)
-  const newEntry: InjectionEntry = {
-    id: generateId(),
-    author: userId,
-    date: entryDate,
-    medicationId,
-    dose,
-    siteId,
-    timestamp: timestamp || now,
-    updatedAt: now
-  };
+    // Create new entry (injections are not one-per-day, each is unique)
+    const newEntry: InjectionEntry = {
+      id: generateId(),
+      author: userId,
+      date: entryDate,
+      medicationId,
+      dose,
+      siteId,
+      timestamp: timestamp || now,
+      updatedAt: now
+    };
 
-  if (notes) {
-    newEntry.notes = notes;
-  }
+    if (notes) {
+      newEntry.notes = notes;
+    }
 
-  entries.push(newEntry);
-  await saveInjectionEntries(userId, entries);
-  return newEntry;
+    entries.push(newEntry);
+    await saveInjectionEntries(userId, entries);
+    return newEntry;
+  });
 }
 
 // Update injection entry by ID
@@ -126,49 +127,53 @@ export async function updateInjectionById(
     notes?: string;
   }
 ): Promise<InjectionEntry | null> {
-  const entries = await getInjectionEntries(userId);
-  const existingIndex = entries.findIndex(e => e.id === id);
-  const now = new Date().toISOString();
+  return withFileLock(getInjectionsPath(userId), async () => {
+    const entries = await getInjectionEntries(userId);
+    const existingIndex = entries.findIndex(e => e.id === id);
+    const now = new Date().toISOString();
 
-  if (existingIndex === -1) {
-    return null; // Entry not found
-  }
+    if (existingIndex === -1) {
+      return null; // Entry not found
+    }
 
-  // Update existing entry
-  if (updates.dose !== undefined) {
-    entries[existingIndex].dose = updates.dose;
-  }
-  if (updates.siteId !== undefined) {
-    entries[existingIndex].siteId = updates.siteId;
-  }
-  if (updates.timestamp !== undefined) {
-    entries[existingIndex].timestamp = updates.timestamp;
-  }
-  if (updates.date !== undefined) {
-    entries[existingIndex].date = updates.date;
-  }
-  if (updates.notes !== undefined) {
-    entries[existingIndex].notes = updates.notes;
-  }
-  entries[existingIndex].updatedAt = now;
+    // Update existing entry
+    if (updates.dose !== undefined) {
+      entries[existingIndex].dose = updates.dose;
+    }
+    if (updates.siteId !== undefined) {
+      entries[existingIndex].siteId = updates.siteId;
+    }
+    if (updates.timestamp !== undefined) {
+      entries[existingIndex].timestamp = updates.timestamp;
+    }
+    if (updates.date !== undefined) {
+      entries[existingIndex].date = updates.date;
+    }
+    if (updates.notes !== undefined) {
+      entries[existingIndex].notes = updates.notes;
+    }
+    entries[existingIndex].updatedAt = now;
 
-  await saveInjectionEntries(userId, entries);
-  return entries[existingIndex];
+    await saveInjectionEntries(userId, entries);
+    return entries[existingIndex];
+  });
 }
 
 // Delete injection entry by ID
 export async function deleteInjectionById(userId: string, id: string): Promise<boolean> {
-  const entries = await getInjectionEntries(userId);
-  const existingIndex = entries.findIndex(e => e.id === id);
+  return withFileLock(getInjectionsPath(userId), async () => {
+    const entries = await getInjectionEntries(userId);
+    const existingIndex = entries.findIndex(e => e.id === id);
 
-  if (existingIndex === -1) {
-    return false; // Entry not found
-  }
+    if (existingIndex === -1) {
+      return false; // Entry not found
+    }
 
-  entries.splice(existingIndex, 1);
-  await saveInjectionEntries(userId, entries);
-  // Clean up associated photo if any
-  const { deletePhoto } = await import('./photos');
-  await deletePhoto(userId, 'injection', id);
-  return true;
+    entries.splice(existingIndex, 1);
+    await saveInjectionEntries(userId, entries);
+    // Clean up associated photo if any
+    const { deletePhoto } = await import('./photos');
+    await deletePhoto(userId, 'injection', id);
+    return true;
+  });
 }

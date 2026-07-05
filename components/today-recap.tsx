@@ -5,7 +5,7 @@ import { isToday, parseISO, differenceInDays, format } from 'date-fns';
 import { Scale, Droplets, Flame, Footprints, HeartPulse, Pill, Syringe, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import type { WeightEntry, WaterEntry, WaterUnit, GoalSettings, StepsEntry, PressureEntry, FeatureToggles, MedicationEntry, MedicationPreset, MedicationSchedule, InjectionEntry, InjectionSettings } from '@/lib/types';
+import type { WeightEntry, WaterDayTotal, WaterUnit, GoalSettings, StepsEntry, PressureEntry, FeatureToggles, MedicationEntry, MedicationPreset, MedicationSchedule, InjectionEntry, InjectionSettings } from '@/lib/types';
 import { formatWaterAmount } from '@/lib/water-utils';
 import { formatDateForRecap } from '@/lib/date-utils';
 import { calculateWaterStreak, calculateProgress, getCurrentWeekWeightChange, getCurrentMonthWeightChange } from '@/lib/goals';
@@ -36,11 +36,11 @@ function isMedicationDueToday(schedule: MedicationSchedule | undefined, today: D
 
 interface TodayRecapProps {
   entries: WeightEntry[];
-  todayWater: WaterEntry | null;
+  todayWater: WaterDayTotal | null;
   unit: 'kg' | 'lb';
   waterUnit: WaterUnit;
   goals?: GoalSettings;
-  waterEntries?: WaterEntry[];
+  waterEntries?: WaterDayTotal[];
   todaySteps?: StepsEntry[];
   todayPressure?: PressureEntry[];
   todayMedications?: MedicationEntry[];

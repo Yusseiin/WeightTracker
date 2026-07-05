@@ -263,9 +263,12 @@ Each user gets their own data files in separate folders inside the config direct
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `CONFIG_PATH` | Directory for storing JSON data files | `/config` |
+| `TZ` | Timezone used to decide the current day for daily totals (water, steps, pressure, medications). Use an [IANA name](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), e.g. `America/Los_Angeles`. Leave as `UTC` and your daily totals reset at midnight UTC. | `UTC` |
 | `PUID` | User ID for file permissions (Unraid) | `1000` |
 | `PGID` | Group ID for file permissions (Unraid) | `1000` |
 | `API_KEY` | Secret key for API authentication (enables HA integration) | (disabled) |
+
+> **Set `TZ` to your local timezone.** Daily metrics (water, steps, blood pressure, medications, injections) are bucketed by calendar day using the container's clock. Without `TZ`, the container runs on UTC, so — for example — in California (UTC-7/8) your daily water total appears to "reset" at 4–5 PM. Setting `TZ=America/Los_Angeles` makes the day roll over at your local midnight instead.
 
 ## Docker Deployment
 
@@ -282,6 +285,7 @@ docker run -d \
   --name weight-tracker \
   -p 3000:3000 \
   -v /path/to/config:/config \
+  -e TZ=America/Los_Angeles \
   -e PUID=1000 \
   -e PGID=1000 \
   yusseiin/weighttracker:latest
@@ -299,6 +303,7 @@ services:
     volumes:
       - /path/to/config:/config
     environment:
+      - TZ=America/Los_Angeles
       - PUID=1000
       - PGID=1000
     restart: unless-stopped
@@ -338,6 +343,7 @@ docker run -d -p 3000:3000 -v /path/to/config:/config weight-tracker
 |----------|---------------|-----------|-------------|
 | Config | `/config` | `/mnt/user/appdata/weight-tracker` | Data storage |
 | Port | `3000` | `3000` | Web UI port |
+| TZ | - | `America/Los_Angeles` | Timezone for daily totals (add as a Variable, default `UTC`) |
 | PUID | - | `99` | User ID |
 | PGID | - | `100` | Group ID |
 

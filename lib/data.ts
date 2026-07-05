@@ -3,6 +3,7 @@ import path from 'path';
 import { WeightEntry, UserSettings, DEFAULT_USER_ID, DEFAULT_ACTIVITIES, DEFAULT_GOALS, DEFAULT_WATER_PRESETS, DEFAULT_FEATURE_TOGGLES, DEFAULT_MEDICATION_PRESETS, DEFAULT_INJECTION_SETTINGS, MedicationPreset } from './types';
 import { DEFAULT_DATE_FORMAT } from './date-utils';
 import { deletePhoto } from './photos';
+import { withFileLock, writeJsonAtomic } from './storage';
 
 // Config directory - configurable via env for Docker/Unraid
 const CONFIG_PATH = process.env.CONFIG_PATH || '/config';
@@ -90,9 +91,9 @@ export async function getEntries(userId: string = DEFAULT_USER_ID): Promise<Weig
     const originalData = JSON.stringify(entries);
     entries = migrateEntryTraining(entries);
 
-    // If migration changed data, save it back
+    // If migration changed data, save it back (atomic; read path stays lock-free)
     if (JSON.stringify(entries) !== originalData) {
-      await fs.writeFile(filePath, JSON.stringify(entries, null, 2), 'utf-8');
+      await writeJsonAtomic(filePath, entries);
     }
 
     // Sort by timestamp descending (newest first)
@@ -107,22 +108,24 @@ export async function addEntry(
   data: Omit<WeightEntry, 'id'>,
   userId: string = DEFAULT_USER_ID
 ): Promise<WeightEntry> {
-  await ensureDataDirs();
-  await migrateUserDataIfNeeded(userId);
-  const filePath = getEntriesPath(userId);
+  return withFileLock(getEntriesPath(userId), async () => {
+    await ensureDataDirs();
+    await migrateUserDataIfNeeded(userId);
+    const filePath = getEntriesPath(userId);
 
-  const entries = await getEntries(userId);
+    const entries = await getEntries(userId);
 
-  const newEntry: WeightEntry = {
-    ...data,
-    id: generateId(),
-    author: userId
-  };
+    const newEntry: WeightEntry = {
+      ...data,
+      id: generateId(),
+      author: userId
+    };
 
-  entries.push(newEntry);
-  await fs.writeFile(filePath, JSON.stringify(entries, null, 2), 'utf-8');
+    entries.push(newEntry);
+    await writeJsonAtomic(filePath, entries);
 
-  return newEntry;
+    return newEntry;
+  });
 }
 
 export async function updateEntry(
@@ -130,42 +133,46 @@ export async function updateEntry(
   data: Partial<Omit<WeightEntry, 'id' | 'author'>>,
   userId: string = DEFAULT_USER_ID
 ): Promise<WeightEntry | null> {
-  await ensureDataDirs();
-  await migrateUserDataIfNeeded(userId);
-  const filePath = getEntriesPath(userId);
+  return withFileLock(getEntriesPath(userId), async () => {
+    await ensureDataDirs();
+    await migrateUserDataIfNeeded(userId);
+    const filePath = getEntriesPath(userId);
 
-  const entries = await getEntries(userId);
-  const index = entries.findIndex(e => e.id === entryId);
+    const entries = await getEntries(userId);
+    const index = entries.findIndex(e => e.id === entryId);
 
-  if (index === -1) {
-    return null;
-  }
+    if (index === -1) {
+      return null;
+    }
 
-  entries[index] = { ...entries[index], ...data };
-  await fs.writeFile(filePath, JSON.stringify(entries, null, 2), 'utf-8');
+    entries[index] = { ...entries[index], ...data };
+    await writeJsonAtomic(filePath, entries);
 
-  return entries[index];
+    return entries[index];
+  });
 }
 
 export async function deleteEntry(
   entryId: string,
   userId: string = DEFAULT_USER_ID
 ): Promise<boolean> {
-  await ensureDataDirs();
-  await migrateUserDataIfNeeded(userId);
-  const filePath = getEntriesPath(userId);
+  return withFileLock(getEntriesPath(userId), async () => {
+    await ensureDataDirs();
+    await migrateUserDataIfNeeded(userId);
+    const filePath = getEntriesPath(userId);
 
-  const entries = await getEntries(userId);
-  const filteredEntries = entries.filter(e => e.id !== entryId);
+    const entries = await getEntries(userId);
+    const filteredEntries = entries.filter(e => e.id !== entryId);
 
-  if (filteredEntries.length === entries.length) {
-    return false; // Entry not found
-  }
+    if (filteredEntries.length === entries.length) {
+      return false; // Entry not found
+    }
 
-  await fs.writeFile(filePath, JSON.stringify(filteredEntries, null, 2), 'utf-8');
-  // Clean up associated photo if any
-  await deletePhoto(userId, 'weight', entryId);
-  return true;
+    await writeJsonAtomic(filePath, filteredEntries);
+    // Clean up associated photo if any
+    await deletePhoto(userId, 'weight', entryId);
+    return true;
+  });
 }
 
 // ============ SETTINGS ============
@@ -276,6 +283,10 @@ export async function getSettings(userId: string = DEFAULT_USER_ID): Promise<Use
         settings.features.waterEnabled = true;
         needsSave = true;
       }
+      if (settings.features.waterHistoryEnabled === undefined) {
+        settings.features.waterHistoryEnabled = false;
+        needsSave = true;
+      }
       if (settings.features.bodyFatEnabled === undefined) {
         settings.features.bodyFatEnabled = false;
         needsSave = true;
@@ -315,16 +326,16 @@ export async function getSettings(userId: string = DEFAULT_USER_ID): Promise<Use
       }
     }
 
-    // Persist fixes to file
+    // Persist fixes to file (atomic; read path stays lock-free)
     if (needsSave) {
-      await fs.writeFile(filePath, JSON.stringify(settings, null, 2), 'utf-8');
+      await writeJsonAtomic(filePath, settings);
     }
 
     return settings;
   } catch {
     // File doesn't exist, create with defaults
     const settings = defaultSettings(userId);
-    await fs.writeFile(filePath, JSON.stringify(settings, null, 2), 'utf-8');
+    await writeJsonAtomic(filePath, settings);
     return settings;
   }
 }
@@ -333,17 +344,19 @@ export async function updateSettings(
   data: Partial<Omit<UserSettings, 'userId' | 'createdAt'>>,
   userId: string = DEFAULT_USER_ID
 ): Promise<UserSettings> {
-  await ensureDataDirs();
-  await migrateUserDataIfNeeded(userId);
-  const filePath = getSettingsPath(userId);
+  return withFileLock(getSettingsPath(userId), async () => {
+    await ensureDataDirs();
+    await migrateUserDataIfNeeded(userId);
+    const filePath = getSettingsPath(userId);
 
-  const current = await getSettings(userId);
-  const updated: UserSettings = {
-    ...current,
-    ...data,
-    updatedAt: new Date().toISOString()
-  };
+    const current = await getSettings(userId);
+    const updated: UserSettings = {
+      ...current,
+      ...data,
+      updatedAt: new Date().toISOString()
+    };
 
-  await fs.writeFile(filePath, JSON.stringify(updated, null, 2), 'utf-8');
-  return updated;
+    await writeJsonAtomic(filePath, updated);
+    return updated;
+  });
 }

@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { format } from 'date-fns';
 import { PressureEntry } from './types';
+import { withFileLock, writeJsonAtomic } from './storage';
 
 // Config directory - configurable via env for Docker/Unraid
 const CONFIG_PATH = process.env.CONFIG_PATH || '/config';
@@ -60,11 +61,9 @@ export async function getPressureEntryById(userId: string, id: string): Promise<
   return entries.find(e => e.id === id) || null;
 }
 
-// Save all pressure entries
+// Save all pressure entries (atomic write; callers hold the per-file lock)
 async function savePressureEntries(userId: string, entries: PressureEntry[]): Promise<void> {
-  await ensurePressureDir();
-  const filePath = getPressurePath(userId);
-  await fs.writeFile(filePath, JSON.stringify(entries, null, 2), 'utf-8');
+  await writeJsonAtomic(getPressurePath(userId), entries);
 }
 
 // Create a new pressure entry (always creates new, never updates)
@@ -76,24 +75,26 @@ export async function createPressureEntry(
   timestamp?: string,
   notes?: string
 ): Promise<PressureEntry> {
-  const entries = await getPressureEntries(userId);
-  const entryDate = date || getTodayDate();
-  const now = new Date().toISOString();
+  return withFileLock(getPressurePath(userId), async () => {
+    const entries = await getPressureEntries(userId);
+    const entryDate = date || getTodayDate();
+    const now = new Date().toISOString();
 
-  // Always create new entry
-  const newEntry: PressureEntry = {
-    id: generateId(),
-    author: userId,
-    date: entryDate,
-    systolic,
-    diastolic,
-    timestamp: timestamp || now,
-    updatedAt: now
-  };
-  if (notes) { newEntry.notes = notes; }
-  entries.push(newEntry);
-  await savePressureEntries(userId, entries);
-  return newEntry;
+    // Always create new entry
+    const newEntry: PressureEntry = {
+      id: generateId(),
+      author: userId,
+      date: entryDate,
+      systolic,
+      diastolic,
+      timestamp: timestamp || now,
+      updatedAt: now
+    };
+    if (notes) { newEntry.notes = notes; }
+    entries.push(newEntry);
+    await savePressureEntries(userId, entries);
+    return newEntry;
+  });
 }
 
 // Update pressure entry by ID
@@ -105,43 +106,47 @@ export async function updatePressureById(
   timestamp?: string,
   notes?: string
 ): Promise<PressureEntry | null> {
-  const entries = await getPressureEntries(userId);
-  const existingIndex = entries.findIndex(e => e.id === id);
-  const now = new Date().toISOString();
+  return withFileLock(getPressurePath(userId), async () => {
+    const entries = await getPressureEntries(userId);
+    const existingIndex = entries.findIndex(e => e.id === id);
+    const now = new Date().toISOString();
 
-  if (existingIndex === -1) {
-    return null; // Entry not found
-  }
+    if (existingIndex === -1) {
+      return null; // Entry not found
+    }
 
-  // Update existing entry
-  entries[existingIndex].systolic = systolic;
-  entries[existingIndex].diastolic = diastolic;
-  if (timestamp) {
-    entries[existingIndex].timestamp = timestamp;
-  }
-  if (notes !== undefined) {
-    entries[existingIndex].notes = notes || undefined;
-  }
-  entries[existingIndex].updatedAt = now;
-  await savePressureEntries(userId, entries);
-  return entries[existingIndex];
+    // Update existing entry
+    entries[existingIndex].systolic = systolic;
+    entries[existingIndex].diastolic = diastolic;
+    if (timestamp) {
+      entries[existingIndex].timestamp = timestamp;
+    }
+    if (notes !== undefined) {
+      entries[existingIndex].notes = notes || undefined;
+    }
+    entries[existingIndex].updatedAt = now;
+    await savePressureEntries(userId, entries);
+    return entries[existingIndex];
+  });
 }
 
 // Delete pressure entry by ID
 export async function deletePressureById(userId: string, id: string): Promise<boolean> {
-  const entries = await getPressureEntries(userId);
-  const existingIndex = entries.findIndex(e => e.id === id);
+  return withFileLock(getPressurePath(userId), async () => {
+    const entries = await getPressureEntries(userId);
+    const existingIndex = entries.findIndex(e => e.id === id);
 
-  if (existingIndex === -1) {
-    return false; // Entry not found
-  }
+    if (existingIndex === -1) {
+      return false; // Entry not found
+    }
 
-  entries.splice(existingIndex, 1);
-  await savePressureEntries(userId, entries);
-  // Clean up associated photo if any
-  const { deletePhoto } = await import('./photos');
-  await deletePhoto(userId, 'pressure', id);
-  return true;
+    entries.splice(existingIndex, 1);
+    await savePressureEntries(userId, entries);
+    // Clean up associated photo if any
+    const { deletePhoto } = await import('./photos');
+    await deletePhoto(userId, 'pressure', id);
+    return true;
+  });
 }
 
 // Re-export client-safe functions from pressure-utils

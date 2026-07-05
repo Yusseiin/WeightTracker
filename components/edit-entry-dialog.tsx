@@ -39,7 +39,7 @@ import { DynamicIcon } from '@/components/dynamic-icon';
 import { PhotoCapture } from './photo-capture';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
-import type { WeightEntry, EntryFormData, WaterEntry, WaterUnit, CustomActivity } from '@/lib/types';
+import type { WeightEntry, EntryFormData, WaterDayTotal, WaterUnit, CustomActivity } from '@/lib/types';
 import { mlToOz, ozToMl } from '@/lib/water-utils';
 import { formatDateForTooltip } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
@@ -52,12 +52,16 @@ interface EditEntryDialogProps {
   onDelete: (id: string) => Promise<void>;
   unit: 'kg' | 'lb';
   waterUnit: WaterUnit;
-  waterEntries: WaterEntry[];
+  waterEntries: WaterDayTotal[];
   onUpdateWater: (date: string, amount: number) => Promise<void>;
   activities: CustomActivity[];
   photosEnabled?: boolean;
   notesEnabled?: boolean;
   bodyFatEnabled?: boolean;
+  // When water history mode is on, water is managed as individual entries in the
+  // history table, so the per-day water field is hidden here (editing it would
+  // collapse a day's individual inserts into one).
+  waterHistoryEnabled?: boolean;
 }
 
 export function EditEntryDialog({
@@ -73,7 +77,8 @@ export function EditEntryDialog({
   activities,
   photosEnabled,
   notesEnabled,
-  bodyFatEnabled
+  bodyFatEnabled,
+  waterHistoryEnabled
 }: EditEntryDialogProps) {
   const [weight, setWeight] = useState<string>('');
   const [training, setTraining] = useState<string>('');
@@ -105,9 +110,13 @@ export function EditEntryDialog({
       // Get water for this date
       const waterEntry = waterEntries.find(w => w.date === entryDateStr);
       const waterMl = waterEntry?.amount || 0;
-      // Convert to display unit
+      // Convert to display unit; preserve up to 2 decimals for oz and trim trailing zeros
       if (waterUnit === 'oz') {
-        setWater(waterMl > 0 ? Math.round(mlToOz(waterMl)).toString() : '');
+        setWater(
+          waterMl > 0
+            ? mlToOz(waterMl).toFixed(2).replace(/\.?0+$/, '')
+            : ''
+        );
       } else {
         setWater(waterMl > 0 ? waterMl.toString() : '');
       }
@@ -131,11 +140,14 @@ export function EditEntryDialog({
         bodyFat: bodyFatInput ? parseFloat(bodyFatInput) : undefined
       });
 
-      // Save water if value provided
-      const waterValue = parseFloat(water) || 0;
-      // Convert to ml if using oz
-      const waterMl = waterUnit === 'oz' ? ozToMl(waterValue) : waterValue;
-      await onUpdateWater(date, waterMl);
+      // Save the per-day water total only in non-history mode. In history mode
+      // water is managed as individual entries, so we must not overwrite them here.
+      if (!waterHistoryEnabled) {
+        const waterValue = parseFloat(water) || 0;
+        // Convert to ml if using oz
+        const waterMl = waterUnit === 'oz' ? ozToMl(waterValue) : waterValue;
+        await onUpdateWater(date, waterMl);
+      }
 
       onOpenChange(false);
     } finally {
@@ -184,7 +196,7 @@ export function EditEntryDialog({
       </div>
 
       {/* Weight and Water inputs */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className={cn("grid gap-4", waterHistoryEnabled ? "grid-cols-1" : "grid-cols-2")}>
         <div className="space-y-2">
           <Label htmlFor="edit-weight">Weight ({unit})</Label>
           <Input
@@ -196,22 +208,25 @@ export function EditEntryDialog({
             className="text-lg text-center"
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="edit-water" className="flex items-center gap-1">
-            <Droplets className="h-4 w-4 text-blue-500 pointer-events-none" />
-            Water ({waterUnit})
-          </Label>
-          <Input
-            id="edit-water"
-            type="number"
-            step="1"
-            min="0"
-            value={water}
-            onChange={(e) => setWater(e.target.value)}
-            placeholder="0"
-            className="text-lg text-center"
-          />
-        </div>
+        {/* Per-day water field hidden in history mode (managed per-entry instead) */}
+        {!waterHistoryEnabled && (
+          <div className="space-y-2">
+            <Label htmlFor="edit-water" className="flex items-center gap-1">
+              <Droplets className="h-4 w-4 text-blue-500 pointer-events-none" />
+              Water ({waterUnit})
+            </Label>
+            <Input
+              id="edit-water"
+              type="number"
+              step="1"
+              min="0"
+              value={water}
+              onChange={(e) => setWater(e.target.value)}
+              placeholder="0"
+              className="text-lg text-center"
+            />
+          </div>
+        )}
       </div>
 
       {/* Body Fat % */}

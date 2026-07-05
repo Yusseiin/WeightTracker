@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { format } from 'date-fns';
 import { ArrowLeft, ArrowLeftRight, Maximize2, Download, X, Loader2, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -46,7 +47,11 @@ const ENTRY_API_MAP: Record<PhotoEntryType, string> = {
   'body-measurement': '/api/body-measurements',
 };
 
-function formatEntryLabel(entryType: PhotoEntryType, entry: Record<string, unknown>): string {
+function formatEntryLabel(
+  entryType: PhotoEntryType,
+  entry: Record<string, unknown>,
+  weightUnit: 'kg' | 'lb'
+): string {
   const dateStr = (entry.timestamp || entry.date) as string;
   let date: string;
   try {
@@ -57,7 +62,7 @@ function formatEntryLabel(entryType: PhotoEntryType, entry: Record<string, unkno
 
   switch (entryType) {
     case 'weight':
-      return `${date} — ${entry.weight} kg`;
+      return `${date} — ${entry.weight} ${weightUnit}`;
     case 'steps':
       return `${date} — ${entry.steps} steps`;
     case 'pressure':
@@ -110,11 +115,16 @@ export function ComparePhotosPage() {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        const [photosRes, entriesRes, initialPhotosRes] = await Promise.all([
+        const [photosRes, entriesRes, initialPhotosRes, settingsRes] = await Promise.all([
           fetch(`/api/photos?type=${entryType}`).then(r => r.json()),
           fetch(ENTRY_API_MAP[entryType]).then(r => r.json()),
           fetch(`/api/photos/${entryType}/${initialEntryId}?list=true`).then(r => r.json()),
+          fetch('/api/settings').then(r => r.json()),
         ]);
+
+        // Resolve user's weight unit (defaults to kg if unset / failed)
+        const resolvedUnit: 'kg' | 'lb' =
+          settingsRes?.success && settingsRes.data?.unit === 'lb' ? 'lb' : 'kg';
 
         // Build entry map
         const entries: Record<string, unknown>[] = entriesRes.success
@@ -131,7 +141,7 @@ export function ComparePhotosPage() {
           ? initialPhotosRes.data
           : [];
         const initialLabel = initialEntry
-          ? formatEntryLabel(entryType, initialEntry)
+          ? formatEntryLabel(entryType, initialEntry, resolvedUnit)
           : 'Current';
 
         setSelectedEntries([{ id: initialEntryId, label: initialLabel, indices: initialIndices }]);
@@ -146,7 +156,7 @@ export function ComparePhotosPage() {
             const dateStr = (entry.timestamp || entry.date) as string;
             candidateList.push({
               id: entryId,
-              label: formatEntryLabel(entryType, entry),
+              label: formatEntryLabel(entryType, entry, resolvedUnit),
               date: dateStr,
             });
           }
@@ -313,11 +323,14 @@ export function ComparePhotosPage() {
                           {entry.indices.map(idx => {
                             const url = `/api/photos/${entryType}/${entry.id}?index=${idx}`;
                             return (
-                              <div key={idx} className="relative">
-                                <img
+                              <div key={idx} className="relative h-24 w-full">
+                                <Image
                                   src={url}
                                   alt={`Photo ${idx + 1}`}
-                                  className="h-24 w-full object-cover rounded-md cursor-pointer"
+                                  fill
+                                  sizes="(max-width: 768px) 33vw, 200px"
+                                  unoptimized
+                                  className="object-cover rounded-md cursor-pointer"
                                   onClick={() => handlePhotoClick(url)}
                                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                 />
@@ -409,11 +422,14 @@ export function ComparePhotosPage() {
               <CarouselContent>
                 {carouselPhotos.map((photo, idx) => (
                   <CarouselItem key={idx}>
-                    <div className="flex items-center justify-center h-[80vh]">
-                      <img
+                    <div className="relative h-[80vh] w-full">
+                      <Image
                         src={photo.url}
                         alt={`Photo ${idx + 1}`}
-                        className="max-w-full max-h-full object-contain rounded-md"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 90vw"
+                        unoptimized
+                        className="object-contain rounded-md"
                         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                       />
                     </div>

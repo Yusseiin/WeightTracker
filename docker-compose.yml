@@ -15,6 +15,9 @@ services:
       NODE_ENV: production
       # These paths are INSIDE the container - don't change these
       CONFIG_PATH: /config
+      # Timezone for deciding the current day of daily totals (water, steps, pressure...).
+      # Defaults to UTC; set e.g. TZ=America/Los_Angeles so the day rolls over at your local midnight.
+      TZ: ${TZ:-UTC}
     volumes:
       # Map your host paths to container paths
       # For Unraid: /mnt/user/downloads:/downloads

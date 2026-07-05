@@ -16,23 +16,25 @@ import { DynamicIcon } from '@/components/dynamic-icon';
 import { formatWaterAmount } from '@/lib/water-utils';
 import { formatDateForTable } from '@/lib/date-utils';
 import { getPressureCategory } from '@/lib/pressure-utils';
-import type { WeightEntry, WaterEntry, WaterUnit, DateFormatSettings, CustomActivity, StepsEntry, PressureEntry, FeatureToggles, MedicationEntry, MedicationPreset, InjectionEntry, InjectionSettings } from '@/lib/types';
+import type { WeightEntry, WaterDayTotal, WaterEntry, WaterUnit, DateFormatSettings, CustomActivity, StepsEntry, PressureEntry, FeatureToggles, MedicationEntry, MedicationPreset, InjectionEntry, InjectionSettings } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { EditStepsDialog } from '@/components/edit-steps-dialog';
 import { EditPressureDialog } from '@/components/edit-pressure-dialog';
+import { EditWaterDialog } from '@/components/edit-water-dialog';
 import { EditMedicationDialog } from '@/components/edit-medication-dialog';
 import { EditInjectionDialog } from '@/components/edit-injection-dialog';
 import { DynamicIcon as MedIcon } from './dynamic-icon';
 import { Check, X } from 'lucide-react';
 
-type TableView = 'weight' | 'steps' | 'pressure' | 'medication' | 'injections';
+type TableView = 'weight' | 'water' | 'steps' | 'pressure' | 'medication' | 'injections';
 
 interface EntriesTableProps {
   entries: WeightEntry[];
   unit: 'kg' | 'lb';
   waterUnit: WaterUnit;
   onRowClick: (entry: WeightEntry) => void;
-  waterEntries?: WaterEntry[];
+  waterEntries?: WaterDayTotal[];
+  waterInserts?: WaterEntry[];
   stepsEntries?: StepsEntry[];
   pressureEntries?: PressureEntry[];
   medicationEntries?: MedicationEntry[];
@@ -42,6 +44,8 @@ interface EntriesTableProps {
   dateFormat?: DateFormatSettings;
   activities: CustomActivity[];
   features?: FeatureToggles;
+  onUpdateWater?: (id: string, amount: number, timestamp?: string) => Promise<void>;
+  onDeleteWater?: (id: string) => Promise<void>;
   onUpdateSteps?: (id: string, steps: number, timestamp?: string, notes?: string) => Promise<void>;
   onDeleteSteps?: (id: string) => Promise<void>;
   onUpdatePressure?: (id: string, systolic: number, diastolic: number, timestamp?: string, notes?: string) => Promise<void>;
@@ -150,6 +154,7 @@ export function EntriesTable({
   waterUnit,
   onRowClick,
   waterEntries = [],
+  waterInserts = [],
   stepsEntries = [],
   pressureEntries = [],
   medicationEntries = [],
@@ -159,6 +164,8 @@ export function EntriesTable({
   dateFormat,
   activities,
   features,
+  onUpdateWater,
+  onDeleteWater,
   onUpdateSteps,
   onDeleteSteps,
   onUpdatePressure,
@@ -171,6 +178,7 @@ export function EntriesTable({
   photoRefreshKey
 }: EntriesTableProps) {
   const [currentView, setCurrentView] = useState<TableView>('weight');
+  const [editingWaterEntry, setEditingWaterEntry] = useState<WaterEntry | null>(null);
   const [editingStepsEntry, setEditingStepsEntry] = useState<StepsEntry | null>(null);
   const [editingPressureEntry, setEditingPressureEntry] = useState<PressureEntry | null>(null);
   const [editingMedicationEntry, setEditingMedicationEntry] = useState<MedicationEntry | null>(null);
@@ -184,7 +192,7 @@ export function EntriesTable({
   const fetchPhotoCounts = useCallback(() => {
     if (!photosEnabled) return;
     const typeMap: Record<TableView, string> = {
-      weight: 'weight', steps: 'steps', pressure: 'pressure',
+      weight: 'weight', water: '', steps: 'steps', pressure: 'pressure',
       medication: 'medication', injections: 'injection'
     };
     const entryType = typeMap[currentView];
@@ -203,7 +211,7 @@ export function EntriesTable({
 
   // Create a map of water entries by date for quick lookup
   const waterByDate = useMemo(() => {
-    const map = new Map<string, WaterEntry>();
+    const map = new Map<string, WaterDayTotal>();
     for (const entry of waterEntries) {
       map.set(entry.date, entry);
     }
@@ -229,11 +237,12 @@ export function EntriesTable({
   }, [pressureEntries]);
 
   const waterEnabled = features?.waterEnabled ?? true;
+  const waterHistoryEnabled = (features?.waterEnabled ?? true) && (features?.waterHistoryEnabled ?? false);
   const stepsEnabled = features?.stepsEnabled ?? false;
   const pressureEnabled = features?.pressureEnabled ?? false;
   const medicationEnabled = features?.medicationEnabled ?? false;
   const injectionsEnabled = features?.injectionsEnabled ?? false;
-  const showViewSwitcher = stepsEnabled || pressureEnabled || medicationEnabled || injectionsEnabled;
+  const showViewSwitcher = waterHistoryEnabled || stepsEnabled || pressureEnabled || medicationEnabled || injectionsEnabled;
 
   // Calculate differences and add water data for weight entries
   const entriesWithDiff = entries.map((entry, index) => {
@@ -250,6 +259,11 @@ export function EntriesTable({
       water: water?.amount || 0,
     };
   });
+
+  // Sort individual water inserts, newest first
+  const sortedWaterInserts = useMemo(() => {
+    return [...waterInserts].sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
+  }, [waterInserts]);
 
   // Sort steps entries by date (newest first), then by timestamp
   const sortedStepsEntries = useMemo(() => {
@@ -469,6 +483,47 @@ export function EntriesTable({
     } catch {
       return '-';
     }
+  };
+
+  // Water table - individual inserts (history mode)
+  const renderWaterTable = () => {
+    if (sortedWaterInserts.length === 0) {
+      return (
+        <div className="flex h-25 items-center justify-center text-muted-foreground">
+          No water logged yet
+        </div>
+      );
+    }
+    const canEdit = !!onUpdateWater;
+    return (
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b text-muted-foreground">
+            <th className="text-left py-2 px-1 font-medium">Date</th>
+            <th className="text-right py-2 px-1 font-medium">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sortedWaterInserts.map((entry) => (
+            <tr
+              key={entry.id}
+              onClick={canEdit ? () => setEditingWaterEntry(entry) : undefined}
+              className={cn(
+                "border-b last:border-0",
+                canEdit && "cursor-pointer hover:bg-muted/50 transition-colors"
+              )}
+            >
+              <td className="py-2 px-1 whitespace-nowrap">
+                {formatDateTimeForTable(entry.timestamp, dateFormat)}
+              </td>
+              <td className="py-2 px-1 text-right whitespace-nowrap text-primary">
+                {formatWaterAmount(entry.amount, waterUnit)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
   };
 
   // Pressure table - uses pressureEntries directly
@@ -714,6 +769,11 @@ export function EntriesTable({
               <ToggleGroupItem value="weight" aria-label="Weight view">
                 <Scale className="h-4 w-4" />
               </ToggleGroupItem>
+              {waterHistoryEnabled && (
+                <ToggleGroupItem value="water" aria-label="Water view">
+                  <Droplets className="h-4 w-4" />
+                </ToggleGroupItem>
+              )}
               {stepsEnabled && (
                 <ToggleGroupItem value="steps" aria-label="Steps view">
                   <Footprints className="h-4 w-4" />
@@ -740,12 +800,25 @@ export function EntriesTable({
 
         <div className="overflow-x-auto">
           {currentView === 'weight' && renderWeightTable()}
+          {currentView === 'water' && waterHistoryEnabled && renderWaterTable()}
           {currentView === 'steps' && stepsEnabled && renderStepsTable()}
           {currentView === 'pressure' && pressureEnabled && renderPressureTable()}
           {currentView === 'medication' && medicationEnabled && renderMedicationTable()}
           {currentView === 'injections' && injectionsEnabled && renderInjectionTable()}
         </div>
       </CardContent>
+
+      {/* Edit Water Dialog */}
+      {onUpdateWater && (
+        <EditWaterDialog
+          entry={editingWaterEntry}
+          open={!!editingWaterEntry}
+          onOpenChange={(open) => { if (!open) { setEditingWaterEntry(null); } }}
+          onSave={onUpdateWater}
+          onDelete={onDeleteWater}
+          waterUnit={waterUnit}
+        />
+      )}
 
       {/* Edit Steps Dialog */}
       {onUpdateSteps && (

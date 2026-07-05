@@ -36,7 +36,7 @@ import type {
   TimeFilter,
   ChartColor,
   DateFormatSettings,
-  WaterEntry,
+  WaterDayTotal,
   WaterUnit,
   StepsEntry,
   PressureEntry,
@@ -91,7 +91,7 @@ interface WeightChartProps {
   chartColor?: ChartColor;
   dateFormat?: DateFormatSettings;
   // New data props
-  waterEntries?: WaterEntry[];
+  waterEntries?: WaterDayTotal[];
   waterUnit?: WaterUnit;
   stepsEntries?: StepsEntry[];
   pressureEntries?: PressureEntry[];

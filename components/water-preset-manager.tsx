@@ -37,7 +37,7 @@ import { WaterPreset, MAX_WATER_PRESETS, WaterUnit } from '@/lib/types';
 import { WATER_ICONS } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
-import { formatWaterAmount, ozToMl, mlToOz } from '@/lib/water-utils';
+import { formatWaterAmount, ozToMl, mlToOz, validateWaterAmountInput } from '@/lib/water-utils';
 
 interface WaterPresetManagerProps {
   presets: WaterPreset[];
@@ -97,9 +97,15 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
   const startEdit = (preset: WaterPreset) => {
     setEditingId(preset.id);
     setEditingPreset({ ...preset });
-    // Convert amount to display unit
-    const displayAmount = waterUnit === 'oz' ? Math.round(mlToOz(preset.amount)) : preset.amount;
-    setEditingAmount(displayAmount.toString());
+    // Convert amount to display unit; preserve up to 2 decimals for oz
+    let displayAmount: string;
+    if (waterUnit === 'oz') {
+      const oz = mlToOz(preset.amount);
+      displayAmount = oz.toFixed(2).replace(/\.?0+$/, '');
+    } else {
+      displayAmount = preset.amount.toString();
+    }
+    setEditingAmount(displayAmount);
     setIsAdding(false);
   };
 
@@ -110,13 +116,34 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
     setEditingAmount('');
   };
 
+  // For metric (ml) we still want whole numbers, for oz we allow 2 decimals.
+  // ml is the canonical storage unit and half-ml precision is not meaningful.
+  const validateAmount = (raw: string): string | null => {
+    if (waterUnit === 'oz') {
+      return validateWaterAmountInput(raw);
+    }
+    // ml: whole numbers only, positive
+    const trimmed = raw.trim();
+    if (!trimmed) return 'Enter an amount';
+    const num = parseFloat(trimmed);
+    if (!Number.isFinite(num) || num <= 0) return 'Must be greater than 0';
+    if (!Number.isInteger(num)) return 'ml must be a whole number';
+    return null;
+  };
+
+  const editingAmountError =
+    editingId && editingAmount.trim() !== '' ? validateAmount(editingAmount) : null;
+  const newPresetAmountError =
+    isAdding && newPresetAmount.trim() !== '' ? validateAmount(newPresetAmount) : null;
+
   // Save edit
   const saveEdit = () => {
     if (!editingPreset || !editingPreset.label.trim()) return;
-    const amountValue = parseInt(editingAmount) || 0;
-    if (amountValue <= 0) return;
+    if (validateAmount(editingAmount) !== null) return;
+    const amountValue = parseFloat(editingAmount);
+    if (!Number.isFinite(amountValue) || amountValue <= 0) return;
 
-    // Convert to ml if user entered oz
+    // Convert to ml if user entered oz (ozToMl rounds to nearest whole ml)
     const amountInMl = waterUnit === 'oz' ? ozToMl(amountValue) : amountValue;
 
     setLocalPresets((prev) =>
@@ -130,8 +157,9 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
   // Add new preset
   const addPreset = () => {
     if (!newPreset.label.trim() || localPresets.length >= MAX_WATER_PRESETS) return;
-    const amountValue = parseInt(newPresetAmount) || 0;
-    if (amountValue <= 0) return;
+    if (validateAmount(newPresetAmount) !== null) return;
+    const amountValue = parseFloat(newPresetAmount);
+    if (!Number.isFinite(amountValue) || amountValue <= 0) return;
 
     // Convert to ml if user entered oz
     const amountInMl = waterUnit === 'oz' ? ozToMl(amountValue) : amountValue;
@@ -205,7 +233,12 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
                     ))}
                   </div>
                   <div className="flex gap-1 ml-auto">
-                    <Button variant="ghost" size="icon" onClick={saveEdit}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={saveEdit}
+                      disabled={!!editingAmountError || !editingPreset.label.trim()}
+                    >
                       <Check className="h-4 w-4 text-green-500" />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={cancelEdit}>
@@ -223,9 +256,13 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
                   <div className="relative w-30">
                     <Input
                       type="number"
+                      step={waterUnit === 'oz' ? '0.01' : '1'}
+                      min="0"
+                      inputMode="decimal"
                       value={editingAmount}
                       onChange={(e) => setEditingAmount(e.target.value)}
-                      className="pr-8"
+                      className={cn('pr-8', editingAmountError && 'border-destructive')}
+                      aria-invalid={!!editingAmountError}
                       placeholder="Amount"
                     />
                     <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
@@ -233,6 +270,9 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
                     </span>
                   </div>
                 </div>
+                {editingAmountError && (
+                  <p className="text-xs text-destructive">{editingAmountError}</p>
+                )}
               </div>
             ) : (
               // Display mode
@@ -313,7 +353,7 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
                   variant="ghost"
                   size="icon"
                   onClick={addPreset}
-                  disabled={!newPreset.label.trim() || parseInt(newPresetAmount) <= 0}
+                  disabled={!newPreset.label.trim() || !!newPresetAmountError || (parseFloat(newPresetAmount) || 0) <= 0}
                 >
                   <Check className="h-4 w-4 text-green-500" />
                 </Button>
@@ -333,9 +373,13 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
               <div className="relative w-30">
                 <Input
                   type="number"
+                  step={waterUnit === 'oz' ? '0.01' : '1'}
+                  min="0"
+                  inputMode="decimal"
                   value={newPresetAmount}
                   onChange={(e) => setNewPresetAmount(e.target.value)}
-                  className="pr-8"
+                  className={cn('pr-8', newPresetAmountError && 'border-destructive')}
+                  aria-invalid={!!newPresetAmountError}
                   placeholder="Amount"
                 />
                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
@@ -343,6 +387,9 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
                 </span>
               </div>
             </div>
+            {newPresetAmountError && (
+              <p className="text-xs text-destructive">{newPresetAmountError}</p>
+            )}
           </div>
         </div>
       ) : (

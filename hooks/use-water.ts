@@ -2,26 +2,32 @@
 
 import { useState, useCallback } from 'react';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
-import type { WaterEntry } from '@/lib/types';
+import type { WaterDayTotal, WaterEntry } from '@/lib/types';
 import { getProgressMilestone, calculateRawProgress } from '@/lib/goals';
 
 interface UseWaterReturn {
-  todayWater: WaterEntry | null;
-  waterEntries: WaterEntry[];
+  todayWater: WaterDayTotal | null;
+  waterEntries: WaterDayTotal[];
+  waterInserts: WaterEntry[];
   isLoading: boolean;
   addWater: (amount: number) => Promise<void>;
   resetWater: () => Promise<void>;
   refreshWater: () => Promise<void>;
   updateWater: (date: string, amount: number) => Promise<void>;
+  createWaterEntry: (amount: number, date?: string, timestamp?: string) => Promise<void>;
+  updateWaterById: (id: string, amount: number, timestamp?: string) => Promise<void>;
+  deleteWaterById: (id: string) => Promise<void>;
 }
 
 export function useWater(
-  initialWater: WaterEntry | null,
-  initialWaterEntries: WaterEntry[] = [],
-  dailyWaterGoal?: number | null
+  initialWater: WaterDayTotal | null,
+  initialWaterEntries: WaterDayTotal[] = [],
+  dailyWaterGoal?: number | null,
+  initialWaterInserts: WaterEntry[] = []
 ): UseWaterReturn {
-  const [todayWater, setTodayWater] = useState<WaterEntry | null>(initialWater);
-  const [waterEntries, setWaterEntries] = useState<WaterEntry[]>(initialWaterEntries);
+  const [todayWater, setTodayWater] = useState<WaterDayTotal | null>(initialWater);
+  const [waterEntries, setWaterEntries] = useState<WaterDayTotal[]>(initialWaterEntries);
+  const [waterInserts, setWaterInserts] = useState<WaterEntry[]>(initialWaterInserts);
   const [isLoading, setIsLoading] = useState(false);
 
   const refreshWater = useCallback(async () => {
@@ -43,8 +49,8 @@ export function useWater(
     const previousWater = todayWater;
     const optimisticAmount = (todayWater?.amount || 0) + amount;
     setTodayWater(prev => prev
-      ? { ...prev, amount: optimisticAmount, updatedAt: new Date().toISOString() }
-      : { id: 'temp', author: '', date: '', amount: optimisticAmount, updatedAt: new Date().toISOString() }
+      ? { ...prev, amount: optimisticAmount }
+      : { date: new Date().toISOString().split('T')[0], amount: optimisticAmount }
     );
 
     try {
@@ -104,7 +110,7 @@ export function useWater(
 
     // Optimistic update
     const previousWater = todayWater;
-    setTodayWater(prev => prev ? { ...prev, amount: 0, updatedAt: new Date().toISOString() } : null);
+    setTodayWater(prev => prev ? { ...prev, amount: 0 } : null);
 
     try {
       const response = await fetch('/api/water', {
@@ -151,18 +157,18 @@ export function useWater(
       const existingIndex = prev.findIndex(e => e.date === date);
       if (existingIndex !== -1) {
         const updated = [...prev];
-        updated[existingIndex] = { ...updated[existingIndex], amount, updatedAt: new Date().toISOString() };
+        updated[existingIndex] = { ...updated[existingIndex], amount };
         return updated;
       }
-      return [...prev, { id: 'temp', author: '', date, amount, updatedAt: new Date().toISOString() }];
+      return [...prev, { date, amount }];
     });
 
     // Update todayWater if we're updating today's entry
     const today = new Date().toISOString().split('T')[0];
     if (date === today) {
       setTodayWater(prev => prev
-        ? { ...prev, amount, updatedAt: new Date().toISOString() }
-        : { id: 'temp', author: '', date, amount, updatedAt: new Date().toISOString() }
+        ? { ...prev, amount }
+        : { date, amount }
       );
     }
 
@@ -209,13 +215,135 @@ export function useWater(
     }
   }, [waterEntries, todayWater]);
 
+  // The individual inserts are the source of truth in history mode. Deriving the
+  // daily totals + today's total from them lets every view update instantly and
+  // keeps a single authoritative reload path.
+  const recomputeFromInserts = useCallback((inserts: WaterEntry[]) => {
+    setWaterInserts(inserts);
+    const totalsByDate = new Map<string, number>();
+    for (const e of inserts) {
+      totalsByDate.set(e.date, (totalsByDate.get(e.date) ?? 0) + e.amount);
+    }
+    const totals = Array.from(totalsByDate, ([date, amount]) => ({ date, amount }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    setWaterEntries(totals);
+    const today = new Date().toISOString().split('T')[0];
+    setTodayWater(totals.find(t => t.date === today) ?? { date: today, amount: 0 });
+  }, []);
+
+  // Reload the individual inserts from the server and re-derive every view.
+  const refreshWaterData = useCallback(async () => {
+    try {
+      const res = await fetch('/api/water?entries=true');
+      const result = await res.json();
+      if (result.success) recomputeFromInserts(result.data);
+    } catch {
+      console.error('Failed to refresh water data');
+    }
+  }, [recomputeFromInserts]);
+
+  const createWaterEntry = useCallback(async (amount: number, date?: string, timestamp?: string) => {
+    // Optimistically add the entry so every view updates immediately
+    const previous = waterInserts;
+    const now = new Date().toISOString();
+    const optimistic: WaterEntry = {
+      id: `temp-${now}-${Math.random().toString(36).slice(2, 8)}`,
+      author: '',
+      date: date || now.split('T')[0],
+      amount,
+      timestamp: timestamp || now,
+      updatedAt: now,
+    };
+    recomputeFromInserts([...previous, optimistic]);
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/water', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, date, timestamp })
+      });
+      const result = await response.json();
+      if (result.success) {
+        await refreshWaterData(); // reconcile the server-assigned id (single fetch)
+        showSuccessToast(`Added ${amount >= 1000 ? `${amount / 1000}L` : `${amount}ml`}`);
+      } else {
+        recomputeFromInserts(previous);
+        showErrorToast(result.error || 'Failed to add water');
+      }
+    } catch {
+      recomputeFromInserts(previous);
+      showErrorToast('Failed to add water');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [waterInserts, recomputeFromInserts, refreshWaterData]);
+
+  const updateWaterById = useCallback(async (id: string, amount: number, timestamp?: string) => {
+    const previous = waterInserts;
+    const optimistic = previous.map(e =>
+      e.id === id
+        ? { ...e, amount, ...(timestamp ? { timestamp } : {}), updatedAt: new Date().toISOString() }
+        : e
+    );
+    recomputeFromInserts(optimistic);
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/water', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, amount, timestamp })
+      });
+      const result = await response.json();
+      if (result.success) {
+        await refreshWaterData();
+        showSuccessToast('Water updated');
+      } else {
+        recomputeFromInserts(previous);
+        showErrorToast(result.error || 'Failed to update water');
+      }
+    } catch {
+      recomputeFromInserts(previous);
+      showErrorToast('Failed to update water');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [waterInserts, recomputeFromInserts, refreshWaterData]);
+
+  const deleteWaterById = useCallback(async (id: string) => {
+    // Optimistic removal is authoritative (the id is gone), so no refetch needed
+    const previous = waterInserts;
+    recomputeFromInserts(previous.filter(e => e.id !== id));
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/water?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+      const result = await response.json();
+      if (result.success) {
+        showSuccessToast('Water entry deleted');
+      } else {
+        recomputeFromInserts(previous);
+        showErrorToast(result.error || 'Failed to delete water entry');
+      }
+    } catch {
+      recomputeFromInserts(previous);
+      showErrorToast('Failed to delete water entry');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [waterInserts, recomputeFromInserts]);
+
   return {
     todayWater,
     waterEntries,
+    waterInserts,
     isLoading,
     addWater,
     resetWater,
     refreshWater,
-    updateWater
+    updateWater,
+    createWaterEntry,
+    updateWaterById,
+    deleteWaterById
   };
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, getApiKeyUser } from '@/lib/auth';
-import { getTodayWater, getWaterEntry, getWaterEntries, addWater, resetTodayWater, setWaterAmount } from '@/lib/water';
-import { ApiResponse, WaterEntry } from '@/lib/types';
+import { getTodayWater, getWaterEntry, getWaterDailyTotals, getWaterInserts, addWater, addWaterEntry, updateWaterEntry, deleteWaterEntry, resetTodayWater, setWaterAmount } from '@/lib/water';
+import { ApiResponse, WaterDayTotal, WaterEntry } from '@/lib/types';
 
 // GET /api/water - Get water entry (today or specific date)
 export async function GET(request: NextRequest) {
@@ -18,12 +18,16 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
     const all = searchParams.get('all');
+    const entries = searchParams.get('entries');
 
-    let data: WaterEntry | WaterEntry[] | null;
+    let data: WaterDayTotal | WaterDayTotal[] | WaterEntry[] | null;
 
-    if (all === 'true') {
-      // Return all water entries
-      data = await getWaterEntries(user.username);
+    if (entries === 'true') {
+      // Return individual water inserts (history table)
+      data = await getWaterInserts(user.username);
+    } else if (all === 'true') {
+      // Return daily totals for all days
+      data = await getWaterDailyTotals(user.username);
     } else if (date) {
       // Return specific date
       data = await getWaterEntry(user.username, date);
@@ -62,7 +66,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { amount } = body;
+    const { amount, date, timestamp } = body;
 
     // Validate amount
     if (typeof amount !== 'number' || amount <= 0) {
@@ -72,9 +76,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const entry = await addWater(user.username, amount);
+    // If a date/timestamp is supplied (history mode), create a timestamped
+    // insert; otherwise fall back to the simple "add to today" behavior.
+    const entry = (date || timestamp)
+      ? await addWaterEntry(user.username, amount, date, timestamp)
+      : await addWater(user.username, amount);
 
-    const response: ApiResponse<WaterEntry> = {
+    const response: ApiResponse<WaterDayTotal> = {
       success: true,
       data: entry
     };
@@ -91,7 +99,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE /api/water - Reset today's water to 0
+// DELETE /api/water - Delete a single insert (?id=...) or reset today's water to 0
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getSession();
@@ -103,9 +111,25 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    // History mode: delete a single insert by id
+    if (id) {
+      const deleted = await deleteWaterEntry(user.username, id);
+      if (!deleted) {
+        return NextResponse.json(
+          { success: false, error: 'Water entry not found' },
+          { status: 404 }
+        );
+      }
+      return NextResponse.json({ success: true, data: { id } });
+    }
+
+    // Daily mode: reset today's total to 0
     const entry = await resetTodayWater(user.username);
 
-    const response: ApiResponse<WaterEntry> = {
+    const response: ApiResponse<WaterDayTotal> = {
       success: true,
       data: entry
     };
@@ -122,7 +146,7 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-// PATCH /api/water - Set water amount for a specific date
+// PATCH /api/water - Update a single insert ({id,...}) or set a day's total ({date, amount})
 export async function PATCH(request: NextRequest) {
   try {
     const session = await getSession();
@@ -135,7 +159,28 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { date, amount } = body;
+    const { id, date, amount, timestamp } = body;
+
+    // History mode: update a single insert by id
+    if (id && typeof id === 'string') {
+      if (amount !== undefined && (typeof amount !== 'number' || amount <= 0)) {
+        return NextResponse.json(
+          { success: false, error: 'Amount must be a positive number' },
+          { status: 400 }
+        );
+      }
+      const updated = await updateWaterEntry(user.username, id, { amount, date, timestamp });
+      if (!updated) {
+        return NextResponse.json(
+          { success: false, error: 'Water entry not found' },
+          { status: 404 }
+        );
+      }
+      const response: ApiResponse<WaterEntry> = { success: true, data: updated };
+      return NextResponse.json(response);
+    }
+
+    // Daily mode: set a specific date's total
 
     // Validate date
     if (!date || typeof date !== 'string') {
@@ -155,7 +200,7 @@ export async function PATCH(request: NextRequest) {
 
     const entry = await setWaterAmount(user.username, date, amount);
 
-    const response: ApiResponse<WaterEntry> = {
+    const response: ApiResponse<WaterDayTotal> = {
       success: true,
       data: entry
     };

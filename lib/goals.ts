@@ -1,4 +1,4 @@
-import { WaterEntry, WeightEntry, WeekStartsOn } from './types';
+import { WaterDayTotal, WeightEntry, WeekStartsOn } from './types';
 import { subDays, subWeeks, subMonths, format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 
 /**
@@ -8,7 +8,7 @@ import { subDays, subWeeks, subMonths, format, startOfWeek, endOfWeek, startOfMo
  * @returns Number of consecutive days the goal was met (including today if applicable)
  */
 export function calculateWaterStreak(
-  waterEntries: WaterEntry[],
+  waterEntries: WaterDayTotal[],
   dailyGoal: number
 ): number {
   if (!dailyGoal || dailyGoal <= 0 || waterEntries.length === 0) {

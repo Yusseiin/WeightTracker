@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { WeightChart } from '@/components/weight-chart';
 import { AddEntryDialog } from '@/components/add-entry-dialog';
@@ -21,18 +21,22 @@ import { usePressure } from '@/hooks/use-pressure';
 import { useMedications } from '@/hooks/use-medications';
 import { useInjections } from '@/hooks/use-injections';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { WeightEntry, UserSettings, SessionUser, WaterEntry, StepsEntry, PressureEntry, MedicationEntry, InjectionEntry } from '@/lib/types';
+import type { WeightEntry, UserSettings, SessionUser, WaterDayTotal, WaterEntry, StepsEntry, PressureEntry, MedicationEntry, InjectionEntry } from '@/lib/types';
 import { ChangelogDialog } from './changelog-dialog';
 import { MotivationalQuote } from './motivational-quote';
 import { MedicationReminderBanner } from './medication-reminder-banner';
 import { Button } from './ui/button';
 import { Info } from 'lucide-react';
 
+// localStorage key that remembers which version's changelog the user has already seen
+const CHANGELOG_SEEN_KEY = 'changelog-seen-version';
+
 interface WeightTrackerProps {
   initialEntries: WeightEntry[];
   initialSettings: UserSettings;
-  initialWater: WaterEntry | null;
-  initialWaterEntries: WaterEntry[];
+  initialWater: WaterDayTotal | null;
+  initialWaterEntries: WaterDayTotal[];
+  initialWaterInserts: WaterEntry[];
   initialTodaySteps: StepsEntry[];
   initialStepsEntries: StepsEntry[];
   initialTodayPressure: PressureEntry[];
@@ -49,6 +53,7 @@ export function WeightTracker({
   initialSettings,
   initialWater,
   initialWaterEntries,
+  initialWaterInserts,
   initialTodaySteps,
   initialStepsEntries,
   initialTodayPressure,
@@ -71,11 +76,15 @@ export function WeightTracker({
   const {
     todayWater,
     waterEntries,
+    waterInserts,
     isLoading: isWaterLoading,
     addWater,
     resetWater,
-    updateWater
-  } = useWater(initialWater, initialWaterEntries, settings.goals?.dailyWaterGoal);
+    updateWater,
+    createWaterEntry,
+    updateWaterById,
+    deleteWaterById
+  } = useWater(initialWater, initialWaterEntries, settings.goals?.dailyWaterGoal, initialWaterInserts);
 
   const {
     todaySteps,
@@ -116,7 +125,7 @@ export function WeightTracker({
   const router = useRouter();
 
   // Get feature toggles with defaults
-  const features = settings.features || { waterEnabled: true, stepsEnabled: false, pressureEnabled: false, medicationEnabled: false, injectionsEnabled: false, photosEnabled: false, bodyFatEnabled: false, bodyMeasurementsEnabled: false };
+  const features = settings.features || { waterEnabled: true, waterHistoryEnabled: false, stepsEnabled: false, pressureEnabled: false, medicationEnabled: false, injectionsEnabled: false, photosEnabled: false, bodyFatEnabled: false, bodyMeasurementsEnabled: false };
 
   const [selectedEntry, setSelectedEntry] = useState<WeightEntry | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -125,6 +134,29 @@ export function WeightTracker({
     return 'chart';
   });
   const [changelogOpen, setChangelogOpen] = useState(false);
+
+  // Auto-open the changelog once after each version update
+  useEffect(() => {
+    const currentVersion = process.env.NEXT_PUBLIC_VERSION;
+    if (!currentVersion) return;
+    const seenVersion = window.localStorage.getItem(CHANGELOG_SEEN_KEY);
+    if (seenVersion === null) {
+      // Fresh install: record the current version without showing the popup
+      window.localStorage.setItem(CHANGELOG_SEEN_KEY, currentVersion);
+    } else if (seenVersion !== currentVersion) {
+      // Version changed since last visit: show the new changelog
+      setChangelogOpen(true);
+    }
+  }, []);
+
+  // Remember this version as seen once the dialog is dismissed, so it won't
+  // auto-open again until the next release
+  const handleChangelogOpenChange = (open: boolean) => {
+    setChangelogOpen(open);
+    if (!open && process.env.NEXT_PUBLIC_VERSION) {
+      window.localStorage.setItem(CHANGELOG_SEEN_KEY, process.env.NEXT_PUBLIC_VERSION);
+    }
+  };
 
   // Dialog open states for floating button bar
   const [weightDialogOpen, setWeightDialogOpen] = useState(false);
@@ -253,6 +285,9 @@ export function WeightTracker({
               waterUnit={settings.waterUnit || 'ml'}
               onRowClick={handleRowClick}
               waterEntries={waterEntries}
+              waterInserts={waterInserts}
+              onUpdateWater={features.waterHistoryEnabled ? updateWaterById : undefined}
+              onDeleteWater={features.waterHistoryEnabled ? deleteWaterById : undefined}
               stepsEntries={stepsEntries}
               pressureEntries={pressureEntries}
               medicationEntries={medicationEntries}
@@ -292,6 +327,7 @@ export function WeightTracker({
         photosEnabled={features.photosEnabled}
         notesEnabled={features.weightNotesEnabled}
         bodyFatEnabled={features.bodyFatEnabled}
+        waterHistoryEnabled={features.waterHistoryEnabled}
       />
 
       {/* Floating Button Bar */}
@@ -329,6 +365,8 @@ export function WeightTracker({
           waterPresets={settings.waterPresets}
           open={waterDialogOpen}
           onOpenChange={setWaterDialogOpen}
+          historyEnabled={features.waterHistoryEnabled}
+          onAddWaterEntry={createWaterEntry}
         />
       )}
 
@@ -388,7 +426,7 @@ export function WeightTracker({
         />
       )}
 
-      <ChangelogDialog open={changelogOpen} onOpenChange={setChangelogOpen} />
+      <ChangelogDialog open={changelogOpen} onOpenChange={handleChangelogOpenChange} />
     </>
   );
 }

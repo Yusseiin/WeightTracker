@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { format, parseISO } from 'date-fns';
 import { Droplets, RotateCcw, Pencil } from 'lucide-react';
 import {
   Dialog,
@@ -22,15 +23,16 @@ import {
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { type WaterEntry, type WaterUnit, type WaterPreset } from '@/lib/types';
-import { formatWaterAmount, ozToMl } from '@/lib/water-utils';
+import { type WaterDayTotal, type WaterUnit, type WaterPreset } from '@/lib/types';
+import { formatWaterAmount, ozToMl, validateWaterAmountInput } from '@/lib/water-utils';
 import { DynamicIcon } from './dynamic-icon';
 import { cn } from '@/lib/utils';
 
 interface AddWaterDialogProps {
-  todayWater: WaterEntry | null;
+  todayWater: WaterDayTotal | null;
   onAddWater: (amount: number) => Promise<void>;
   onResetWater: () => Promise<void>;
   isLoading?: boolean;
@@ -38,6 +40,10 @@ interface AddWaterDialogProps {
   waterPresets: WaterPreset[];
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  // History mode: when enabled, the user can pick a date/time and each add is
+  // stored as its own timestamped entry (via onAddWaterEntry).
+  historyEnabled?: boolean;
+  onAddWaterEntry?: (amount: number, date?: string, timestamp?: string) => Promise<void>;
 }
 
 export function AddWaterDialog({
@@ -48,7 +54,9 @@ export function AddWaterDialog({
   waterUnit,
   waterPresets,
   open: controlledOpen,
-  onOpenChange
+  onOpenChange,
+  historyEnabled = false,
+  onAddWaterEntry
 }: AddWaterDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
 
@@ -60,18 +68,32 @@ export function AddWaterDialog({
   const [customAmount, setCustomAmount] = useState<string>('');
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [dateInput, setDateInput] = useState<string>('');
+  const [timeInput, setTimeInput] = useState<string>('');
   const isMobile = useIsMobile();
+
+  // Initialize date/time to "now" whenever the dialog opens (history mode only)
+  useEffect(() => {
+    if (open && historyEnabled) {
+      setDateInput(format(new Date(), 'yyyy-MM-dd'));
+      setTimeInput(format(new Date(), 'HH:mm'));
+    }
+  }, [open, historyEnabled]);
 
   const currentAmount = todayWater?.amount || 0;
 
   const getAmountToAdd = (): number => {
     if (isCustomMode) {
-      const amount = parseInt(customAmount) || 0;
+      const amount = parseFloat(customAmount) || 0;
       // Convert oz to ml for storage if using imperial
       return waterUnit === 'oz' ? ozToMl(amount) : amount;
     }
     return parseInt(selectedAmount) || 0;
   };
+
+  const customAmountError = isCustomMode
+    ? validateWaterAmountInput(customAmount)
+    : null;
 
   const unitLabel = waterUnit === 'oz' ? 'oz' : 'ml';
 
@@ -81,7 +103,19 @@ export function AddWaterDialog({
 
     setIsSubmitting(true);
     try {
-      await onAddWater(amount);
+      if (historyEnabled && onAddWaterEntry) {
+        // Build a timestamp from the selected date + time
+        let timestamp: string | undefined;
+        if (timeInput && dateInput) {
+          const [hours, minutes] = timeInput.split(':').map(Number);
+          const d = parseISO(dateInput);
+          d.setHours(hours, minutes, 0, 0);
+          timestamp = d.toISOString();
+        }
+        await onAddWaterEntry(amount, dateInput || undefined, timestamp);
+      } else {
+        await onAddWater(amount);
+      }
       setSelectedAmount('');
       setCustomAmount('');
       setIsCustomMode(false);
@@ -115,7 +149,9 @@ export function AddWaterDialog({
     }
   };
 
-  const canAdd = isCustomMode ? (parseInt(customAmount) || 0) > 0 : !!selectedAmount;
+  const canAdd = isCustomMode
+    ? customAmountError === null && (parseFloat(customAmount) || 0) > 0
+    : !!selectedAmount;
 
   const formContent = (
     <div className="space-y-6">
@@ -153,23 +189,59 @@ export function AddWaterDialog({
 
         {/* Custom amount input - only shown when custom is selected */}
         {isCustomMode && (
-          <div className="flex items-center gap-2">
-            <div className="flex-1 relative">
-              <Input
-                type="number"
-                placeholder="Enter amount"
-                value={customAmount}
-                onChange={(e) => setCustomAmount(e.target.value)}
-                className="pr-12"
-                autoFocus
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                {unitLabel}
-              </span>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <div className="flex-1 relative">
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  inputMode="decimal"
+                  placeholder="Enter amount"
+                  value={customAmount}
+                  onChange={(e) => setCustomAmount(e.target.value)}
+                  className={cn(
+                    "pr-12",
+                    customAmountError && customAmount.trim() !== '' && 'border-destructive'
+                  )}
+                  aria-invalid={!!customAmountError && customAmount.trim() !== ''}
+                  autoFocus
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                  {unitLabel}
+                </span>
+              </div>
             </div>
+            {customAmountError && customAmount.trim() !== '' && (
+              <p className="text-xs text-destructive">{customAmountError}</p>
+            )}
           </div>
         )}
       </div>
+
+      {/* Date and Time inputs - only in history mode */}
+      {historyEnabled && (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="water-date">Date</Label>
+            <Input
+              id="water-date"
+              type="date"
+              value={dateInput}
+              onChange={(e) => setDateInput(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="water-time">Time</Label>
+            <Input
+              id="water-time"
+              type="time"
+              value={timeInput}
+              onChange={(e) => setTimeInput(e.target.value)}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Custom and Reset buttons row */}
       <div className="flex gap-2">
@@ -181,15 +253,18 @@ export function AddWaterDialog({
           <Pencil className="h-4 w-4 mr-2" />
           Custom
         </Button>
-        <Button
-          variant="outline"
-          onClick={handleReset}
-          disabled={isSubmitting || isLoading || currentAmount === 0}
-          className="flex-1"
-        >
-          <RotateCcw className="h-4 w-4 mr-2" />
-          Reset to 0
-        </Button>
+        {/* In history mode individual entries are removed from the table instead */}
+        {!historyEnabled && (
+          <Button
+            variant="outline"
+            onClick={handleReset}
+            disabled={isSubmitting || isLoading || currentAmount === 0}
+            className="flex-1"
+          >
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Reset to 0
+          </Button>
+        )}
       </div>
     </div>
   );

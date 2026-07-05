@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, LogOut, Key, Users, Save, Loader2, UserPen } from 'lucide-react';
+import { ArrowLeft, LogOut, Key, Users, Save, Loader2, UserPen, AtSign } from 'lucide-react';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/select';
 import { ChangePasswordDialog } from '@/components/change-password-dialog';
 import { ChangeNicknameDialog } from '@/components/change-nickname-dialog';
+import { ChangeUsernameDialog } from '@/components/change-username-dialog';
 import { UserManagementDialog } from '@/components/user-management-dialog';
 import { ActivityManager } from '@/components/activity-manager';
 import { WaterPresetManager } from '@/components/water-preset-manager';
@@ -29,6 +30,7 @@ import { DateFormatEditor } from '@/components/date-format-editor';
 import { DEFAULT_DATE_FORMAT } from '@/lib/date-utils';
 import type { SessionUser, UserSettings, ChartColor, WaterUnit, DateFormatSettings, DateLocale, SingleDateFormat, CustomActivity, WeightEntry, GoalSettings, WeekStartsOn, WaterPreset, FeatureToggles, MedicationPreset, MedicationEntry, InjectionSettings, InjectionEntry, ChartCombination, BodyMeasurementPreset, MeasurementUnit } from '@/lib/types';
 import { DEFAULT_GOALS, WEEK_DAYS, DEFAULT_FEATURE_TOGGLES, DEFAULT_INJECTION_SETTINGS, DEFAULT_CHART_COMBINATIONS, DEFAULT_BODY_MEASUREMENT_PRESETS } from '@/lib/types';
+import { mlToOz, ozToMl } from '@/lib/water-utils';
 import { ChartCombinationManager } from '@/components/chart-combination-manager';
 import { BodyMeasurementPresetManager } from '@/components/body-measurement-preset-manager';
 
@@ -73,6 +75,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [changeNicknameOpen, setChangeNicknameOpen] = useState(false);
+  const [changeUsernameOpen, setChangeUsernameOpen] = useState(false);
   const [userManagementOpen, setUserManagementOpen] = useState(false);
 
   // Local state for form values
@@ -94,6 +97,17 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
   const [localShowQuotes, setLocalShowQuotes] = useState(settings.showQuotes ?? true);
   const [localMeasurementUnit, setLocalMeasurementUnit] = useState<MeasurementUnit>(
     settings.measurementUnit || 'cm'
+  );
+
+  // Water goal input is displayed in the user's chosen unit; storage is always ml.
+  // We keep the raw typed string separate so it isn't clobbered while typing.
+  const goalMlToInput = (goalMl: number | null | undefined, unit: 'ml' | 'oz'): string => {
+    if (goalMl == null) return '';
+    if (unit === 'oz') return mlToOz(goalMl).toFixed(2).replace(/\.?0+$/, '');
+    return String(goalMl);
+  };
+  const [waterGoalInput, setWaterGoalInput] = useState<string>(() =>
+    goalMlToInput(settings.goals?.dailyWaterGoal, settings.waterUnit || 'ml')
   );
 
   // Fetch entries for activity usage check
@@ -164,6 +178,10 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
     setLocalFeatures(settings.features || DEFAULT_FEATURE_TOGGLES);
     setLocalShowQuotes(settings.showQuotes ?? true);
     setLocalMeasurementUnit(settings.measurementUnit || 'cm');
+    // Re-derive the water goal input from the saved value + saved unit
+    setWaterGoalInput(
+      goalMlToInput(settings.goals?.dailyWaterGoal, settings.waterUnit || 'ml')
+    );
   }, [settings]);
 
   const handleGoBack = () => {
@@ -233,9 +251,10 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
   };
 
   const handleWaterUnitChange = (value: string) => {
-    if (value === 'ml' || value === 'oz') {
-      setLocalWaterUnit(value);
-    }
+    if (value !== 'ml' && value !== 'oz') return;
+    setLocalWaterUnit(value);
+    // Re-derive the water goal input from the current (unsaved) goal in ml
+    setWaterGoalInput(goalMlToInput(localGoals.dailyWaterGoal, value));
   };
 
   const handleTargetWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -560,6 +579,23 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                   </Label>
                 </div>
 
+                {/* Water History (individual timestamped entries) - only when water is enabled */}
+                {localFeatures.waterEnabled && (
+                  <div className="flex items-center space-x-2 ml-6">
+                    <Checkbox
+                      id="waterHistoryEnabled"
+                      checked={localFeatures.waterHistoryEnabled}
+                      onCheckedChange={(checked) => setLocalFeatures(prev => ({
+                        ...prev,
+                        waterHistoryEnabled: checked === true
+                      }))}
+                    />
+                    <Label htmlFor="waterHistoryEnabled" className="cursor-pointer">
+                      Log water as individual entries (pick a time, edit/delete in history)
+                    </Label>
+                  </div>
+                )}
+
                 {/* Steps Tracking */}
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -764,13 +800,23 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                     <Label>Daily Water Goal ({localWaterUnit === 'ml' ? 'ml' : 'oz'})</Label>
                     <Input
                       type="number"
-                      step={localWaterUnit === 'ml' ? '100' : '1'}
-                      placeholder="e.g. 2000"
-                      value={localGoals.dailyWaterGoal ?? ''}
-                      onChange={(e) => setLocalGoals(prev => ({
-                        ...prev,
-                        dailyWaterGoal: e.target.value === '' ? null : parseFloat(e.target.value)
-                      }))}
+                      step={localWaterUnit === 'ml' ? '100' : '0.1'}
+                      min="0"
+                      inputMode="decimal"
+                      placeholder={localWaterUnit === 'ml' ? 'e.g. 2000' : 'e.g. 83.2'}
+                      value={waterGoalInput}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        setWaterGoalInput(raw);
+                        if (raw === '') {
+                          setLocalGoals(prev => ({ ...prev, dailyWaterGoal: null }));
+                          return;
+                        }
+                        const num = parseFloat(raw);
+                        if (!Number.isFinite(num) || num < 0) return;
+                        const ml = localWaterUnit === 'oz' ? ozToMl(num) : num;
+                        setLocalGoals(prev => ({ ...prev, dailyWaterGoal: ml }));
+                      }}
                       className="max-w-32"
                     />
                   </div>
@@ -998,6 +1044,14 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                 <Button
                   variant="outline"
                   className="w-full justify-start"
+                  onClick={() => setChangeUsernameOpen(true)}
+                >
+                  <AtSign className="mr-2 h-4 w-4" />
+                  Change Username
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
                   onClick={() => setChangeNicknameOpen(true)}
                 >
                   <UserPen className="mr-2 h-4 w-4" />
@@ -1054,6 +1108,12 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
         open={changeNicknameOpen}
         onOpenChange={setChangeNicknameOpen}
         currentNickname={session.nickname}
+      />
+
+      <ChangeUsernameDialog
+        open={changeUsernameOpen}
+        onOpenChange={setChangeUsernameOpen}
+        currentUsername={session.username}
       />
 
       <UserManagementDialog
