@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { Droplets, Scale, Footprints, HeartPulse, Pill, Syringe, Info, Camera, ImagePlus, Maximize2, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/carousel';
 import { DynamicIcon } from '@/components/dynamic-icon';
 import { formatWaterAmount } from '@/lib/water-utils';
-import { formatDateForTable } from '@/lib/date-utils';
+import { formatDateForTable, formatDateForRecap } from '@/lib/date-utils';
 import { getPressureCategory } from '@/lib/pressure-utils';
 import type { WeightEntry, WaterDayTotal, WaterEntry, WaterUnit, DateFormatSettings, CustomActivity, StepsEntry, PressureEntry, FeatureToggles, MedicationEntry, MedicationPreset, InjectionEntry, InjectionSettings } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -179,6 +179,7 @@ export function EntriesTable({
 }: EntriesTableProps) {
   const [currentView, setCurrentView] = useState<TableView>('weight');
   const [editingWaterEntry, setEditingWaterEntry] = useState<WaterEntry | null>(null);
+  const [expandedWaterDays, setExpandedWaterDays] = useState<Set<string>>(new Set());
   const [editingStepsEntry, setEditingStepsEntry] = useState<StepsEntry | null>(null);
   const [editingPressureEntry, setEditingPressureEntry] = useState<PressureEntry | null>(null);
   const [editingMedicationEntry, setEditingMedicationEntry] = useState<MedicationEntry | null>(null);
@@ -264,6 +265,31 @@ export function EntriesTable({
   const sortedWaterInserts = useMemo(() => {
     return [...waterInserts].sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
   }, [waterInserts]);
+
+  // Group inserts by day (newest day first) with the day's total, for the
+  // collapsible daily-recap view
+  const waterDays = useMemo(() => {
+    const byDate = new Map<string, WaterEntry[]>();
+    for (const entry of sortedWaterInserts) {
+      const list = byDate.get(entry.date);
+      if (list) list.push(entry);
+      else byDate.set(entry.date, [entry]);
+    }
+    return Array.from(byDate, ([date, entries]) => ({
+      date,
+      entries,
+      total: entries.reduce((sum, e) => sum + e.amount, 0),
+    })).sort((a, b) => b.date.localeCompare(a.date));
+  }, [sortedWaterInserts]);
+
+  const toggleWaterDay = (date: string) => {
+    setExpandedWaterDays(prev => {
+      const next = new Set(prev);
+      if (next.has(date)) next.delete(date);
+      else next.add(date);
+      return next;
+    });
+  };
 
   // Sort steps entries by date (newest first), then by timestamp
   const sortedStepsEntries = useMemo(() => {
@@ -485,9 +511,9 @@ export function EntriesTable({
     }
   };
 
-  // Water table - individual inserts (history mode)
+  // Water table - daily recap rows; expand a day to see/edit/delete its inserts
   const renderWaterTable = () => {
-    if (sortedWaterInserts.length === 0) {
+    if (waterDays.length === 0) {
       return (
         <div className="flex h-25 items-center justify-center text-muted-foreground">
           No water logged yet
@@ -495,32 +521,74 @@ export function EntriesTable({
       );
     }
     const canEdit = !!onUpdateWater;
+    // Time-only pattern for the individual inserts, respecting the user's time format
+    const tf = dateFormat?.tableFormat?.timeFormat;
+    const timePattern = tf && tf !== 'none' ? tf : 'HH:mm';
+    const formatTime = (timestamp: string) => {
+      try {
+        return format(parseISO(timestamp), timePattern);
+      } catch {
+        return '';
+      }
+    };
     return (
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-muted-foreground">
             <th className="text-left py-2 px-1 font-medium">Date</th>
-            <th className="text-right py-2 px-1 font-medium">Amount</th>
+            <th className="text-right py-2 px-1 font-medium">Total</th>
           </tr>
         </thead>
         <tbody>
-          {sortedWaterInserts.map((entry) => (
-            <tr
-              key={entry.id}
-              onClick={canEdit ? () => setEditingWaterEntry(entry) : undefined}
-              className={cn(
-                "border-b last:border-0",
-                canEdit && "cursor-pointer hover:bg-muted/50 transition-colors"
-              )}
-            >
-              <td className="py-2 px-1 whitespace-nowrap">
-                {formatDateTimeForTable(entry.timestamp, dateFormat)}
-              </td>
-              <td className="py-2 px-1 text-right whitespace-nowrap text-primary">
-                {formatWaterAmount(entry.amount, waterUnit)}
-              </td>
-            </tr>
-          ))}
+          {waterDays.map((day) => {
+            const expanded = expandedWaterDays.has(day.date);
+            return (
+              <Fragment key={day.date}>
+                {/* Daily recap row (click to expand/collapse) */}
+                <tr
+                  onClick={() => toggleWaterDay(day.date)}
+                  className="border-b last:border-0 cursor-pointer hover:bg-muted/50 transition-colors"
+                >
+                  <td className="py-2 px-1 whitespace-nowrap">
+                    <div className="flex items-center gap-1.5">
+                      <ChevronRight
+                        className={cn(
+                          "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+                          expanded && "rotate-90"
+                        )}
+                      />
+                      <span>{formatDateForRecap(day.date, dateFormat)}</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({day.entries.length})
+                      </span>
+                    </div>
+                  </td>
+                  <td className="py-2 px-1 text-right whitespace-nowrap font-medium text-primary">
+                    {formatWaterAmount(day.total, waterUnit)}
+                  </td>
+                </tr>
+
+                {/* Individual inserts for the day */}
+                {expanded && day.entries.map((entry) => (
+                  <tr
+                    key={entry.id}
+                    onClick={canEdit ? () => setEditingWaterEntry(entry) : undefined}
+                    className={cn(
+                      "border-b last:border-0 bg-muted/30",
+                      canEdit && "cursor-pointer hover:bg-muted/60 transition-colors"
+                    )}
+                  >
+                    <td className="py-1.5 px-1 whitespace-nowrap text-muted-foreground">
+                      <span className="pl-6">{formatTime(entry.timestamp)}</span>
+                    </td>
+                    <td className="py-1.5 px-1 text-right whitespace-nowrap">
+                      {formatWaterAmount(entry.amount, waterUnit)}
+                    </td>
+                  </tr>
+                ))}
+              </Fragment>
+            );
+          })}
         </tbody>
       </table>
     );

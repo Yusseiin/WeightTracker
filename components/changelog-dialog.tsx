@@ -25,6 +25,13 @@ interface ChangelogEntry {
 const changelog: ChangelogEntry[] = [
   {
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
+    date: "2026-07-06",
+    changes: [
+      { type: "changed", description: "Water history now groups entries by day: each row shows that day's total, and clicking it expands to reveal the individual entries with their times, each editable/deletable" },
+    ],
+  },
+  {
+    version: "v0.0.21",
     date: "2026-07-05",
     changes: [
       { type: "added", description: "Optional water history (Settings → Features → 'Log water as individual entries'): when on, the Add Water dialog lets you pick a date/time and a History tab shows every water entry to edit or delete individually. When off, water works exactly as before (simple daily total)" },
