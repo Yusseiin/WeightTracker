@@ -25,6 +25,14 @@ interface ChangelogEntry {
 const changelog: ChangelogEntry[] = [
   {
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
+    date: "2026-07-07",
+    changes: [
+      { type: "fixed", description: "Water and steps charts were plotting each day's entry on the wrong day (the previous day, around 5pm) for users in non-UTC timezones. Daily entries are now charted on the correct local calendar day, with no phantom time." },
+      { type: "fixed", description: "Water chart Y-axis now uses round values in your unit (e.g. 50, 100, 150 oz) instead of awkward numbers like 33.81 oz." },
+    ],
+  },
+  {
+    version: "v0.0.22",
     date: "2026-07-06",
     changes: [
       { type: "changed", description: "Water history now groups entries by day: each row shows that day's total, and clicking it expands to reveal the individual entries with their times, each editable/deletable" },

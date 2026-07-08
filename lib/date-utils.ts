@@ -41,14 +41,31 @@ function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+// Matches a plain calendar date with no time component, e.g. "2026-07-07"
+const DATE_ONLY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+// Parse a value into a Date. Date-only strings are parsed in LOCAL time:
+// `new Date("2026-07-07")` would be UTC midnight, which renders as the previous
+// day (e.g. "Jul 6, 5:00 PM") in negative-UTC-offset timezones. These strings
+// represent a calendar day, so we build the date in the local zone instead.
+function toDateObj(date: Date | string): Date {
+  if (typeof date !== 'string') return date;
+  const m = DATE_ONLY_RE.exec(date);
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return new Date(date);
+}
+
 // Format a date according to a single format setting
 function formatWithSettings(
   date: Date | string,
   singleFormat: SingleDateFormat,
   locale: DateLocale
 ): string {
+  // Date-only values (e.g. water/steps daily totals) represent a calendar day
+  // with no meaningful time, so parse them locally and never append a time.
+  const isDateOnly = typeof date === 'string' && DATE_ONLY_RE.test(date);
   try {
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    const dateObj = toDateObj(date);
     const localeObj = getLocale(locale);
 
     // Determine the date pattern
@@ -61,8 +78,8 @@ function formatWithSettings(
       pattern = `EEE ${pattern}`;
     }
 
-    // Add time if not 'none'
-    if (singleFormat.timeFormat !== 'none') {
+    // Add time if not 'none' (skip for date-only values)
+    if (singleFormat.timeFormat !== 'none' && !isDateOnly) {
       pattern = `${pattern} ${singleFormat.timeFormat}`;
     }
 
@@ -77,8 +94,8 @@ function formatWithSettings(
     return formatted;
   } catch {
     // Fallback to a safe default format if there's an error
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
-    return format(dateObj, 'dd/MM/yyyy HH:mm');
+    const dateObj = toDateObj(date);
+    return format(dateObj, isDateOnly ? 'dd/MM/yyyy' : 'dd/MM/yyyy HH:mm');
   }
 }
 

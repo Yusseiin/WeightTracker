@@ -31,6 +31,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { formatDateForAxis, formatDateForTooltip } from '@/lib/date-utils';
 import { formatWaterAmount } from '@/lib/water-utils';
 import { getPressureCategory } from '@/lib/pressure-utils';
+import { ML_PER_OZ } from '@/lib/types';
 import type {
   WeightEntry,
   TimeFilter,
@@ -59,6 +60,33 @@ const CHART_COLORS: Record<ChartColor, string> = {
   orange: 'hsl(25, 95%, 53%)',
   purple: 'hsl(270, 76%, 55%)'
 };
+
+// Round a raw step up to a "nice" number (1, 2, 5 × 10^n)
+function niceStep(raw: number): number {
+  if (raw <= 0) return 1;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const norm = raw / mag;
+  const nice = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10;
+  return nice * mag;
+}
+
+// Compute Y-axis tick positions (in stored millilitres) that land on ROUND
+// numbers in the active display unit. Water is stored in ml, but the axis is
+// labelled in the user's unit; without this, oz ticks read as 33.81, 67.63, …
+// which is confusing and easy to misread. ~4-5 ticks from 0.
+function getWaterAxisTicks(maxMl: number, unit: WaterUnit): number[] {
+  if (!(maxMl > 0)) return [0];
+  const mlPerUnit = unit === 'oz' ? ML_PER_OZ : 1;
+  const maxDisplay = maxMl / mlPerUnit;
+  const step = niceStep(maxDisplay / 4);
+  const ticks: number[] = [];
+  // Keep the exact ml position (no rounding) so it converts back to a clean
+  // round number in the display unit (e.g. 50oz, not 50.01oz).
+  for (let v = 0; v <= maxDisplay + step * 0.5; v += step) {
+    ticks.push(v * mlPerUnit);
+  }
+  return ticks;
+}
 
 // Specific colors for different chart types
 const WATER_COLOR = 'hsl(210, 100%, 50%)';
@@ -682,7 +710,16 @@ export function WeightChart({
   };
 
   // Render water chart
-  const renderWaterChart = () => (
+  const renderWaterChart = () => {
+    // Round tick positions in the display unit (avoids labels like "33.81oz")
+    const maxWaterMl = Math.max(
+      0,
+      ...waterChartData.map(d => d.amount),
+      dailyWaterGoal ?? 0
+    );
+    const waterTicks = getWaterAxisTicks(maxWaterMl, waterUnit);
+    const waterAxisMax = waterTicks[waterTicks.length - 1];
+    return (
     <BarChart data={waterChartData} margin={{ top: 10, right: 10, left: -10, bottom: 15 }}>
       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
       <XAxis
@@ -699,6 +736,8 @@ export function WeightChart({
         tickMargin={8}
         fontSize={12}
         className="fill-muted-foreground"
+        ticks={waterTicks}
+        domain={[0, waterAxisMax]}
         tickFormatter={(value) => formatWaterAmount(value, waterUnit)}
       />
       <Tooltip
@@ -738,7 +777,8 @@ export function WeightChart({
         />
       )}
     </BarChart>
-  );
+    );
+  };
 
   // Render steps chart
   const renderStepsChart = () => (
