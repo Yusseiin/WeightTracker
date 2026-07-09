@@ -37,6 +37,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTranslation } from '@/hooks/use-translation';
 import { PhotoCapture } from './photo-capture';
 import {
   BodyMeasurementEntry,
@@ -70,6 +71,7 @@ export function EditBodyMeasurementDialog({
   photosEnabled,
 }: EditBodyMeasurementDialogProps) {
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
   const [dateInput, setDateInput] = useState('');
   const [timeInput, setTimeInput] = useState('');
   const [values, setValues] = useState<Record<string, string>>({});
@@ -122,15 +124,15 @@ export function EditBodyMeasurementDialog({
       if (!raw || raw.trim() === '') continue;
       const num = parseFloat(raw);
       if (!Number.isFinite(num)) {
-        nextErrors[preset.id] = 'Not a number';
+        nextErrors[preset.id] = t('bodyMeasurement.errorNotANumber');
         continue;
       }
       if (num <= 0) {
-        nextErrors[preset.id] = 'Must be greater than 0';
+        nextErrors[preset.id] = t('bodyMeasurement.errorMustBePositive');
         continue;
       }
       if (num > maxDisplayValue) {
-        nextErrors[preset.id] = `Max ${maxDisplayValue.toFixed(1)} ${unit}`;
+        nextErrors[preset.id] = t('bodyMeasurement.errorMax', { max: maxDisplayValue.toFixed(1), unit });
         continue;
       }
       measurements[preset.id] = unit === 'in' ? num * CM_PER_INCH : num;
@@ -139,17 +141,17 @@ export function EditBodyMeasurementDialog({
     setFieldErrors(nextErrors);
 
     if (Object.keys(nextErrors).length > 0) {
-      setFormError('Please fix the highlighted measurements');
+      setFormError(t('bodyMeasurement.errorFixHighlighted'));
       return;
     }
 
     if (Object.keys(measurements).length === 0) {
-      setFormError('Enter at least one measurement');
+      setFormError(t('bodyMeasurement.errorEnterAtLeastOne'));
       return;
     }
 
     if (!dateInput) {
-      setFormError('Pick a date');
+      setFormError(t('bodyMeasurement.errorPickDate'));
       return;
     }
 
@@ -168,7 +170,7 @@ export function EditBodyMeasurementDialog({
         notes: notesInput,
       });
       if (!ok) {
-        setFormError('Could not save. Check the values and try again.');
+        setFormError(t('bodyMeasurement.errorCouldNotSave'));
         return;
       }
       onOpenChange(false);
@@ -197,7 +199,7 @@ export function EditBodyMeasurementDialog({
       )}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="bm-edit-date">Date</Label>
+          <Label htmlFor="bm-edit-date">{t('common.date')}</Label>
           <Input
             id="bm-edit-date"
             type="date"
@@ -206,7 +208,7 @@ export function EditBodyMeasurementDialog({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="bm-edit-time">Time</Label>
+          <Label htmlFor="bm-edit-time">{t('common.time')}</Label>
           <Input
             id="bm-edit-time"
             type="time"
@@ -218,7 +220,7 @@ export function EditBodyMeasurementDialog({
 
       {sortedPresets.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-4">
-          No measurement presets configured.
+          {t('bodyMeasurement.noPresets')}
         </p>
       ) : (
         <div className="space-y-3">
@@ -271,11 +273,11 @@ export function EditBodyMeasurementDialog({
       <div className="space-y-2">
         <Label htmlFor="bm-edit-notes" className="flex items-center gap-2">
           <FileText className="h-4 w-4" />
-          Notes (optional)
+          {t('common.notes')} ({t('common.optional')})
         </Label>
         <Textarea
           id="bm-edit-notes"
-          placeholder="Any notes..."
+          placeholder={t('bodyMeasurement.notesPlaceholder')}
           value={notesInput}
           onChange={(e) => setNotesInput(e.target.value)}
           rows={2}
@@ -292,18 +294,18 @@ export function EditBodyMeasurementDialog({
     <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete measurement entry?</AlertDialogTitle>
+          <AlertDialogTitle>{t('bodyMeasurement.deleteConfirmTitle')}</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently remove this measurement and any attached photos.
+            {t('bodyMeasurement.deleteConfirmDescription')}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            Delete
+            {t('common.delete')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -318,10 +320,10 @@ export function EditBodyMeasurementDialog({
             <DrawerHeader className="shrink-0">
               <DrawerTitle className="flex items-center gap-2 justify-center">
                 <Ruler className="h-5 w-5" />
-                Edit Measurements
+                {t('bodyMeasurement.editTitle')}
               </DrawerTitle>
               <DrawerDescription className="text-center">
-                Update or delete this measurement session.
+                {t('bodyMeasurement.editDescription')}
               </DrawerDescription>
             </DrawerHeader>
             <ScrollArea className="flex-1 overflow-auto px-4">
@@ -329,7 +331,7 @@ export function EditBodyMeasurementDialog({
             </ScrollArea>
             <DrawerFooter className="pt-2 border-t shrink-0">
               <Button onClick={handleSave} disabled={isSubmitting || !canSave}>
-                {isSubmitting ? 'Saving...' : 'Save'}
+                {isSubmitting ? t('common.saving') : t('common.save')}
               </Button>
               <Button
                 variant="destructive"
@@ -337,10 +339,10 @@ export function EditBodyMeasurementDialog({
                 disabled={isSubmitting}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Delete
+                {t('common.delete')}
               </Button>
               <DrawerClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline">{t('common.cancel')}</Button>
               </DrawerClose>
             </DrawerFooter>
           </DrawerContent>
@@ -357,10 +359,10 @@ export function EditBodyMeasurementDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Ruler className="h-5 w-5" />
-              Edit Measurements
+              {t('bodyMeasurement.editTitle')}
             </DialogTitle>
             <DialogDescription>
-              Update or delete this measurement session.
+              {t('bodyMeasurement.editDescription')}
             </DialogDescription>
           </DialogHeader>
           <ScrollArea className="flex-1 -mx-6 px-6">{formContent}</ScrollArea>
@@ -372,11 +374,11 @@ export function EditBodyMeasurementDialog({
               className="w-full sm:w-auto sm:mr-auto"
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Delete
+              {t('common.delete')}
             </Button>
             <DialogClose asChild>
               <Button variant="outline" className="w-full sm:w-auto">
-                Cancel
+                {t('common.cancel')}
               </Button>
             </DialogClose>
             <Button
@@ -384,7 +386,7 @@ export function EditBodyMeasurementDialog({
               disabled={isSubmitting || !canSave}
               className="w-full sm:w-auto"
             >
-              {isSubmitting ? 'Saving...' : 'Save'}
+              {isSubmitting ? t('common.saving') : t('common.save')}
             </Button>
           </DialogFooter>
         </DialogContent>

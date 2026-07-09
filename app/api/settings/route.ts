@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSettings, updateSettings } from '@/lib/data';
 import { getSession } from '@/lib/auth';
+import { getAvailableLanguages } from '@/lib/i18n';
 import { ApiResponse, UserSettings, DateFormatSettings, SingleDateFormat, CustomActivity, MAX_ACTIVITIES, GoalSettings, WaterPreset, MAX_WATER_PRESETS, FeatureToggles, MedicationPreset, MAX_MEDICATIONS, MedicationSchedule, MedicationScheduleType, MedicationTrackingMode, InjectionSettings, InjectableMedication, InjectionSitePreset, MAX_INJECTABLE_MEDICATIONS, MAX_INJECTION_SITES, ChartCombination, ChartView, ChartType, BodyMeasurementPreset, MAX_BODY_MEASUREMENT_PRESETS, MeasurementUnit } from '@/lib/types';
 import { ALL_ACTIVITY_ICONS, WATER_ICONS, MEDICATION_ICONS } from '@/lib/icons';
 
@@ -376,7 +377,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { unit, waterUnit, targetWeight, chartColor, dateFormat, activities, waterPresets, medicationPresets, injectionSettings, goals, features, showQuotes, chartCombinations, bodyMeasurementPresets, measurementUnit } = body;
+    const { unit, waterUnit, targetWeight, chartColor, dateFormat, activities, waterPresets, medicationPresets, injectionSettings, goals, features, showQuotes, chartCombinations, bodyMeasurementPresets, measurementUnit, language } = body;
 
     // Validate unit if provided
     if (unit !== undefined && !['kg', 'lb'].includes(unit)) {
@@ -501,6 +502,17 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    // Validate language if provided (must match an available dictionary file)
+    if (language !== undefined) {
+      const available = await getAvailableLanguages();
+      if (typeof language !== 'string' || !available.includes(language)) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid language. Must match an available dictionary.' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Only include defined values to avoid overwriting with undefined
     const updateData: Partial<UserSettings> = {};
     if (unit !== undefined) updateData.unit = unit;
@@ -518,6 +530,7 @@ export async function PUT(request: NextRequest) {
     if (chartCombinations !== undefined) updateData.chartCombinations = chartCombinations;
     if (bodyMeasurementPresets !== undefined) updateData.bodyMeasurementPresets = bodyMeasurementPresets;
     if (measurementUnit !== undefined) updateData.measurementUnit = measurementUnit;
+    if (language !== undefined) updateData.language = language;
 
     const updated = await updateSettings(
       updateData,

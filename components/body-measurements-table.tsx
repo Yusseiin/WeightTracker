@@ -24,6 +24,7 @@ import {
   CM_PER_INCH,
   MeasurementUnit,
 } from '@/lib/types';
+import { useTranslation } from '@/hooks/use-translation';
 
 function display(cm: number, unit: MeasurementUnit): string {
   const v = unit === 'in' ? cm / CM_PER_INCH : cm;
@@ -47,6 +48,7 @@ export function BodyMeasurementsTable({
   onEdit,
   onCompare,
 }: BodyMeasurementsTableProps) {
+  const { t } = useTranslation();
   const sortedPresets = useMemo(
     () => [...presets].sort((a, b) => a.order - b.order),
     [presets]
@@ -58,11 +60,11 @@ export function BodyMeasurementsTable({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>History</CardTitle>
+          <CardTitle>{t('bodyMeasurements.history')}</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground text-center py-8">
-            No measurements yet.
+            {t('bodyMeasurements.noMeasurements')}
           </p>
         </CardContent>
       </Card>
@@ -72,16 +74,16 @@ export function BodyMeasurementsTable({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>History</CardTitle>
+        <CardTitle>{t('bodyMeasurements.history')}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Summary</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t('common.date')}</TableHead>
+                <TableHead>{t('bodyMeasurements.summary')}</TableHead>
+                <TableHead className="text-right">{t('bodyMeasurements.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -119,7 +121,7 @@ export function BodyMeasurementsTable({
                           ))}
                           {remaining > 0 && (
                             <span className="text-xs text-muted-foreground">
-                              +{remaining} more
+                              {t('bodyMeasurements.moreCount', { n: remaining })}
                             </span>
                           )}
                           {photoCount > 0 && (
@@ -139,7 +141,7 @@ export function BodyMeasurementsTable({
                               e.stopPropagation();
                               onCompare(entry);
                             }}
-                            title="Compare photos"
+                            title={t('bodyMeasurements.comparePhotos')}
                           >
                             <Images className="h-4 w-4" />
                           </Button>
@@ -151,7 +153,7 @@ export function BodyMeasurementsTable({
                             e.stopPropagation();
                             onEdit(entry);
                           }}
-                          title="Edit"
+                          title={t('common.edit')}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>

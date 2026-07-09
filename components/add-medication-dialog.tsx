@@ -31,6 +31,7 @@ import { DynamicIcon } from './dynamic-icon';
 import { PhotoCapture } from './photo-capture';
 import type { MedicationPreset, MedicationEntry } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/hooks/use-translation';
 
 // Three states: 'unselected' (no entry), 'taken', 'not_taken'
 type MedicationState = 'unselected' | 'taken' | 'not_taken';
@@ -83,6 +84,7 @@ export function AddMedicationDialog({
   const setOpen = isControlled ? (onOpenChange || (() => {})) : setInternalOpen;
   const [isSaving, setIsSaving] = useState(false);
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
 
   // Local state for all medications (not persisted until Done is pressed)
   const [localStates, setLocalStates] = useState<Record<string, LocalMedicationState>>({});
@@ -276,8 +278,8 @@ export function AddMedicationDialog({
   const formContent = medicationPresets.length === 0 ? (
     <div className="py-8 text-center text-muted-foreground">
       <Pill className="h-8 w-8 mx-auto mb-2 opacity-50" />
-      <p>No medications configured</p>
-      <p className="text-sm mt-1">Add medications in Settings</p>
+      <p>{t('medication.noMedicationsConfigured')}</p>
+      <p className="text-sm mt-1">{t('medication.addInSettings')}</p>
     </div>
   ) : (
     <div className="space-y-2">
@@ -390,7 +392,7 @@ export function AddMedicationDialog({
                       ? "bg-red-500 text-white"
                       : "bg-muted text-muted-foreground hover:bg-red-500/20 hover:text-red-500"
                   )}
-                  title="Mark as not taken"
+                  title={t('medication.markNotTaken')}
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -401,7 +403,7 @@ export function AddMedicationDialog({
                     onClick={() => handleSetState(preset.id, 'unselected')}
                     disabled={isLoading || isSaving}
                     className="w-8 h-8 rounded-full flex items-center justify-center bg-muted text-muted-foreground hover:bg-muted-foreground/20 transition-colors"
-                    title="Clear selection"
+                    title={t('medication.clearSelection')}
                   >
                     <Minus className="h-4 w-4" />
                   </button>
@@ -417,7 +419,7 @@ export function AddMedicationDialog({
                       ? "bg-green-500 text-white"
                       : "bg-muted text-muted-foreground hover:bg-green-500/20 hover:text-green-500"
                   )}
-                  title="Mark as taken"
+                  title={t('medication.markTaken')}
                 >
                   <Check className="h-4 w-4" />
                 </button>
@@ -451,7 +453,7 @@ export function AddMedicationDialog({
             {/* Dose selection for dosage-mode medications - show when expanded */}
             {isDosageMode && (
               <div className="mt-3 space-y-2">
-                <span className="text-sm text-muted-foreground">Dose:</span>
+                <span className="text-sm text-muted-foreground">{t('medication.dose')}:</span>
                 <div className="flex items-center gap-2">
                   {/* Preset dose button */}
                   {expectedDose !== undefined && (
@@ -463,7 +465,7 @@ export function AddMedicationDialog({
                       disabled={isSaving}
                       className="flex-1"
                     >
-                      {expectedDose} {preset.unit || 'units'}
+                      {expectedDose} {preset.unit || t('medication.units')}
                     </Button>
                   )}
                   {/* Custom dose button */}
@@ -475,7 +477,7 @@ export function AddMedicationDialog({
                     disabled={isSaving}
                     className={expectedDose !== undefined ? 'flex-1' : 'w-full'}
                   >
-                    Custom
+                    {t('medication.custom')}
                   </Button>
                 </div>
 
@@ -486,7 +488,7 @@ export function AddMedicationDialog({
                       type="number"
                       min="0"
                       step="any"
-                      placeholder="Enter dose"
+                      placeholder={t('medication.enterDose')}
                       value={localState.dose ?? ''}
                       onChange={(e) => handleDoseChange(preset.id, e.target.value ? parseFloat(e.target.value) : undefined)}
                       className="h-8 text-sm flex-1"
@@ -494,7 +496,7 @@ export function AddMedicationDialog({
                       autoFocus
                     />
                     <span className="text-sm text-muted-foreground">
-                      {preset.unit || 'units'}
+                      {preset.unit || t('medication.units')}
                     </span>
                   </div>
                 )}
@@ -506,7 +508,7 @@ export function AddMedicationDialog({
                  localState.dose !== expectedDose && (
                   <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-1 rounded">
                     <AlertTriangle className="h-3.5 w-3.5" />
-                    <span>Dose differs from expected ({expectedDose} {preset.unit || 'units'})</span>
+                    <span>{t('medication.doseDiffersFromExpected', { dose: expectedDose, unit: preset.unit || t('medication.units') })}</span>
                   </div>
                 )}
               </div>
@@ -517,11 +519,11 @@ export function AddMedicationDialog({
               <div className="mt-3 space-y-2">
                 <Label htmlFor={`notes-${preset.id}`} className="flex items-center gap-2 text-sm">
                   <FileText className="h-4 w-4" />
-                  Notes (optional)
+                  {t('common.notes')} ({t('common.optional')})
                 </Label>
                 <Textarea
                   id={`notes-${preset.id}`}
-                  placeholder="Any notes..."
+                  placeholder={t('medication.notesPlaceholder')}
                   value={notesInputs[preset.id] || ''}
                   onChange={(e) => setNotesInputs(prev => ({ ...prev, [preset.id]: e.target.value }))}
                   rows={2}
@@ -554,7 +556,7 @@ export function AddMedicationDialog({
       className="fixed bottom-6 left-60 rounded-full shadow-lg h-14 w-14 z-50 border-purple-500/50"
     >
       <Pill className="h-6 w-6 text-purple-500" />
-      <span className="sr-only">Track medications</span>
+      <span className="sr-only">{t('medication.trackMedications')}</span>
     </Button>
   ) : null;
 
@@ -571,7 +573,7 @@ export function AddMedicationDialog({
           <DrawerHeader className="shrink-0">
             <DrawerTitle className="flex items-center gap-2 justify-center">
               <Pill className="h-5 w-5 text-purple-500" />
-              Medications
+              {t('medication.title')}
               {medicationPresets.length > 0 && (
                 <span className="text-sm font-normal text-muted-foreground">
                   ({takenCount}/{medicationPresets.length})
@@ -589,10 +591,10 @@ export function AddMedicationDialog({
               onClick={handleSave}
               disabled={isSaving || !hasChanges}
             >
-              {isSaving ? 'Saving...' : 'Done'}
+              {isSaving ? t('common.saving') : t('medication.done')}
             </Button>
             <DrawerClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline">{t('common.cancel')}</Button>
             </DrawerClose>
           </DrawerFooter>
         </DrawerContent>
@@ -611,7 +613,7 @@ export function AddMedicationDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Pill className="h-5 w-5 text-purple-500" />
-            Medications
+            {t('medication.title')}
             {medicationPresets.length > 0 && (
               <span className="text-sm font-normal text-muted-foreground">
                 ({takenCount}/{medicationPresets.length})
@@ -624,14 +626,14 @@ export function AddMedicationDialog({
         </ScrollArea>
         <DialogFooter className="mt-4 flex-col gap-2 sm:flex-row">
           <DialogClose asChild>
-            <Button variant="outline" className="w-full sm:w-auto">Cancel</Button>
+            <Button variant="outline" className="w-full sm:w-auto">{t('common.cancel')}</Button>
           </DialogClose>
           <Button
             onClick={handleSave}
             disabled={isSaving || !hasChanges}
             className="w-full sm:w-auto"
           >
-            {isSaving ? 'Saving...' : 'Done'}
+            {isSaving ? t('common.saving') : t('medication.done')}
           </Button>
         </DialogFooter>
       </DialogContent>

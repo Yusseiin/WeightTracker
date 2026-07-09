@@ -48,16 +48,17 @@ import { MedicationPreset, MAX_MEDICATIONS, MedicationEntry, MedicationSchedule,
 import { ACTIVITY_COLORS } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
+import { useTranslation } from '@/hooks/use-translation';
 
 // Days of week for schedule picker
 const DAYS_OF_WEEK = [
-  { value: 0, label: 'Sun' },
-  { value: 1, label: 'Mon' },
-  { value: 2, label: 'Tue' },
-  { value: 3, label: 'Wed' },
-  { value: 4, label: 'Thu' },
-  { value: 5, label: 'Fri' },
-  { value: 6, label: 'Sat' },
+  { value: 0, labelKey: 'managers.medication.days.sun' },
+  { value: 1, labelKey: 'managers.medication.days.mon' },
+  { value: 2, labelKey: 'managers.medication.days.tue' },
+  { value: 3, labelKey: 'managers.medication.days.wed' },
+  { value: 4, labelKey: 'managers.medication.days.thu' },
+  { value: 5, labelKey: 'managers.medication.days.fri' },
+  { value: 6, labelKey: 'managers.medication.days.sat' },
 ];
 
 interface MedicationManagerProps {
@@ -81,6 +82,7 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
   const [deletingMedication, setDeletingMedication] = useState<MedicationPreset | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
 
   // Reset local state when dialog opens
   useEffect(() => {
@@ -162,7 +164,7 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
   const handleDeleteClick = (medication: MedicationPreset) => {
     const usageCount = getMedicationUsageCount(medication.id);
     if (usageCount > 0) {
-      showErrorToast(`Cannot delete: ${usageCount} entries use this medication`);
+      showErrorToast(t('managers.medication.cannotDelete', { count: usageCount }));
       return;
     }
     setDeletingMedication(medication);
@@ -173,10 +175,10 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
     setIsSaving(true);
     try {
       await onSave(localMedications);
-      showSuccessToast('Medications saved');
+      showSuccessToast(t('managers.medication.saved'));
       setOpen(false);
     } catch {
-      showErrorToast('Failed to save medications');
+      showErrorToast(t('managers.medication.saveFailed'));
     } finally {
       setIsSaving(false);
     }
@@ -232,20 +234,20 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
                   value={editingMedication.label}
                   onChange={(e) => setEditingMedication({ ...editingMedication, label: e.target.value })}
                   className="w-full"
-                  placeholder="Medication name"
+                  placeholder={t('managers.medication.namePlaceholder')}
                 />
 
                 {/* Tracking mode */}
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Tracking mode</Label>
+                  <Label className="text-xs text-muted-foreground">{t('managers.medication.trackingMode')}</Label>
                   <ToggleGroup
                     type="single"
                     value={editingMedication.trackingMode || 'boolean'}
                     onValueChange={(v) => v && setEditingMedication({ ...editingMedication, trackingMode: v as MedicationTrackingMode })}
                     className="justify-start"
                   >
-                    <ToggleGroupItem value="boolean" className="text-xs">Taken/Not taken</ToggleGroupItem>
-                    <ToggleGroupItem value="dosage" className="text-xs">Dosage</ToggleGroupItem>
+                    <ToggleGroupItem value="boolean" className="text-xs">{t('managers.medication.takenNotTaken')}</ToggleGroupItem>
+                    <ToggleGroupItem value="dosage" className="text-xs">{t('managers.medication.dosage')}</ToggleGroupItem>
                   </ToggleGroup>
                 </div>
 
@@ -253,16 +255,16 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
                 {editingMedication.trackingMode === 'dosage' && (
                   <div className="flex gap-2">
                     <div className="flex-1 space-y-1">
-                      <Label className="text-xs text-muted-foreground">Unit</Label>
+                      <Label className="text-xs text-muted-foreground">{t('managers.medication.unit')}</Label>
                       <Input
                         value={editingMedication.unit || ''}
                         onChange={(e) => setEditingMedication({ ...editingMedication, unit: e.target.value })}
-                        placeholder="mg, ml, pills..."
+                        placeholder={t('managers.medication.unitPlaceholder')}
                         className="h-8"
                       />
                     </div>
                     <div className="flex-1 space-y-1">
-                      <Label className="text-xs text-muted-foreground">Expected dose</Label>
+                      <Label className="text-xs text-muted-foreground">{t('managers.medication.expectedDose')}</Label>
                       <Input
                         type="number"
                         value={editingMedication.schedule?.expectedDose || ''}
@@ -274,7 +276,7 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
                             expectedDose: e.target.value ? Number(e.target.value) : undefined
                           }
                         })}
-                        placeholder="50"
+                        placeholder={t('managers.medication.dosePlaceholder')}
                         className="h-8"
                       />
                     </div>
@@ -283,7 +285,7 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
 
                 {/* Schedule type */}
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Schedule</Label>
+                  <Label className="text-xs text-muted-foreground">{t('managers.medication.schedule')}</Label>
                   <Select
                     value={editingMedication.schedule?.type || 'daily'}
                     onValueChange={(v) => setEditingMedication({
@@ -301,9 +303,9 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="daily">Daily</SelectItem>
-                      <SelectItem value="weekly">Specific days</SelectItem>
-                      <SelectItem value="interval">Every N days</SelectItem>
+                      <SelectItem value="daily">{t('managers.medication.daily')}</SelectItem>
+                      <SelectItem value="weekly">{t('managers.medication.specificDays')}</SelectItem>
+                      <SelectItem value="interval">{t('managers.medication.everyNDays')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -311,7 +313,7 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
                 {/* Days of week picker (for weekly) */}
                 {editingMedication.schedule?.type === 'weekly' && (
                   <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">Days</Label>
+                    <Label className="text-xs text-muted-foreground">{t('managers.medication.daysLabel')}</Label>
                     <div className="flex gap-1 flex-wrap">
                       {DAYS_OF_WEEK.map((day) => (
                         <Button
@@ -331,7 +333,7 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
                             });
                           }}
                         >
-                          {day.label}
+                          {t(day.labelKey)}
                         </Button>
                       ))}
                     </div>
@@ -342,7 +344,7 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
                 {editingMedication.schedule?.type === 'interval' && (
                   <div className="flex gap-2">
                     <div className="flex-1 space-y-1">
-                      <Label className="text-xs text-muted-foreground">Every N days</Label>
+                      <Label className="text-xs text-muted-foreground">{t('managers.medication.everyNDays')}</Label>
                       <Input
                         type="number"
                         min={1}
@@ -355,7 +357,7 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
                       />
                     </div>
                     <div className="flex-1 space-y-1">
-                      <Label className="text-xs text-muted-foreground">Starting from</Label>
+                      <Label className="text-xs text-muted-foreground">{t('managers.medication.startingFrom')}</Label>
                       <Input
                         type="date"
                         value={editingMedication.schedule?.startDate || format(new Date(), 'yyyy-MM-dd')}
@@ -455,21 +457,21 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
               value={newMedication.label}
               onChange={(e) => setNewMedication({ ...newMedication, label: e.target.value })}
               className="w-full"
-              placeholder="Medication name"
+              placeholder={t('managers.medication.namePlaceholder')}
               autoFocus
             />
 
             {/* Tracking mode */}
             <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Tracking mode</Label>
+              <Label className="text-xs text-muted-foreground">{t('managers.medication.trackingMode')}</Label>
               <ToggleGroup
                 type="single"
                 value={newMedication.trackingMode || 'boolean'}
                 onValueChange={(v) => v && setNewMedication({ ...newMedication, trackingMode: v as MedicationTrackingMode })}
                 className="justify-start"
               >
-                <ToggleGroupItem value="boolean" className="text-xs">Taken/Not taken</ToggleGroupItem>
-                <ToggleGroupItem value="dosage" className="text-xs">Dosage</ToggleGroupItem>
+                <ToggleGroupItem value="boolean" className="text-xs">{t('managers.medication.takenNotTaken')}</ToggleGroupItem>
+                <ToggleGroupItem value="dosage" className="text-xs">{t('managers.medication.dosage')}</ToggleGroupItem>
               </ToggleGroup>
             </div>
 
@@ -477,16 +479,16 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
             {newMedication.trackingMode === 'dosage' && (
               <div className="flex gap-2">
                 <div className="flex-1 space-y-1">
-                  <Label className="text-xs text-muted-foreground">Unit</Label>
+                  <Label className="text-xs text-muted-foreground">{t('managers.medication.unit')}</Label>
                   <Input
                     value={newMedication.unit || ''}
                     onChange={(e) => setNewMedication({ ...newMedication, unit: e.target.value })}
-                    placeholder="mg, ml, pills..."
+                    placeholder={t('managers.medication.unitPlaceholder')}
                     className="h-8"
                   />
                 </div>
                 <div className="flex-1 space-y-1">
-                  <Label className="text-xs text-muted-foreground">Expected dose</Label>
+                  <Label className="text-xs text-muted-foreground">{t('managers.medication.expectedDose')}</Label>
                   <Input
                     type="number"
                     value={newMedication.schedule?.expectedDose || ''}
@@ -498,7 +500,7 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
                         expectedDose: e.target.value ? Number(e.target.value) : undefined
                       }
                     })}
-                    placeholder="50"
+                    placeholder={t('managers.medication.dosePlaceholder')}
                     className="h-8"
                   />
                 </div>
@@ -507,7 +509,7 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
 
             {/* Schedule type */}
             <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Schedule</Label>
+              <Label className="text-xs text-muted-foreground">{t('managers.medication.schedule')}</Label>
               <Select
                 value={newMedication.schedule?.type || 'daily'}
                 onValueChange={(v) => setNewMedication({
@@ -525,9 +527,9 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="weekly">Specific days</SelectItem>
-                  <SelectItem value="interval">Every N days</SelectItem>
+                  <SelectItem value="daily">{t('managers.medication.daily')}</SelectItem>
+                  <SelectItem value="weekly">{t('managers.medication.specificDays')}</SelectItem>
+                  <SelectItem value="interval">{t('managers.medication.everyNDays')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -535,7 +537,7 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
             {/* Days of week picker (for weekly) */}
             {newMedication.schedule?.type === 'weekly' && (
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Days</Label>
+                <Label className="text-xs text-muted-foreground">{t('managers.medication.daysLabel')}</Label>
                 <div className="flex gap-1 flex-wrap">
                   {DAYS_OF_WEEK.map((day) => (
                     <Button
@@ -555,7 +557,7 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
                         });
                       }}
                     >
-                      {day.label}
+                      {t(day.labelKey)}
                     </Button>
                   ))}
                 </div>
@@ -566,7 +568,7 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
             {newMedication.schedule?.type === 'interval' && (
               <div className="flex gap-2">
                 <div className="flex-1 space-y-1">
-                  <Label className="text-xs text-muted-foreground">Every N days</Label>
+                  <Label className="text-xs text-muted-foreground">{t('managers.medication.everyNDays')}</Label>
                   <Input
                     type="number"
                     min={1}
@@ -579,7 +581,7 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
                   />
                 </div>
                 <div className="flex-1 space-y-1">
-                  <Label className="text-xs text-muted-foreground">Starting from</Label>
+                  <Label className="text-xs text-muted-foreground">{t('managers.medication.startingFrom')}</Label>
                   <Input
                     type="date"
                     value={newMedication.schedule?.startDate || format(new Date(), 'yyyy-MM-dd')}
@@ -602,16 +604,16 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
           disabled={localMedications.length >= MAX_MEDICATIONS}
         >
           <Plus className="h-4 w-4 mr-2" />
-          Add Medication
+          {t('managers.medication.addMedication')}
           {localMedications.length >= MAX_MEDICATIONS && (
-            <span className="ml-2 text-muted-foreground">(max {MAX_MEDICATIONS})</span>
+            <span className="ml-2 text-muted-foreground">{t('managers.common.maxLabel', { max: MAX_MEDICATIONS })}</span>
           )}
         </Button>
       )}
 
       {/* Info text */}
       <p className="text-xs text-muted-foreground text-center">
-        {localMedications.length} / {MAX_MEDICATIONS} medications
+        {t('managers.medication.countLabel', { current: localMedications.length, max: MAX_MEDICATIONS })}
       </p>
     </div>
   );
@@ -633,7 +635,7 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
           <Pill className="h-4 w-4 text-purple-500" />
         )}
       </div>
-      <span className="ml-auto text-muted-foreground">Manage</span>
+      <span className="ml-auto text-muted-foreground">{t('managers.common.manage')}</span>
     </Button>
   );
 
@@ -644,7 +646,7 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
           <DrawerTrigger asChild>{TriggerButton}</DrawerTrigger>
           <DrawerContent>
             <DrawerHeader>
-              <DrawerTitle>Manage Medications</DrawerTitle>
+              <DrawerTitle>{t('managers.medication.title')}</DrawerTitle>
             </DrawerHeader>
             <div className="px-4 pb-4 overflow-y-auto max-h-[60vh]">
               {medicationListContent}
@@ -652,10 +654,10 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
             <DrawerFooter>
               <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
                 {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Save Changes
+                {t('managers.common.saveChanges')}
               </Button>
               <DrawerClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline">{t('common.cancel')}</Button>
               </DrawerClose>
             </DrawerFooter>
           </DrawerContent>
@@ -665,14 +667,14 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
         <AlertDialog open={!!deletingMedication} onOpenChange={(open) => !open && setDeletingMedication(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete Medication</AlertDialogTitle>
+              <AlertDialogTitle>{t('managers.medication.deleteTitle')}</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete &quot;{deletingMedication?.label}&quot;?
+                {t('managers.common.deleteConfirm', { name: deletingMedication?.label ?? '' })}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={deleteMedication}>Delete</AlertDialogAction>
+              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+              <AlertDialogAction onClick={deleteMedication}>{t('common.delete')}</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -686,16 +688,16 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
         <DialogTrigger asChild>{TriggerButton}</DialogTrigger>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Manage Medications</DialogTitle>
+            <DialogTitle>{t('managers.medication.title')}</DialogTitle>
           </DialogHeader>
           {medicationListContent}
           <div className="flex justify-end gap-2 mt-4">
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline">{t('common.cancel')}</Button>
             </DialogClose>
             <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Save Changes
+              {t('managers.common.saveChanges')}
             </Button>
           </div>
         </DialogContent>
@@ -705,14 +707,14 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
       <AlertDialog open={!!deletingMedication} onOpenChange={(open) => !open && setDeletingMedication(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Medication</AlertDialogTitle>
+            <AlertDialogTitle>{t('managers.medication.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete &quot;{deletingMedication?.label}&quot;?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={deleteMedication}>Delete</AlertDialogAction>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={deleteMedication}>{t('common.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Quote, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "./ui/button";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface QuoteData {
   quoteText: string;
@@ -10,6 +11,7 @@ interface QuoteData {
 }
 
 export function MotivationalQuote() {
+  const { t } = useTranslation();
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -71,10 +73,10 @@ export function MotivationalQuote() {
           size="sm"
           className="h-6 text-xs text-muted-foreground opacity-50 hover:opacity-100"
           onClick={() => setIsCollapsed(false)}
-          aria-label="Show quote"
+          aria-label={t('dashboard.quote.show')}
         >
           <Quote className="h-3 w-3 mr-1" />
-          Show quote
+          {t('dashboard.quote.show')}
           <ChevronDown className="h-3 w-3 ml-1" />
         </Button>
       </div>
@@ -85,7 +87,7 @@ export function MotivationalQuote() {
     return (
       <div className="flex items-center gap-2 text-muted-foreground text-sm italic px-4 py-2">
         <Quote className="h-4 w-4 shrink-0 opacity-50" />
-        <span className="animate-pulse">Loading inspiration...</span>
+        <span className="animate-pulse">{t('dashboard.quote.loading')}</span>
       </div>
     );
   }
@@ -108,7 +110,7 @@ export function MotivationalQuote() {
         size="icon"
         className="h-6 w-6 shrink-0 opacity-50 hover:opacity-100"
         onClick={() => setIsCollapsed(true)}
-        aria-label="Hide quote"
+        aria-label={t('dashboard.quote.hide')}
       >
         <ChevronUp className="h-3 w-3" />
       </Button>

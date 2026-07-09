@@ -41,6 +41,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Pencil, Trash2, X } from 'lucide-react';
 import type { User, UserRole } from '@/lib/types';
+import { useTranslation } from '@/hooks/use-translation';
 
 type UserWithoutPassword = Omit<User, 'password'>;
 
@@ -69,6 +70,7 @@ interface UserManagementDialogProps {
 }
 
 export function UserManagementDialog({ open, onOpenChange, currentUsername }: UserManagementDialogProps) {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<UserWithoutPassword[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -101,10 +103,10 @@ export function UserManagementDialog({ open, onOpenChange, currentUsername }: Us
       if (result.success) {
         setUsers(result.data);
       } else {
-        showErrorToast(result.error || 'Failed to fetch users');
+        showErrorToast(result.error || t('users.fetchError'));
       }
     } catch {
-      showErrorToast('Failed to fetch users');
+      showErrorToast(t('users.fetchError'));
     } finally {
       setIsLoading(false);
     }
@@ -128,15 +130,15 @@ export function UserManagementDialog({ open, onOpenChange, currentUsername }: Us
       const result = await response.json();
 
       if (result.success) {
-        showSuccessToast('User created successfully');
+        showSuccessToast(t('users.createSuccess'));
         createForm.reset();
         setShowCreateForm(false);
         fetchUsers();
       } else {
-        showErrorToast(result.error || 'Failed to create user');
+        showErrorToast(result.error || t('users.createError'));
       }
     } catch {
-      showErrorToast('Failed to create user');
+      showErrorToast(t('users.createError'));
     } finally {
       setIsLoading(false);
     }
@@ -156,14 +158,14 @@ export function UserManagementDialog({ open, onOpenChange, currentUsername }: Us
       const result = await response.json();
 
       if (result.success) {
-        showSuccessToast('User updated successfully');
+        showSuccessToast(t('users.updateSuccess'));
         setEditingUser(null);
         fetchUsers();
       } else {
-        showErrorToast(result.error || 'Failed to update user');
+        showErrorToast(result.error || t('users.updateError'));
       }
     } catch {
-      showErrorToast('Failed to update user');
+      showErrorToast(t('users.updateError'));
     } finally {
       setIsLoading(false);
     }
@@ -181,14 +183,14 @@ export function UserManagementDialog({ open, onOpenChange, currentUsername }: Us
       const result = await response.json();
 
       if (result.success) {
-        showSuccessToast('User deleted successfully');
+        showSuccessToast(t('users.deleteSuccess'));
         setDeletingUser(null);
         fetchUsers();
       } else {
-        showErrorToast(result.error || 'Failed to delete user');
+        showErrorToast(result.error || t('users.deleteError'));
       }
     } catch {
-      showErrorToast('Failed to delete user');
+      showErrorToast(t('users.deleteError'));
     } finally {
       setIsLoading(false);
     }
@@ -207,7 +209,7 @@ export function UserManagementDialog({ open, onOpenChange, currentUsername }: Us
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-125 max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Manage Users</DialogTitle>
+            <DialogTitle>{t('users.manageTitle')}</DialogTitle>
           </DialogHeader>
 
           {/* User List */}
@@ -260,7 +262,7 @@ export function UserManagementDialog({ open, onOpenChange, currentUsername }: Us
           {showCreateForm ? (
             <div className="border rounded-lg p-4 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-medium">New User</h3>
+                <h3 className="font-medium">{t('users.newUser')}</h3>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -280,9 +282,9 @@ export function UserManagementDialog({ open, onOpenChange, currentUsername }: Us
                     name="username"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Username</FormLabel>
+                        <FormLabel>{t('users.username')}</FormLabel>
                         <FormControl>
-                          <Input placeholder="username" {...field} />
+                          <Input placeholder={t('users.usernamePlaceholder')} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -294,9 +296,9 @@ export function UserManagementDialog({ open, onOpenChange, currentUsername }: Us
                     name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Password</FormLabel>
+                        <FormLabel>{t('users.password')}</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="password" {...field} />
+                          <Input type="password" placeholder={t('users.passwordPlaceholder')} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -308,9 +310,9 @@ export function UserManagementDialog({ open, onOpenChange, currentUsername }: Us
                     name="nickname"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Nickname</FormLabel>
+                        <FormLabel>{t('users.nickname')}</FormLabel>
                         <FormControl>
-                          <Input placeholder="Display Name" {...field} />
+                          <Input placeholder={t('users.nicknamePlaceholder')} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -322,16 +324,16 @@ export function UserManagementDialog({ open, onOpenChange, currentUsername }: Us
                     name="role"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Role</FormLabel>
+                        <FormLabel>{t('users.role')}</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select role" />
+                              <SelectValue placeholder={t('users.selectRole')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="user">User</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="user">{t('users.roleUser')}</SelectItem>
+                            <SelectItem value="admin">{t('users.roleAdmin')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -349,11 +351,11 @@ export function UserManagementDialog({ open, onOpenChange, currentUsername }: Us
                       }}
                       disabled={isLoading}
                     >
-                      Cancel
+                      {t('common.cancel')}
                     </Button>
                     <Button type="submit" disabled={isLoading}>
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin pointer-events-none" />}
-                      Create
+                      {t('users.create')}
                     </Button>
                   </div>
                 </form>
@@ -366,7 +368,7 @@ export function UserManagementDialog({ open, onOpenChange, currentUsername }: Us
               onClick={() => setShowCreateForm(true)}
             >
               <Plus className="mr-2 h-4 w-4 pointer-events-none" />
-              Add User
+              {t('users.addUser')}
             </Button>
           )}
         </DialogContent>
@@ -376,14 +378,14 @@ export function UserManagementDialog({ open, onOpenChange, currentUsername }: Us
       <Dialog open={!!editingUser} onOpenChange={open => !open && setEditingUser(null)}>
         <DialogContent className="sm:max-w-100">
           <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
+            <DialogTitle>{t('users.editUser')}</DialogTitle>
           </DialogHeader>
 
           {editingUser && (
             <Form {...editForm}>
               <form onSubmit={editForm.handleSubmit(handleEditUser)} className="space-y-4">
                 <div className="text-sm text-muted-foreground">
-                  Username: @{editingUser.username}
+                  {t('users.usernameLabel', { username: editingUser.username })}
                 </div>
 
                 <FormField
@@ -391,9 +393,9 @@ export function UserManagementDialog({ open, onOpenChange, currentUsername }: Us
                   name="nickname"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nickname</FormLabel>
+                      <FormLabel>{t('users.nickname')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Display Name" {...field} />
+                        <Input placeholder={t('users.nicknamePlaceholder')} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -405,7 +407,7 @@ export function UserManagementDialog({ open, onOpenChange, currentUsername }: Us
                   name="role"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Role</FormLabel>
+                      <FormLabel>{t('users.role')}</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
@@ -413,17 +415,17 @@ export function UserManagementDialog({ open, onOpenChange, currentUsername }: Us
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select role" />
+                            <SelectValue placeholder={t('users.selectRole')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="user">User</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="user">{t('users.roleUser')}</SelectItem>
+                          <SelectItem value="admin">{t('users.roleAdmin')}</SelectItem>
                         </SelectContent>
                       </Select>
                       {editingUser.username === currentUsername && (
                         <p className="text-xs text-muted-foreground">
-                          You cannot change your own role
+                          {t('users.cannotChangeOwnRole')}
                         </p>
                       )}
                       <FormMessage />
@@ -438,11 +440,11 @@ export function UserManagementDialog({ open, onOpenChange, currentUsername }: Us
                     onClick={() => setEditingUser(null)}
                     disabled={isLoading}
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </Button>
                   <Button type="submit" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin pointer-events-none" />}
-                    Save
+                    {t('common.save')}
                   </Button>
                 </div>
               </form>
@@ -455,19 +457,18 @@ export function UserManagementDialog({ open, onOpenChange, currentUsername }: Us
       <AlertDialog open={!!deletingUser} onOpenChange={open => !open && setDeletingUser(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete User?</AlertDialogTitle>
+            <AlertDialogTitle>{t('users.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the user &quot;{deletingUser?.nickname}&quot; (@{deletingUser?.username}).
-              This action cannot be undone.
+              {t('users.deleteDescription', { nickname: deletingUser?.nickname ?? '', username: deletingUser?.username ?? '' })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteUser}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

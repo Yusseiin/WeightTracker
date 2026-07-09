@@ -18,6 +18,7 @@ import { formatDateForTable, formatDateForRecap } from '@/lib/date-utils';
 import { getPressureCategory } from '@/lib/pressure-utils';
 import type { WeightEntry, WaterDayTotal, WaterEntry, WaterUnit, DateFormatSettings, CustomActivity, StepsEntry, PressureEntry, FeatureToggles, MedicationEntry, MedicationPreset, InjectionEntry, InjectionSettings } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/hooks/use-translation';
 import { EditStepsDialog } from '@/components/edit-steps-dialog';
 import { EditPressureDialog } from '@/components/edit-pressure-dialog';
 import { EditWaterDialog } from '@/components/edit-water-dialog';
@@ -78,6 +79,7 @@ function EntryInfoPopover({ entryType, entryId, notes, hasPhotos, onFullscreen }
   hasPhotos: boolean;
   onFullscreen: (urls: string[], startIndex: number) => void;
 }) {
+  const { t } = useTranslation();
   const [indices, setIndices] = useState<number[]>([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -123,7 +125,7 @@ function EntryInfoPopover({ entryType, entryId, notes, hasPhotos, onFullscreen }
                   <div key={idx} className="relative">
                     <img
                       src={url}
-                      alt={`Photo ${idx + 1}`}
+                      alt={t('table.photoAlt', { n: idx + 1 })}
                       className="max-w-36 max-h-36 rounded-md object-contain"
                       onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
@@ -140,7 +142,7 @@ function EntryInfoPopover({ entryType, entryId, notes, hasPhotos, onFullscreen }
             </div>
           )}
           {hasPhotos && loaded && indices.length === 0 && !notes && (
-            <p className="text-xs text-muted-foreground">No photos</p>
+            <p className="text-xs text-muted-foreground">{t('table.noPhotos')}</p>
           )}
         </div>
       </PopoverContent>
@@ -177,6 +179,7 @@ export function EntriesTable({
   photosEnabled,
   photoRefreshKey
 }: EntriesTableProps) {
+  const { t } = useTranslation();
   const [currentView, setCurrentView] = useState<TableView>('weight');
   const [editingWaterEntry, setEditingWaterEntry] = useState<WaterEntry | null>(null);
   const [expandedWaterDays, setExpandedWaterDays] = useState<Set<string>>(new Set());
@@ -343,9 +346,9 @@ export function EntriesTable({
     return (
       <Card>
         <CardContent className="pt-4">
-          <h3 className="text-lg font-semibold mb-2">History</h3>
+          <h3 className="text-lg font-semibold mb-2">{t('table.history')}</h3>
           <div className="flex h-25 items-center justify-center text-muted-foreground">
-            No entries yet
+            {t('table.noEntriesYet')}
           </div>
         </CardContent>
       </Card>
@@ -357,7 +360,7 @@ export function EntriesTable({
     if (entriesWithDiff.length === 0) {
       return (
         <div className="flex h-25 items-center justify-center text-muted-foreground">
-          No weight entries yet
+          {t('table.noWeightEntries')}
         </div>
       );
     }
@@ -365,15 +368,15 @@ export function EntriesTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-muted-foreground">
-            <th className="text-center py-2 px-1 font-medium w-8"><span className="sr-only">Info</span></th>
-            <th className="text-left py-2 px-1 font-medium">Date</th>
-            <th className="text-center py-2 px-0.5 font-medium w-10">Train</th>
-            <th className="text-center py-2 px-0.5 font-medium w-10">Sleep</th>
-            <th className="text-right py-2 px-0.5 font-medium">Weight</th>
+            <th className="text-center py-2 px-1 font-medium w-8"><span className="sr-only">{t('table.info')}</span></th>
+            <th className="text-left py-2 px-1 font-medium">{t('common.date')}</th>
+            <th className="text-center py-2 px-0.5 font-medium w-10">{t('table.train')}</th>
+            <th className="text-center py-2 px-0.5 font-medium w-10">{t('table.sleep')}</th>
+            <th className="text-right py-2 px-0.5 font-medium">{t('table.weight')}</th>
             {features?.bodyFatEnabled && (
-              <th className="text-right py-2 px-0.5 font-medium w-14">BF%</th>
+              <th className="text-right py-2 px-0.5 font-medium w-14">{t('table.bodyFatShort')}</th>
             )}
-            <th className="text-right py-2 px-0.5 font-medium w-14">Diff</th>
+            <th className="text-right py-2 px-0.5 font-medium w-14">{t('table.diff')}</th>
             {waterEnabled && (
               <th className="text-right py-2 px-1 font-medium w-14">
                 <Droplets className="h-4 w-4 inline text-blue-500" />
@@ -450,7 +453,7 @@ export function EntriesTable({
     if (sortedStepsEntries.length === 0) {
       return (
         <div className="flex h-25 items-center justify-center text-muted-foreground">
-          No steps recorded yet
+          {t('table.noStepsRecorded')}
         </div>
       );
     }
@@ -459,9 +462,9 @@ export function EntriesTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-muted-foreground">
-            <th className="text-center py-2 px-1 font-medium w-8"><span className="sr-only">Info</span></th>
-            <th className="text-left py-2 px-1 font-medium">Date</th>
-            <th className="text-right py-2 px-1 font-medium">Steps</th>
+            <th className="text-center py-2 px-1 font-medium w-8"><span className="sr-only">{t('table.info')}</span></th>
+            <th className="text-left py-2 px-1 font-medium">{t('common.date')}</th>
+            <th className="text-right py-2 px-1 font-medium">{t('table.steps')}</th>
           </tr>
         </thead>
         <tbody>
@@ -516,7 +519,7 @@ export function EntriesTable({
     if (waterDays.length === 0) {
       return (
         <div className="flex h-25 items-center justify-center text-muted-foreground">
-          No water logged yet
+          {t('table.noWaterLogged')}
         </div>
       );
     }
@@ -535,8 +538,8 @@ export function EntriesTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-muted-foreground">
-            <th className="text-left py-2 px-1 font-medium">Date</th>
-            <th className="text-right py-2 px-1 font-medium">Total</th>
+            <th className="text-left py-2 px-1 font-medium">{t('common.date')}</th>
+            <th className="text-right py-2 px-1 font-medium">{t('table.total')}</th>
           </tr>
         </thead>
         <tbody>
@@ -599,7 +602,7 @@ export function EntriesTable({
     if (sortedPressureEntries.length === 0) {
       return (
         <div className="flex h-25 items-center justify-center text-muted-foreground">
-          No pressure recorded yet
+          {t('table.noPressureRecorded')}
         </div>
       );
     }
@@ -608,10 +611,10 @@ export function EntriesTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-muted-foreground">
-            <th className="text-center py-2 px-1 font-medium w-8"><span className="sr-only">Info</span></th>
-            <th className="text-left py-2 px-1 font-medium">Date</th>
-            <th className="text-right py-2 px-1 font-medium">Pressure</th>
-            <th className="text-left py-2 px-1 font-medium">Category</th>
+            <th className="text-center py-2 px-1 font-medium w-8"><span className="sr-only">{t('table.info')}</span></th>
+            <th className="text-left py-2 px-1 font-medium">{t('common.date')}</th>
+            <th className="text-right py-2 px-1 font-medium">{t('table.pressure')}</th>
+            <th className="text-left py-2 px-1 font-medium">{t('table.category')}</th>
           </tr>
         </thead>
         <tbody>
@@ -659,7 +662,7 @@ export function EntriesTable({
     if (sortedMedicationEntries.length === 0) {
       return (
         <div className="flex h-25 items-center justify-center text-muted-foreground">
-          No medications recorded yet
+          {t('table.noMedicationsRecorded')}
         </div>
       );
     }
@@ -670,13 +673,13 @@ export function EntriesTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-muted-foreground">
-            <th className="text-center py-2 px-1 font-medium w-8"><span className="sr-only">Info</span></th>
-            <th className="text-left py-2 px-1 font-medium">Date</th>
-            <th className="text-left py-2 px-1 font-medium">Medication</th>
+            <th className="text-center py-2 px-1 font-medium w-8"><span className="sr-only">{t('table.info')}</span></th>
+            <th className="text-left py-2 px-1 font-medium">{t('common.date')}</th>
+            <th className="text-left py-2 px-1 font-medium">{t('table.medication')}</th>
             {hasDosageMeds && (
-              <th className="text-right py-2 px-1 font-medium">Dose</th>
+              <th className="text-right py-2 px-1 font-medium">{t('table.dose')}</th>
             )}
-            <th className="text-center py-2 px-1 font-medium">Status</th>
+            <th className="text-center py-2 px-1 font-medium">{t('table.status')}</th>
           </tr>
         </thead>
         <tbody>
@@ -711,7 +714,7 @@ export function EntriesTable({
                     {preset && (
                       <MedIcon name={preset.icon} className={cn("h-4 w-4", preset.color)} />
                     )}
-                    <span>{preset?.label || 'Unknown'}</span>
+                    <span>{preset?.label || t('table.unknown')}</span>
                   </div>
                 </td>
                 {hasDosageMeds && (
@@ -723,7 +726,7 @@ export function EntriesTable({
                           ? "text-amber-600 dark:text-amber-400 font-medium"
                           : ""
                       )}>
-                        {entry.dose} {preset?.unit || 'units'}
+                        {entry.dose} {preset?.unit || t('table.units')}
                       </span>
                     ) : isDosageMode ? (
                       <span className="text-muted-foreground">-</span>
@@ -734,12 +737,12 @@ export function EntriesTable({
                   {entry.taken ? (
                     <span className="inline-flex items-center gap-1 text-green-500">
                       <Check className="h-4 w-4" />
-                      <span className="sr-only">Taken</span>
+                      <span className="sr-only">{t('table.taken')}</span>
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 text-red-500">
                       <X className="h-4 w-4" />
-                      <span className="sr-only">Not taken</span>
+                      <span className="sr-only">{t('table.notTaken')}</span>
                     </span>
                   )}
                 </td>
@@ -756,7 +759,7 @@ export function EntriesTable({
     if (sortedInjectionEntries.length === 0) {
       return (
         <div className="flex h-25 items-center justify-center text-muted-foreground">
-          No injections recorded yet
+          {t('table.noInjectionsRecorded')}
         </div>
       );
     }
@@ -766,12 +769,12 @@ export function EntriesTable({
         <thead>
           <tr className="border-b text-muted-foreground">
             <th className="text-center py-2 px-1 font-medium w-8">
-              <span className="sr-only">Info</span>
+              <span className="sr-only">{t('table.info')}</span>
             </th>
-            <th className="text-left py-2 px-1 font-medium">Date</th>
-            <th className="text-left py-2 px-1 font-medium">Medication</th>
-            <th className="text-right py-2 px-1 font-medium">Dose</th>
-            <th className="text-left py-2 px-1 font-medium">Site</th>
+            <th className="text-left py-2 px-1 font-medium">{t('common.date')}</th>
+            <th className="text-left py-2 px-1 font-medium">{t('table.medication')}</th>
+            <th className="text-right py-2 px-1 font-medium">{t('table.dose')}</th>
+            <th className="text-left py-2 px-1 font-medium">{t('table.site')}</th>
           </tr>
         </thead>
         <tbody>
@@ -804,14 +807,14 @@ export function EntriesTable({
                 <td className="py-2 px-1 whitespace-nowrap">
                   <div className="flex items-center gap-1.5">
                     <Syringe className={cn("h-4 w-4", medication?.color || 'text-teal-500')} />
-                    <span className={medication?.color || 'text-muted-foreground'}>{medication?.name || 'Unknown'}</span>
+                    <span className={medication?.color || 'text-muted-foreground'}>{medication?.name || t('table.unknown')}</span>
                   </div>
                 </td>
                 <td className={cn("py-2 px-1 text-right whitespace-nowrap", medication?.color || 'text-teal-500')}>
                   {entry.dose} {medication?.unit || 'mg'}
                 </td>
                 <td className="py-2 px-1 whitespace-nowrap text-muted-foreground">
-                  {site?.label || 'Unknown'}
+                  {site?.label || t('table.unknown')}
                 </td>
               </tr>
             );
@@ -834,31 +837,31 @@ export function EntriesTable({
               variant="outline"
               size="sm"
             >
-              <ToggleGroupItem value="weight" aria-label="Weight view">
+              <ToggleGroupItem value="weight" aria-label={t('table.weightView')}>
                 <Scale className="h-4 w-4" />
               </ToggleGroupItem>
               {waterHistoryEnabled && (
-                <ToggleGroupItem value="water" aria-label="Water view">
+                <ToggleGroupItem value="water" aria-label={t('table.waterView')}>
                   <Droplets className="h-4 w-4" />
                 </ToggleGroupItem>
               )}
               {stepsEnabled && (
-                <ToggleGroupItem value="steps" aria-label="Steps view">
+                <ToggleGroupItem value="steps" aria-label={t('table.stepsView')}>
                   <Footprints className="h-4 w-4" />
                 </ToggleGroupItem>
               )}
               {pressureEnabled && (
-                <ToggleGroupItem value="pressure" aria-label="Pressure view">
+                <ToggleGroupItem value="pressure" aria-label={t('table.pressureView')}>
                   <HeartPulse className="h-4 w-4" />
                 </ToggleGroupItem>
               )}
               {medicationEnabled && (
-                <ToggleGroupItem value="medication" aria-label="Medication view">
+                <ToggleGroupItem value="medication" aria-label={t('table.medicationView')}>
                   <Pill className="h-4 w-4" />
                 </ToggleGroupItem>
               )}
               {injectionsEnabled && (
-                <ToggleGroupItem value="injections" aria-label="Injections view">
+                <ToggleGroupItem value="injections" aria-label={t('table.injectionsView')}>
                   <Syringe className="h-4 w-4" />
                 </ToggleGroupItem>
               )}
@@ -1032,7 +1035,7 @@ export function EntriesTable({
                       <div className="flex items-center justify-center h-[80vh]">
                         <img
                           src={url}
-                          alt={`Photo ${idx + 1}`}
+                          alt={t('table.photoAlt', { n: idx + 1 })}
                           className="max-w-full max-h-full object-contain rounded-md"
                           onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                         />
@@ -1045,7 +1048,7 @@ export function EntriesTable({
           ) : (
             <img
               src={fullscreenPhotos.urls[0]}
-              alt="Full screen photo"
+              alt={t('table.fullScreenPhoto')}
               className="max-w-[95vw] max-h-[90vh] object-contain rounded-md"
               onClick={(e) => e.stopPropagation()}
               onError={() => setFullscreenPhotos(null)}

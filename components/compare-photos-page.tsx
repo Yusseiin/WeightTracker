@@ -20,6 +20,7 @@ import {
   type CarouselApi,
 } from '@/components/ui/carousel';
 import type { PhotoEntryType } from './photo-capture';
+import { useTranslation } from '@/hooks/use-translation';
 
 interface SelectedEntry {
   id: string;
@@ -82,6 +83,7 @@ function formatEntryLabel(
 }
 
 export function ComparePhotosPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const entryType = (searchParams.get('type') || 'weight') as PhotoEntryType;
@@ -251,7 +253,7 @@ export function ComparePhotosPage() {
             </Button>
             <h1 className="text-lg font-semibold flex items-center gap-2">
               <ArrowLeftRight className="h-5 w-5" />
-              Compare Photos
+              {t('photos.compareTitle')}
             </h1>
           </div>
         </div>
@@ -263,7 +265,7 @@ export function ComparePhotosPage() {
           {isLoading ? (
             <div className="flex items-center gap-2 justify-center py-16 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
-              <span>Loading...</span>
+              <span>{t('common.loading')}</span>
             </div>
           ) : (
             <>
@@ -273,8 +275,8 @@ export function ComparePhotosPage() {
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder={
                       availableCandidates.length === 0
-                        ? 'No more entries with photos'
-                        : 'Select an entry to add...'
+                        ? t('photos.noMoreEntries')
+                        : t('photos.selectEntryToAdd')
                     } />
                   </SelectTrigger>
                   <SelectContent>
@@ -297,7 +299,7 @@ export function ComparePhotosPage() {
               {/* Selected entries grid */}
               {selectedEntries.length === 0 ? (
                 <div className="flex items-center justify-center h-32 text-muted-foreground text-sm border border-dashed rounded-md">
-                  No entries selected
+                  {t('photos.noEntriesSelected')}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -317,7 +319,7 @@ export function ComparePhotosPage() {
                       </div>
                       {/* Photo grid */}
                       {entry.indices.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">No photos</p>
+                        <p className="text-xs text-muted-foreground">{t('photos.noPhotos')}</p>
                       ) : (
                         <div className="grid grid-cols-3 gap-2">
                           {entry.indices.map(idx => {
@@ -326,7 +328,7 @@ export function ComparePhotosPage() {
                               <div key={idx} className="relative h-24 w-full">
                                 <Image
                                   src={url}
-                                  alt={`Photo ${idx + 1}`}
+                                  alt={t('photos.photoAlt', { n: idx + 1 })}
                                   fill
                                   sizes="(max-width: 768px) 33vw, 200px"
                                   unoptimized
@@ -425,7 +427,7 @@ export function ComparePhotosPage() {
                     <div className="relative h-[80vh] w-full">
                       <Image
                         src={photo.url}
-                        alt={`Photo ${idx + 1}`}
+                        alt={t('photos.photoAlt', { n: idx + 1 })}
                         fill
                         sizes="(max-width: 768px) 100vw, 90vw"
                         unoptimized

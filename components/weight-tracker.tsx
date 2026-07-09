@@ -27,6 +27,7 @@ import { MotivationalQuote } from './motivational-quote';
 import { MedicationReminderBanner } from './medication-reminder-banner';
 import { Button } from './ui/button';
 import { Info } from 'lucide-react';
+import { useTranslation } from '@/hooks/use-translation';
 
 // localStorage key that remembers which version's changelog the user has already seen
 const CHANGELOG_SEEN_KEY = 'changelog-seen-version';
@@ -123,6 +124,7 @@ export function WeightTracker({
   } = useInjections(initialInjectionEntries, initialLastInjection);
 
   const router = useRouter();
+  const { t } = useTranslation();
 
   // Get feature toggles with defaults
   const features = settings.features || { waterEnabled: true, waterHistoryEnabled: false, stepsEnabled: false, pressureEnabled: false, medicationEnabled: false, injectionsEnabled: false, photosEnabled: false, bodyFatEnabled: false, bodyMeasurementsEnabled: false };
@@ -195,8 +197,8 @@ export function WeightTracker({
       <header className="shrink-0 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
         <div className="container flex h-12 items-center justify-between px-4 max-w-3xl mx-auto">
           <div className="flex items-center gap-2">
-            <img src="/logo.svg" alt="Logo" className="h-6 w-6" />
-            <h1 className="text-lg font-semibold">Weight Tracker</h1>
+            <img src="/logo.svg" alt={t('dashboard.header.logoAlt')} className="h-6 w-6" />
+            <h1 className="text-lg font-semibold">{t('dashboard.header.title')}</h1>
             {session && (
               <span className="text-sm text-muted-foreground">
                 ({session.nickname})
@@ -207,7 +209,7 @@ export function WeightTracker({
             variant="ghost"
             size="icon"
             onClick={() => setChangelogOpen(true)}
-            title="Changelog"
+            title={t('nav.changelog')}
             className="cursor-pointer"
           >
             <Info className="h-5 w-5" />
@@ -232,8 +234,8 @@ export function WeightTracker({
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 flex flex-col overflow-hidden">
           <TabsList className="w-full grid grid-cols-2 shrink-0">
-            <TabsTrigger value="chart">Chart</TabsTrigger>
-            <TabsTrigger value="history">History</TabsTrigger>
+            <TabsTrigger value="chart">{t('nav.chart')}</TabsTrigger>
+            <TabsTrigger value="history">{t('nav.history')}</TabsTrigger>
           </TabsList>
 
           {/* Today's Recap - only show on chart view */}

@@ -52,6 +52,11 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
+# Copy i18n dictionaries so the runtime can scan/read them (add a JSON here and
+# reboot to enable a new language). Standalone tracing won't include these
+# runtime-read files automatically, so copy them explicitly.
+COPY --from=builder /app/dictionary ./dictionary
+
 # Copy entrypoint script
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh

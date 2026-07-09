@@ -45,6 +45,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { PhotoCapture } from './photo-capture';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { InjectionEntry, InjectionSettings } from '@/lib/types';
+import { useTranslation } from '@/hooks/use-translation';
 
 interface EditInjectionDialogProps {
   entry: InjectionEntry | null;
@@ -76,6 +77,7 @@ export function EditInjectionDialog({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const router = useRouter();
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
 
   // Get the medication for this entry
   const medication = useMemo(() => {
@@ -157,7 +159,7 @@ export function EditInjectionDialog({
 
       {/* Dose selector */}
       <div className="space-y-2">
-        <Label>Dose ({medication.unit})</Label>
+        <Label>{t('injection.doseWithUnit', { unit: medication.unit })}</Label>
         <div className="grid grid-cols-3 gap-2">
           {medication.availableDoses.map((dose) => (
             <Button
@@ -177,11 +179,11 @@ export function EditInjectionDialog({
       <div className="space-y-2">
         <Label className="flex items-center gap-2">
           <MapPin className="h-4 w-4" />
-          Injection Site
+          {t('injection.injectionSite')}
         </Label>
         <Select value={selectedSiteId} onValueChange={setSelectedSiteId}>
           <SelectTrigger>
-            <SelectValue placeholder="Select injection site" />
+            <SelectValue placeholder={t('injection.selectInjectionSite')} />
           </SelectTrigger>
           <SelectContent>
             {injectionSettings.injectionSites?.map((site) => (
@@ -196,7 +198,7 @@ export function EditInjectionDialog({
       {/* Date and Time inputs */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="date">Date</Label>
+          <Label htmlFor="date">{t('common.date')}</Label>
           <Input
             id="date"
             type="date"
@@ -205,7 +207,7 @@ export function EditInjectionDialog({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="time">Time</Label>
+          <Label htmlFor="time">{t('common.time')}</Label>
           <Input
             id="time"
             type="time"
@@ -220,11 +222,11 @@ export function EditInjectionDialog({
         <div className="space-y-2">
           <Label htmlFor="notes" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            Notes (optional)
+            {t('common.notes')} ({t('common.optional')})
           </Label>
           <Textarea
             id="notes"
-            placeholder="Any notes about this injection..."
+            placeholder={t('injection.notesPlaceholder')}
             value={notesInput}
             onChange={(e) => setNotesInput(e.target.value)}
             rows={2}
@@ -247,7 +249,7 @@ export function EditInjectionDialog({
             onClick={() => router.push(`/compare-photos?type=injection&entry=${entry.id}`)}
           >
             <ArrowLeftRight className="h-4 w-4 mr-1" />
-            Compare Photos
+            {t('injection.comparePhotos')}
           </Button>
         </>
       )}
@@ -260,7 +262,7 @@ export function EditInjectionDialog({
           onClick={() => setShowDeleteConfirm(true)}
         >
           <Trash2 className="h-4 w-4 mr-2" />
-          Delete Entry
+          {t('injection.deleteEntry')}
         </Button>
       )}
     </div>
@@ -270,15 +272,15 @@ export function EditInjectionDialog({
     <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete injection entry?</AlertDialogTitle>
+          <AlertDialogTitle>{t('injection.deleteConfirmTitle')}</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete this injection entry.
+            {t('injection.deleteConfirmDescription')}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
           <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-            Delete
+            {t('common.delete')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -295,7 +297,7 @@ export function EditInjectionDialog({
             <DrawerHeader className="shrink-0">
               <DrawerTitle className="flex items-center gap-2 justify-center">
                 <Syringe className="h-5 w-5 text-teal-500" />
-                Edit Injection
+                {t('injection.editTitle')}
               </DrawerTitle>
             </DrawerHeader>
             <ScrollArea className="flex-1 overflow-auto px-4">
@@ -308,10 +310,10 @@ export function EditInjectionDialog({
                 onClick={handleSave}
                 disabled={isSubmitting || !canSave}
               >
-                {isSubmitting ? 'Saving...' : 'Save'}
+                {isSubmitting ? t('common.saving') : t('common.save')}
               </Button>
               <DrawerClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline">{t('common.cancel')}</Button>
               </DrawerClose>
             </DrawerFooter>
           </DrawerContent>
@@ -328,7 +330,7 @@ export function EditInjectionDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Syringe className="h-5 w-5 text-teal-500" />
-              Edit Injection
+              {t('injection.editTitle')}
             </DialogTitle>
           </DialogHeader>
           <ScrollArea className="flex-1 -mx-6 px-6">
@@ -336,14 +338,14 @@ export function EditInjectionDialog({
           </ScrollArea>
           <DialogFooter className="flex-col gap-2 sm:flex-row mt-4">
             <DialogClose asChild>
-              <Button variant="outline" className="w-full sm:w-auto">Cancel</Button>
+              <Button variant="outline" className="w-full sm:w-auto">{t('common.cancel')}</Button>
             </DialogClose>
             <Button
               onClick={handleSave}
               disabled={isSubmitting || !canSave}
               className="w-full sm:w-auto"
             >
-              {isSubmitting ? 'Saving...' : 'Save'}
+              {isSubmitting ? t('common.saving') : t('common.save')}
             </Button>
           </DialogFooter>
         </DialogContent>

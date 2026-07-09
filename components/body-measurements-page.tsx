@@ -14,6 +14,7 @@ import {
   BodyMeasurementPreset,
   MeasurementUnit,
 } from '@/lib/types';
+import { useTranslation } from '@/hooks/use-translation';
 
 interface BodyMeasurementsPageProps {
   initialEntries: BodyMeasurementEntry[];
@@ -28,6 +29,7 @@ export function BodyMeasurementsPage({
   initialUnit,
   photosEnabled,
 }: BodyMeasurementsPageProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const { entries, isLoading, addEntry, updateEntry, deleteEntry } =
     useBodyMeasurements(initialEntries);
@@ -70,32 +72,32 @@ export function BodyMeasurementsPage({
               variant="ghost"
               size="icon"
               onClick={() => router.push('/')}
-              title="Back"
+              title={t('common.back')}
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="flex items-center gap-2">
               <Ruler className="h-5 w-5" />
-              <h1 className="text-2xl font-bold">Body Measurements</h1>
+              <h1 className="text-2xl font-bold">{t('bodyMeasurements.title')}</h1>
             </div>
           </div>
           <Button onClick={() => setAddOpen(true)} disabled={presets.length === 0}>
             <Plus className="h-4 w-4 mr-1" />
-            Add
+            {t('common.add')}
           </Button>
         </header>
 
         {presets.length === 0 ? (
           <div className="rounded-lg border bg-muted/30 p-6 text-center">
             <p className="text-sm text-muted-foreground">
-              No measurement presets configured yet.
+              {t('bodyMeasurements.noPresets')}
             </p>
             <Button
               variant="link"
               onClick={() => router.push('/settings')}
               className="mt-2"
             >
-              Configure in Settings
+              {t('bodyMeasurements.configureInSettings')}
             </Button>
           </div>
         ) : (

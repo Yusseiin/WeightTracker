@@ -34,6 +34,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTranslation } from '@/hooks/use-translation';
 import { type WaterEntry, type WaterUnit } from '@/lib/types';
 import { mlToOz, ozToMl, validateWaterAmountInput } from '@/lib/water-utils';
 import { cn } from '@/lib/utils';
@@ -66,6 +67,7 @@ export function EditWaterDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
 
   const unitLabel = waterUnit === 'oz' ? 'oz' : 'ml';
 
@@ -140,7 +142,7 @@ export function EditWaterDialog({
         <div className="space-y-2">
           <Label htmlFor="edit-water-amount" className="flex items-center gap-2">
             <Droplets className="h-4 w-4 text-primary" />
-            Amount
+            {t('water.amount')}
           </Label>
           <div className="relative">
             <Input
@@ -149,7 +151,7 @@ export function EditWaterDialog({
               step="0.01"
               min="0"
               inputMode="decimal"
-              placeholder="Enter amount"
+              placeholder={t('water.enterAmount')}
               value={amountInput}
               onChange={(e) => setAmountInput(e.target.value)}
               className={cn(
@@ -170,7 +172,7 @@ export function EditWaterDialog({
 
         {/* Date input */}
         <div className="space-y-2">
-          <Label htmlFor="edit-water-date">Date</Label>
+          <Label htmlFor="edit-water-date">{t('common.date')}</Label>
           <Input
             id="edit-water-date"
             type="date"
@@ -181,7 +183,7 @@ export function EditWaterDialog({
 
         {/* Time input */}
         <div className="space-y-2">
-          <Label htmlFor="edit-water-time">Time</Label>
+          <Label htmlFor="edit-water-time">{t('common.time')}</Label>
           <Input
             id="edit-water-time"
             type="time"
@@ -198,7 +200,7 @@ export function EditWaterDialog({
             onClick={() => setShowDeleteConfirm(true)}
           >
             <Trash2 className="h-4 w-4 mr-2" />
-            Delete Entry
+            {t('water.deleteEntry')}
           </Button>
         )}
       </div>
@@ -209,15 +211,15 @@ export function EditWaterDialog({
     <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete water entry?</AlertDialogTitle>
+          <AlertDialogTitle>{t('water.deleteTitle')}</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete this water entry.
+            {t('water.deleteDescription')}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
           <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-            Delete
+            {t('common.delete')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -234,7 +236,7 @@ export function EditWaterDialog({
             <DrawerHeader className="shrink-0">
               <DrawerTitle className="flex items-center gap-2 justify-center">
                 <Droplets className="h-5 w-5 text-primary" />
-                Edit Water
+                {t('water.editTitle')}
               </DrawerTitle>
             </DrawerHeader>
             <ScrollArea className="flex-1 overflow-auto px-4">
@@ -247,10 +249,10 @@ export function EditWaterDialog({
                 onClick={handleSave}
                 disabled={isSubmitting || !canSave}
               >
-                {isSubmitting ? 'Saving...' : 'Save'}
+                {isSubmitting ? t('common.saving') : t('common.save')}
               </Button>
               <DrawerClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline">{t('common.cancel')}</Button>
               </DrawerClose>
             </DrawerFooter>
           </DrawerContent>
@@ -267,7 +269,7 @@ export function EditWaterDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Droplets className="h-5 w-5 text-primary" />
-              Edit Water
+              {t('water.editTitle')}
             </DialogTitle>
           </DialogHeader>
           <ScrollArea className="flex-1 -mx-6 px-6">
@@ -275,14 +277,14 @@ export function EditWaterDialog({
           </ScrollArea>
           <DialogFooter className="flex-col gap-2 sm:flex-row mt-4">
             <DialogClose asChild>
-              <Button variant="outline" className="w-full sm:w-auto">Cancel</Button>
+              <Button variant="outline" className="w-full sm:w-auto">{t('common.cancel')}</Button>
             </DialogClose>
             <Button
               onClick={handleSave}
               disabled={isSubmitting || !canSave}
               className="w-full sm:w-auto"
             >
-              {isSubmitting ? 'Saving...' : 'Save'}
+              {isSubmitting ? t('common.saving') : t('common.save')}
             </Button>
           </DialogFooter>
         </DialogContent>

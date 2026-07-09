@@ -35,6 +35,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { PhotoCapture } from './photo-capture';
 import type { InjectableMedication, InjectionSitePreset, InjectionEntry } from '@/lib/types';
+import { useTranslation } from '@/hooks/use-translation';
 
 interface AddInjectionDialogProps {
   medications: InjectableMedication[];
@@ -80,6 +81,7 @@ export function AddInjectionDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
 
   // Get selected medication
   const selectedMedication = useMemo(() =>
@@ -202,9 +204,9 @@ export function AddInjectionDialog({
     const emptyContent = (
       <div className="flex flex-col items-center justify-center py-8 text-center">
         <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-        <p className="text-muted-foreground mb-2">No injectable medications configured</p>
+        <p className="text-muted-foreground mb-2">{t('injection.noMedicationsConfigured')}</p>
         <p className="text-sm text-muted-foreground">
-          Go to Settings to add your medications first
+          {t('injection.addInSettings')}
         </p>
       </div>
     );
@@ -216,13 +218,13 @@ export function AddInjectionDialog({
             <DrawerHeader>
               <DrawerTitle className="flex items-center gap-2 justify-center">
                 <Syringe className="h-5 w-5 text-teal-500" />
-                Log Injection
+                {t('injection.logInjection')}
               </DrawerTitle>
             </DrawerHeader>
             {emptyContent}
             <DrawerFooter>
               <DrawerClose asChild>
-                <Button variant="outline">Close</Button>
+                <Button variant="outline">{t('common.close')}</Button>
               </DrawerClose>
             </DrawerFooter>
           </DrawerContent>
@@ -236,13 +238,13 @@ export function AddInjectionDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Syringe className="h-5 w-5 text-teal-500" />
-              Log Injection
+              {t('injection.logInjection')}
             </DialogTitle>
           </DialogHeader>
           {emptyContent}
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline">Close</Button>
+              <Button variant="outline">{t('common.close')}</Button>
             </DialogClose>
           </DialogFooter>
         </DialogContent>
@@ -255,10 +257,10 @@ export function AddInjectionDialog({
       {/* Medication selector */}
       {medications.length > 1 && (
         <div className="space-y-2">
-          <Label>Medication</Label>
+          <Label>{t('injection.medication')}</Label>
           <Select value={selectedMedicationId} onValueChange={setSelectedMedicationId}>
             <SelectTrigger>
-              <SelectValue placeholder="Select medication" />
+              <SelectValue placeholder={t('injection.selectMedication')} />
             </SelectTrigger>
             <SelectContent>
               {medications.map((med) => (
@@ -276,17 +278,17 @@ export function AddInjectionDialog({
         <div className="bg-muted/50 rounded-lg p-3 text-sm">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
             <Syringe className="h-4 w-4" />
-            Last {selectedMedication.name} injection
+            {t('injection.lastInjection', { name: selectedMedication.name })}
           </div>
           <div className="font-medium">
-            {daysSinceLastInjection === 0 ? 'Today' :
-             daysSinceLastInjection === 1 ? 'Yesterday' :
-             `${daysSinceLastInjection} days ago`}
+            {daysSinceLastInjection === 0 ? t('common.today') :
+             daysSinceLastInjection === 1 ? t('injection.yesterday') :
+             t('injection.daysAgo', { n: daysSinceLastInjection ?? 0 })}
             {' - '}
             {lastInjectionForMedication.dose} {selectedMedication.unit}
           </div>
           <div className="text-xs text-muted-foreground mt-1">
-            Site: {injectionSites.find(s => s.id === lastInjectionForMedication.siteId)?.label || 'Unknown'}
+            {t('injection.site')}: {injectionSites.find(s => s.id === lastInjectionForMedication.siteId)?.label || t('injection.unknownSite')}
           </div>
         </div>
       )}
@@ -294,7 +296,7 @@ export function AddInjectionDialog({
       {/* Dose selector */}
       {selectedMedication && (
         <div className="space-y-2">
-          <Label>Dose ({selectedMedication.unit})</Label>
+          <Label>{t('injection.doseWithUnit', { unit: selectedMedication.unit })}</Label>
           <div className="grid grid-cols-3 gap-2">
             {selectedMedication.availableDoses.map((dose) => (
               <Button
@@ -316,14 +318,14 @@ export function AddInjectionDialog({
         <div className="space-y-2">
           <Label className="flex items-center gap-2">
             <MapPin className="h-4 w-4" />
-            Injection Site
+            {t('injection.injectionSite')}
             {suggestedSiteId === selectedSiteId && selectedSiteId && (
-              <span className="text-xs text-green-500">(Suggested)</span>
+              <span className="text-xs text-green-500">{t('injection.suggested')}</span>
             )}
           </Label>
           <Select value={selectedSiteId} onValueChange={setSelectedSiteId}>
             <SelectTrigger>
-              <SelectValue placeholder="Select injection site" />
+              <SelectValue placeholder={t('injection.selectInjectionSite')} />
             </SelectTrigger>
             <SelectContent>
               {injectionSites.map((site) => (
@@ -331,10 +333,10 @@ export function AddInjectionDialog({
                   <span className="flex items-center gap-2">
                     {site.label}
                     {site.id === suggestedSiteId && (
-                      <span className="text-xs text-green-500">(Suggested)</span>
+                      <span className="text-xs text-green-500">{t('injection.suggested')}</span>
                     )}
                     {site.id === lastInjectionForMedication?.siteId && (
-                      <span className="text-xs text-muted-foreground">(Last)</span>
+                      <span className="text-xs text-muted-foreground">{t('injection.last')}</span>
                     )}
                   </span>
                 </SelectItem>
@@ -349,11 +351,11 @@ export function AddInjectionDialog({
         <div className="space-y-2">
           <Label className="flex items-center gap-2">
             <RotateCw className="h-4 w-4" />
-            Next Rotation
+            {t('injection.nextRotation')}
           </Label>
           <Select value={selectedNextSiteId} onValueChange={setSelectedNextSiteId}>
             <SelectTrigger>
-              <SelectValue placeholder="Select next rotation site" />
+              <SelectValue placeholder={t('injection.selectNextRotation')} />
             </SelectTrigger>
             <SelectContent>
               {injectionSites.map((site) => (
@@ -369,7 +371,7 @@ export function AddInjectionDialog({
       {/* Date and Time inputs */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="date">Date</Label>
+          <Label htmlFor="date">{t('common.date')}</Label>
           <Input
             id="date"
             type="date"
@@ -378,7 +380,7 @@ export function AddInjectionDialog({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="time">Time</Label>
+          <Label htmlFor="time">{t('common.time')}</Label>
           <Input
             id="time"
             type="time"
@@ -393,11 +395,11 @@ export function AddInjectionDialog({
         <div className="space-y-2">
           <Label htmlFor="notes" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            Notes (optional)
+            {t('common.notes')} ({t('common.optional')})
           </Label>
           <Textarea
             id="notes"
-            placeholder="Any notes about this injection..."
+            placeholder={t('injection.notesPlaceholder')}
             value={notesInput}
             onChange={(e) => setNotesInput(e.target.value)}
             rows={2}
@@ -424,7 +426,7 @@ export function AddInjectionDialog({
           <DrawerHeader className="shrink-0">
             <DrawerTitle className="flex items-center gap-2 justify-center">
               <Syringe className="h-5 w-5 text-teal-500" />
-              Log Injection
+              {t('injection.logInjection')}
             </DrawerTitle>
           </DrawerHeader>
           <ScrollArea className="flex-1 overflow-auto px-4">
@@ -437,10 +439,10 @@ export function AddInjectionDialog({
               onClick={handleSave}
               disabled={isSubmitting || isLoading || !canSave}
             >
-              {isSubmitting ? 'Saving...' : 'Log Injection'}
+              {isSubmitting ? t('common.saving') : t('injection.logInjection')}
             </Button>
             <DrawerClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline">{t('common.cancel')}</Button>
             </DrawerClose>
           </DrawerFooter>
         </DrawerContent>
@@ -454,7 +456,7 @@ export function AddInjectionDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Syringe className="h-5 w-5 text-teal-500" />
-            Log Injection
+            {t('injection.logInjection')}
           </DialogTitle>
         </DialogHeader>
         <ScrollArea className="flex-1 -mx-6 px-6">
@@ -462,14 +464,14 @@ export function AddInjectionDialog({
         </ScrollArea>
         <DialogFooter className="flex-col gap-2 sm:flex-row mt-4">
           <DialogClose asChild>
-            <Button variant="outline" className="w-full sm:w-auto">Cancel</Button>
+            <Button variant="outline" className="w-full sm:w-auto">{t('common.cancel')}</Button>
           </DialogClose>
           <Button
             onClick={handleSave}
             disabled={isSubmitting || isLoading || !canSave}
             className="w-full sm:w-auto"
           >
-            {isSubmitting ? 'Saving...' : 'Log Injection'}
+            {isSubmitting ? t('common.saving') : t('injection.logInjection')}
           </Button>
         </DialogFooter>
       </DialogContent>

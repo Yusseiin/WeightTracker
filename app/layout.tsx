@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { cookies } from "next/headers";
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { ServiceWorkerRegister } from "@/components/service-worker-register"
+import { I18nProvider } from "@/components/i18n-provider"
+import { getAvailableLanguages, getDictionary, DEFAULT_LANGUAGE } from "@/lib/i18n"
+import { getSettings } from "@/lib/data"
+import { SESSION_COOKIE_NAME, type SessionUser } from "@/lib/types"
 import "./globals.css";
 
 const geistSans = Geist({
@@ -44,27 +49,48 @@ export const viewport = {
   interactiveWidget: 'resizes-visual', // Keeps layout stable when keyboard appears
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Resolve the UI language from the logged-in user's settings (default otherwise)
+  const languages = await getAvailableLanguages();
+  let language = DEFAULT_LANGUAGE;
+  try {
+    const sessionCookie = (await cookies()).get(SESSION_COOKIE_NAME);
+    if (sessionCookie?.value) {
+      const session = JSON.parse(sessionCookie.value) as SessionUser;
+      if (session?.username) {
+        const settings = await getSettings(session.username);
+        if (settings.language && languages.includes(settings.language)) {
+          language = settings.language;
+        }
+      }
+    }
+  } catch {
+    // Not logged in or unreadable session: fall back to the default language
+  }
+  const dictionary = await getDictionary(language);
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={language} suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-          <Toaster position="top-left" closeButton />
-          <ServiceWorkerRegister />
-        </ThemeProvider>
+        <I18nProvider dictionary={dictionary} locale={language} languages={languages}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {children}
+            <Toaster position="top-left" closeButton />
+            <ServiceWorkerRegister />
+          </ThemeProvider>
+        </I18nProvider>
       </body>
     </html>
   );

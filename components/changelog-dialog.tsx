@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/hooks/use-translation";
 
 interface ChangelogEntry {
   version: string;
@@ -25,6 +26,13 @@ interface ChangelogEntry {
 const changelog: ChangelogEntry[] = [
   {
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
+    date: "2026-07-07",
+    changes: [
+      { type: "added", description: "Multi-language support. Pick your language in Settings → Account → Language — English, Italiano and Español are included. The whole interface is translated, and new languages can be added by dropping a JSON file into the dictionary folder and restarting (the app detects available languages automatically)." },
+    ],
+  },
+  {
+    version: "v0.0.23",
     date: "2026-07-07",
     changes: [
       { type: "fixed", description: "Water and steps charts were plotting each day's entry on the wrong day (the previous day, around 5pm) for users in non-UTC timezones. Daily entries are now charted on the correct local calendar day, with no phantom time." },
@@ -231,13 +239,14 @@ interface ChangelogDialogProps {
 }
 
 export function ChangelogDialog({ open, onOpenChange }: ChangelogDialogProps) {
+  const { t } = useTranslation();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader className="shrink-0">
-          <DialogTitle>Changelog</DialogTitle>
+          <DialogTitle>{t('changelog.title')}</DialogTitle>
           <DialogDescription>
-            See what&apos;s new and improved in Weight Tracker App
+            {t('changelog.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -251,7 +260,7 @@ export function ChangelogDialog({ open, onOpenChange }: ChangelogDialogProps) {
                   </h3>
                   {index === 0 && (
                     <Badge variant="secondary" className="text-xs">
-                      Latest
+                      {t('changelog.latest')}
                     </Badge>
                   )}
                   <span className="text-xs text-muted-foreground ml-auto">
@@ -281,7 +290,7 @@ export function ChangelogDialog({ open, onOpenChange }: ChangelogDialogProps) {
 
         <DialogFooter className="shrink-0">
           <DialogClose asChild>
-            <Button type="button">OK</Button>
+            <Button type="button">{t('common.ok')}</Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>

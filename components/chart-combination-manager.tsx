@@ -47,6 +47,7 @@ import type { ChartCombination, ChartView, ChartType, FeatureToggles, InjectionS
 import { CHART_TYPE_MAP, DEFAULT_CHART_COMBINATIONS } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
+import { useTranslation } from '@/hooks/use-translation';
 
 interface ChartCombinationManagerProps {
   combinations: ChartCombination[];
@@ -54,17 +55,6 @@ interface ChartCombinationManagerProps {
   features: FeatureToggles;
   injectionSettings?: InjectionSettings;
 }
-
-// Chart view display names
-const CHART_VIEW_NAMES: Record<ChartView, string> = {
-  weight: 'Weight',
-  water: 'Water',
-  steps: 'Steps',
-  pressure: 'Blood Pressure',
-  medication: 'Medication',
-  injections: 'Injections',
-  bodyfat: 'Body Fat %',
-};
 
 // Get available charts based on feature toggles
 function getAvailableCharts(features: FeatureToggles): ChartView[] {
@@ -101,6 +91,10 @@ export function ChartCombinationManager({ combinations = [], onSave, features, i
   const [deletingCombination, setDeletingCombination] = useState<ChartCombination | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
+
+  // Chart view display names
+  const chartViewName = (chart: ChartView): string => t(`managers.chart.views.${chart}`);
 
   // Reset local state when dialog opens
   useEffect(() => {
@@ -247,10 +241,10 @@ export function ChartCombinationManager({ combinations = [], onSave, features, i
     setIsSaving(true);
     try {
       await onSave(localCombinations);
-      showSuccessToast('Chart configuration saved');
+      showSuccessToast(t('managers.chart.saved'));
       setOpen(false);
     } catch {
-      showErrorToast('Failed to save chart configuration');
+      showErrorToast(t('managers.chart.saveFailed'));
     } finally {
       setIsSaving(false);
     }
@@ -281,7 +275,7 @@ export function ChartCombinationManager({ combinations = [], onSave, features, i
                     value={editingCombination.name}
                     onChange={(e) => setEditingCombination({ ...editingCombination, name: e.target.value })}
                     className="flex-1"
-                    placeholder="Chart name"
+                    placeholder={t('managers.chart.namePlaceholder')}
                   />
                   <div className="flex gap-1">
                     <Button variant="ghost" size="icon" onClick={saveEdit} disabled={!editingCombination.name.trim() || editingCombination.charts.length === 0}>
@@ -294,7 +288,7 @@ export function ChartCombinationManager({ combinations = [], onSave, features, i
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground">
-                    Charts to combine ({editingCombination.chartType} charts only):
+                    {t('managers.chart.chartsToCombine', { type: editingCombination.chartType })}
                   </Label>
                   <div className="flex flex-wrap gap-2">
                     {getCompatibleCharts(editingCombination.chartType, features).map(chart => (
@@ -305,7 +299,7 @@ export function ChartCombinationManager({ combinations = [], onSave, features, i
                           onCheckedChange={() => toggleChartInEdit(chart)}
                         />
                         <Label htmlFor={`edit-${chart}`} className="text-sm cursor-pointer">
-                          {CHART_VIEW_NAMES[chart]}
+                          {chartViewName(chart)}
                         </Label>
                       </div>
                     ))}
@@ -315,7 +309,7 @@ export function ChartCombinationManager({ combinations = [], onSave, features, i
                 {editingCombination.charts.includes('injections') && availableInjectionMeds.length > 0 && (
                   <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">
-                      Injection medications to show (leave empty for all):
+                      {t('managers.chart.injectionMedsLabel')}
                     </Label>
                     <div className="flex flex-wrap gap-2">
                       {availableInjectionMeds.map(med => (
@@ -354,7 +348,7 @@ export function ChartCombinationManager({ combinations = [], onSave, features, i
                   <span className="font-medium">{combination.name}</span>
                   {combination.charts.length > 1 && (
                     <span className="text-xs text-muted-foreground ml-2">
-                      ({combination.charts.map(c => CHART_VIEW_NAMES[c]).join(' + ')})
+                      ({combination.charts.map(c => chartViewName(c)).join(' + ')})
                     </span>
                   )}
                 </div>
@@ -413,8 +407,8 @@ export function ChartCombinationManager({ combinations = [], onSave, features, i
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="line">Line</SelectItem>
-                <SelectItem value="bar">Bar</SelectItem>
+                <SelectItem value="line">{t('managers.chart.line')}</SelectItem>
+                <SelectItem value="bar">{t('managers.chart.bar')}</SelectItem>
               </SelectContent>
             </Select>
             <IconPicker
@@ -425,7 +419,7 @@ export function ChartCombinationManager({ combinations = [], onSave, features, i
               value={newCombination.name}
               onChange={(e) => setNewCombination({ ...newCombination, name: e.target.value })}
               className="flex-1"
-              placeholder="Chart name"
+              placeholder={t('managers.chart.namePlaceholder')}
               autoFocus
             />
             <div className="flex gap-1">
@@ -439,7 +433,7 @@ export function ChartCombinationManager({ combinations = [], onSave, features, i
           </div>
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">
-              Select charts to combine ({newChartType} charts):
+              {t('managers.chart.selectCharts', { type: newChartType })}
             </Label>
             <div className="flex flex-wrap gap-2">
               {getCompatibleCharts(newChartType, features).map(chart => (
@@ -450,7 +444,7 @@ export function ChartCombinationManager({ combinations = [], onSave, features, i
                     onCheckedChange={() => toggleChartInNew(chart)}
                   />
                   <Label htmlFor={`new-${chart}`} className="text-sm cursor-pointer">
-                    {CHART_VIEW_NAMES[chart]}
+                    {chartViewName(chart)}
                   </Label>
                 </div>
               ))}
@@ -460,7 +454,7 @@ export function ChartCombinationManager({ combinations = [], onSave, features, i
           {newCombination.charts.includes('injections') && availableInjectionMeds.length > 0 && (
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">
-                Injection medications to show (leave empty for all):
+                {t('managers.chart.injectionMedsLabel')}
               </Label>
               <div className="flex flex-wrap gap-2">
                 {availableInjectionMeds.map(med => (
@@ -486,7 +480,7 @@ export function ChartCombinationManager({ combinations = [], onSave, features, i
           onClick={() => setIsAdding(true)}
         >
           <Plus className="h-4 w-4 mr-2" />
-          Add Chart Combination
+          {t('managers.chart.addCombination')}
         </Button>
       )}
 
@@ -496,7 +490,7 @@ export function ChartCombinationManager({ combinations = [], onSave, features, i
         className="w-full text-muted-foreground"
         onClick={resetToDefaults}
       >
-        Reset to Defaults
+        {t('managers.chart.resetToDefaults')}
       </Button>
     </div>
   );
@@ -514,7 +508,7 @@ export function ChartCombinationManager({ combinations = [], onSave, features, i
           <span className="text-muted-foreground">+{enabledCount - 3}</span>
         )}
       </div>
-      <span className="ml-auto text-muted-foreground">Configure</span>
+      <span className="ml-auto text-muted-foreground">{t('managers.chart.configure')}</span>
     </Button>
   );
 
@@ -525,7 +519,7 @@ export function ChartCombinationManager({ combinations = [], onSave, features, i
           <DrawerTrigger asChild>{TriggerButton}</DrawerTrigger>
           <DrawerContent>
             <DrawerHeader>
-              <DrawerTitle>Chart Configuration</DrawerTitle>
+              <DrawerTitle>{t('managers.chart.title')}</DrawerTitle>
             </DrawerHeader>
             <div className="px-4 pb-4 overflow-y-auto max-h-[60vh]">
               {combinationListContent}
@@ -533,10 +527,10 @@ export function ChartCombinationManager({ combinations = [], onSave, features, i
             <DrawerFooter>
               <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
                 {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Save Changes
+                {t('managers.common.saveChanges')}
               </Button>
               <DrawerClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline">{t('common.cancel')}</Button>
               </DrawerClose>
             </DrawerFooter>
           </DrawerContent>
@@ -546,14 +540,14 @@ export function ChartCombinationManager({ combinations = [], onSave, features, i
         <AlertDialog open={!!deletingCombination} onOpenChange={(open) => !open && setDeletingCombination(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete Chart</AlertDialogTitle>
+              <AlertDialogTitle>{t('managers.chart.deleteTitle')}</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete &quot;{deletingCombination?.name}&quot;?
+                {t('managers.common.deleteConfirm', { name: deletingCombination?.name ?? '' })}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={deleteCombination}>Delete</AlertDialogAction>
+              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+              <AlertDialogAction onClick={deleteCombination}>{t('common.delete')}</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -567,16 +561,16 @@ export function ChartCombinationManager({ combinations = [], onSave, features, i
         <DialogTrigger asChild>{TriggerButton}</DialogTrigger>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Chart Configuration</DialogTitle>
+            <DialogTitle>{t('managers.chart.title')}</DialogTitle>
           </DialogHeader>
           {combinationListContent}
           <div className="flex justify-end gap-2 mt-4">
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline">{t('common.cancel')}</Button>
             </DialogClose>
             <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Save Changes
+              {t('managers.common.saveChanges')}
             </Button>
           </div>
         </DialogContent>
@@ -586,14 +580,14 @@ export function ChartCombinationManager({ combinations = [], onSave, features, i
       <AlertDialog open={!!deletingCombination} onOpenChange={(open) => !open && setDeletingCombination(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Chart</AlertDialogTitle>
+            <AlertDialogTitle>{t('managers.chart.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete &quot;{deletingCombination?.name}&quot;?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={deleteCombination}>Delete</AlertDialogAction>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={deleteCombination}>{t('common.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

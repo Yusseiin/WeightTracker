@@ -22,6 +22,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from '@/hooks/use-translation';
 
 const formSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
@@ -40,6 +41,7 @@ interface ChangePasswordDialogProps {
 }
 
 export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialogProps) {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<FormData>({
@@ -66,14 +68,14 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
       const result = await response.json();
 
       if (result.success) {
-        showSuccessToast('Password changed successfully');
+        showSuccessToast(t('account.passwordChangedSuccess'));
         form.reset();
         onOpenChange(false);
       } else {
-        showErrorToast(result.error || 'Failed to change password');
+        showErrorToast(result.error || t('account.passwordChangeError'));
       }
     } catch {
-      showErrorToast('Failed to change password');
+      showErrorToast(t('account.passwordChangeError'));
     } finally {
       setIsLoading(false);
     }
@@ -83,7 +85,7 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-100">
         <DialogHeader>
-          <DialogTitle>Change Password</DialogTitle>
+          <DialogTitle>{t('account.changePassword')}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -93,11 +95,11 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
               name="currentPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Current Password</FormLabel>
+                  <FormLabel>{t('account.currentPassword')}</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
-                      placeholder="Enter current password"
+                      placeholder={t('account.currentPasswordPlaceholder')}
                       {...field}
                     />
                   </FormControl>
@@ -111,11 +113,11 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
               name="newPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>New Password</FormLabel>
+                  <FormLabel>{t('account.newPassword')}</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
-                      placeholder="Enter new password"
+                      placeholder={t('account.newPasswordPlaceholder')}
                       {...field}
                     />
                   </FormControl>
@@ -129,11 +131,11 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
               name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Confirm New Password</FormLabel>
+                  <FormLabel>{t('account.confirmNewPassword')}</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
-                      placeholder="Confirm new password"
+                      placeholder={t('account.confirmNewPasswordPlaceholder')}
                       {...field}
                     />
                   </FormControl>
@@ -149,11 +151,11 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
                 onClick={() => onOpenChange(false)}
                 disabled={isLoading}
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin pointer-events-none" />}
-                Change Password
+                {t('account.changePassword')}
               </Button>
             </div>
           </form>

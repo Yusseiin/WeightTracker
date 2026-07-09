@@ -26,6 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTranslation } from '@/hooks/use-translation';
 import { type WaterDayTotal, type WaterUnit, type WaterPreset } from '@/lib/types';
 import { formatWaterAmount, ozToMl, validateWaterAmountInput } from '@/lib/water-utils';
 import { DynamicIcon } from './dynamic-icon';
@@ -71,6 +72,7 @@ export function AddWaterDialog({
   const [dateInput, setDateInput] = useState<string>('');
   const [timeInput, setTimeInput] = useState<string>('');
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
 
   // Initialize date/time to "now" whenever the dialog opens (history mode only)
   useEffect(() => {
@@ -157,7 +159,7 @@ export function AddWaterDialog({
     <div className="space-y-6">
       {/* Current amount display */}
       <div className="text-center p-4 bg-muted rounded-lg">
-        <div className="text-sm text-muted-foreground mb-1">Today&apos;s Total</div>
+        <div className="text-sm text-muted-foreground mb-1">{t('water.todayTotal')}</div>
         <div className="text-3xl font-bold text-primary">
           {formatWaterAmount(currentAmount, waterUnit)}
         </div>
@@ -197,7 +199,7 @@ export function AddWaterDialog({
                   step="0.01"
                   min="0"
                   inputMode="decimal"
-                  placeholder="Enter amount"
+                  placeholder={t('water.enterAmount')}
                   value={customAmount}
                   onChange={(e) => setCustomAmount(e.target.value)}
                   className={cn(
@@ -223,7 +225,7 @@ export function AddWaterDialog({
       {historyEnabled && (
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="water-date">Date</Label>
+            <Label htmlFor="water-date">{t('common.date')}</Label>
             <Input
               id="water-date"
               type="date"
@@ -232,7 +234,7 @@ export function AddWaterDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="water-time">Time</Label>
+            <Label htmlFor="water-time">{t('common.time')}</Label>
             <Input
               id="water-time"
               type="time"
@@ -251,7 +253,7 @@ export function AddWaterDialog({
           className="flex-1"
         >
           <Pencil className="h-4 w-4 mr-2" />
-          Custom
+          {t('water.custom')}
         </Button>
         {/* In history mode individual entries are removed from the table instead */}
         {!historyEnabled && (
@@ -262,7 +264,7 @@ export function AddWaterDialog({
             className="flex-1"
           >
             <RotateCcw className="h-4 w-4 mr-2" />
-            Reset to 0
+            {t('water.resetToZero')}
           </Button>
         )}
       </div>
@@ -277,7 +279,7 @@ export function AddWaterDialog({
       className="fixed bottom-6 left-6 rounded-full shadow-lg h-14 w-14 z-50 border-primary/50"
     >
       <Droplets className="h-6 w-6 text-primary" />
-      <span className="sr-only">Add water</span>
+      <span className="sr-only">{t('water.addAria')}</span>
     </Button>
   ) : null;
 
@@ -294,7 +296,7 @@ export function AddWaterDialog({
           <DrawerHeader className="shrink-0">
             <DrawerTitle className="flex items-center gap-2 justify-center">
               <Droplets className="h-5 w-5 text-primary" />
-              Add Water
+              {t('water.addTitle')}
             </DrawerTitle>
           </DrawerHeader>
           <ScrollArea className="flex-1 overflow-auto px-4">
@@ -307,10 +309,10 @@ export function AddWaterDialog({
               onClick={handleAdd}
               disabled={isSubmitting || isLoading || !canAdd}
             >
-              {isSubmitting ? 'Adding...' : 'Add Water'}
+              {isSubmitting ? t('common.adding') : t('water.addTitle')}
             </Button>
             <DrawerClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline">{t('common.cancel')}</Button>
             </DrawerClose>
           </DrawerFooter>
         </DrawerContent>
@@ -329,7 +331,7 @@ export function AddWaterDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Droplets className="h-5 w-5 text-primary" />
-            Add Water
+            {t('water.addTitle')}
           </DialogTitle>
         </DialogHeader>
         <ScrollArea className="flex-1 -mx-6 px-6">
@@ -337,14 +339,14 @@ export function AddWaterDialog({
         </ScrollArea>
         <DialogFooter className="flex-col gap-2 sm:flex-row mt-4">
           <DialogClose asChild>
-            <Button variant="outline" className="w-full sm:w-auto">Cancel</Button>
+            <Button variant="outline" className="w-full sm:w-auto">{t('common.cancel')}</Button>
           </DialogClose>
           <Button
             onClick={handleAdd}
             disabled={isSubmitting || isLoading || !canAdd}
             className="w-full sm:w-auto"
           >
-            {isSubmitting ? 'Adding...' : 'Add Water'}
+            {isSubmitting ? t('common.adding') : t('water.addTitle')}
           </Button>
         </DialogFooter>
       </DialogContent>

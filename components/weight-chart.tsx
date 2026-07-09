@@ -51,6 +51,7 @@ import type {
 } from '@/lib/types';
 import { DEFAULT_CHART_COMBINATIONS } from '@/lib/types';
 import { DynamicIcon } from '@/components/dynamic-icon';
+import { useTranslation } from '@/hooks/use-translation';
 
 // Color mapping for chart
 const CHART_COLORS: Record<ChartColor, string> = {
@@ -153,6 +154,7 @@ export function WeightChart({
   goals,
   chartCombinations
 }: WeightChartProps) {
+  const { t } = useTranslation();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [medTimeFilter, setMedTimeFilter] = useState<MedicationTimeFilter>('30d');
   const lineColor = CHART_COLORS[chartColor];
@@ -423,7 +425,7 @@ export function WeightChart({
       const dataPoint: Record<string, unknown> = {
         date: entry.timestamp,
         formattedDate: formatDateForAxis(entry.timestamp, dateFormat),
-        site: site?.label || 'Unknown',
+        site: site?.label || t('chart.unknown'),
       };
 
       // Initialize ALL medication dose fields to null first
@@ -563,14 +565,14 @@ export function WeightChart({
   }, [waterChartData, stepsChartData, medicationChartData]);
 
   const chartConfig: ChartConfig = {
-    weight: { label: `Weight (${unit})`, color: lineColor },
-    water: { label: `Water (${waterUnit})`, color: WATER_COLOR },
-    steps: { label: 'Steps', color: STEPS_COLOR },
-    systolic: { label: 'Systolic', color: SYSTOLIC_COLOR },
-    diastolic: { label: 'Diastolic', color: DIASTOLIC_COLOR },
-    adherence: { label: 'Adherence %', color: 'hsl(270, 76%, 55%)' },
-    dose: { label: 'Dose', color: INJECTION_COLOR },
-    bodyFat: { label: 'Body Fat %', color: BODY_FAT_COLOR },
+    weight: { label: t('chart.weightWithUnit', { unit }), color: lineColor },
+    water: { label: t('chart.waterWithUnit', { unit: waterUnit }), color: WATER_COLOR },
+    steps: { label: t('chart.steps'), color: STEPS_COLOR },
+    systolic: { label: t('chart.systolic'), color: SYSTOLIC_COLOR },
+    diastolic: { label: t('chart.diastolic'), color: DIASTOLIC_COLOR },
+    adherence: { label: t('chart.adherencePercent'), color: 'hsl(270, 76%, 55%)' },
+    dose: { label: t('chart.dose'), color: INJECTION_COLOR },
+    bodyFat: { label: t('chart.bodyFatPercent'), color: BODY_FAT_COLOR },
   };
 
   // Calculate Y-axis domain for weight chart
@@ -810,7 +812,7 @@ export function WeightChart({
                   {formatDateForTooltip(data.date, dateFormat)}
                 </div>
                 <div className="font-medium text-green-500">
-                  {data.steps.toLocaleString()} steps
+                  {data.steps.toLocaleString()} {t('chart.stepsUnit')}
                 </div>
               </div>
             );
@@ -887,7 +889,7 @@ export function WeightChart({
       <Legend
         verticalAlign="top"
         height={24}
-        formatter={(value) => <span className="text-xs">{value === 'systolic' ? 'Systolic' : 'Diastolic'}</span>}
+        formatter={(value) => <span className="text-xs">{value === 'systolic' ? t('chart.systolic') : t('chart.diastolic')}</span>}
       />
       <Line
         type="monotone"
@@ -950,7 +952,7 @@ export function WeightChart({
                     {formatDateForTooltip(data.date, dateFormat)}
                   </div>
                   <div className="font-medium text-purple-500">
-                    {data.taken}/{data.total} taken ({data.adherence}%)
+                    {t('chart.medsTakenSummary', { taken: data.taken, total: data.total, adherence: data.adherence })}
                   </div>
                 </div>
               );
@@ -1039,7 +1041,7 @@ export function WeightChart({
                     );
                   })}
                   <div className="text-xs text-muted-foreground mt-1">
-                    Site: {data.site}
+                    {t('chart.site')}: {data.site}
                   </div>
                 </div>
               );
@@ -1217,7 +1219,7 @@ export function WeightChart({
                   </div>
                   {hasWeight && data.weight != null && (
                     <div className="font-medium" style={{ color: lineColor }}>
-                      Weight: {data.weight} {unit}
+                      {t('chart.weight')}: {data.weight} {unit}
                     </div>
                   )}
                   {hasPressure && data.systolic != null && (
@@ -1241,12 +1243,12 @@ export function WeightChart({
                   })}
                   {hasBodyFat && data.bodyFat != null && (
                     <div className="font-medium" style={{ color: BODY_FAT_COLOR }}>
-                      Body Fat: {data.bodyFat}%
+                      {t('chart.bodyFat')}: {data.bodyFat}%
                     </div>
                   )}
                   {hasInjections && data.site && (
                     <div className="text-xs text-muted-foreground mt-1">
-                      Site: {data.site}
+                      {t('chart.site')}: {data.site}
                     </div>
                   )}
                 </div>
@@ -1261,7 +1263,7 @@ export function WeightChart({
             yAxisId="weight"
             type="monotone"
             dataKey="weight"
-            name="Weight"
+            name={t('chart.weight')}
             stroke={lineColor}
             strokeWidth={2}
             dot={{ r: 0 }}
@@ -1275,7 +1277,7 @@ export function WeightChart({
               yAxisId="pressure"
               type="monotone"
               dataKey="systolic"
-              name="Systolic"
+              name={t('chart.systolic')}
               stroke={SYSTOLIC_COLOR}
               strokeWidth={2}
               dot={{ r: 0 }}
@@ -1286,7 +1288,7 @@ export function WeightChart({
               yAxisId="pressure"
               type="monotone"
               dataKey="diastolic"
-              name="Diastolic"
+              name={t('chart.diastolic')}
               stroke={DIASTOLIC_COLOR}
               strokeWidth={2}
               dot={{ r: 0 }}
@@ -1318,7 +1320,7 @@ export function WeightChart({
             yAxisId="bodyfat"
             type="monotone"
             dataKey="bodyFat"
-            name="Body Fat %"
+            name={t('chart.bodyFatPercent')}
             stroke={BODY_FAT_COLOR}
             strokeWidth={2}
             dot={{ r: 0 }}
@@ -1396,17 +1398,17 @@ export function WeightChart({
                   </div>
                   {data.water !== undefined && (
                     <div className="font-medium text-blue-500">
-                      Water: {formatWaterAmount(data.water, waterUnit)}
+                      {t('chart.water')}: {formatWaterAmount(data.water, waterUnit)}
                     </div>
                   )}
                   {data.steps !== undefined && (
                     <div className="font-medium text-green-500">
-                      Steps: {data.steps.toLocaleString()}
+                      {t('chart.steps')}: {data.steps.toLocaleString()}
                     </div>
                   )}
                   {data.adherence !== undefined && (
                     <div className="font-medium text-purple-500">
-                      Meds: {data.taken}/{data.total} ({data.adherence}%)
+                      {t('chart.meds')}: {data.taken}/{data.total} ({data.adherence}%)
                     </div>
                   )}
                 </div>
@@ -1416,9 +1418,9 @@ export function WeightChart({
           }}
         />
         <Legend />
-        {hasWater && <Bar dataKey="water" name="Water" fill={WATER_COLOR} radius={[4, 4, 0, 0]} />}
-        {hasSteps && <Bar dataKey="steps" name="Steps" fill={STEPS_COLOR} radius={[4, 4, 0, 0]} />}
-        {hasMedication && <Bar dataKey="adherence" name="Medication %" fill="hsl(270, 76%, 55%)" radius={[4, 4, 0, 0]} />}
+        {hasWater && <Bar dataKey="water" name={t('chart.water')} fill={WATER_COLOR} radius={[4, 4, 0, 0]} />}
+        {hasSteps && <Bar dataKey="steps" name={t('chart.steps')} fill={STEPS_COLOR} radius={[4, 4, 0, 0]} />}
+        {hasMedication && <Bar dataKey="adherence" name={t('chart.medicationPercent')} fill="hsl(270, 76%, 55%)" radius={[4, 4, 0, 0]} />}
       </BarChart>
     );
   };
@@ -1426,35 +1428,35 @@ export function WeightChart({
   // Get empty message for current combination
   const getEmptyMessageForCombination = () => {
     const combination = activeCombinations.find(c => c.id === currentView);
-    if (!combination) return 'No data available.';
+    if (!combination) return t('chart.noDataAvailable');
 
     // Check each chart in the combination
     for (const chart of combination.charts) {
       switch (chart) {
         case 'weight':
-          if (entries.length === 0) return 'No weight entries yet. Add your first weight entry!';
+          if (entries.length === 0) return t('chart.noWeightEntries');
           break;
         case 'water':
-          if (waterEntries.length === 0) return 'No water entries yet. Start tracking your water intake!';
+          if (waterEntries.length === 0) return t('chart.noWaterEntries');
           break;
         case 'steps':
-          if (stepsEntries.length === 0) return 'No step entries yet. Start tracking your daily steps!';
+          if (stepsEntries.length === 0) return t('chart.noStepEntries');
           break;
         case 'pressure':
-          if (pressureEntries.length === 0) return 'No blood pressure readings yet. Add your first reading!';
+          if (pressureEntries.length === 0) return t('chart.noPressureReadings');
           break;
         case 'medication':
-          if (medicationPresets.length === 0) return 'No medications configured. Add medications in Settings.';
+          if (medicationPresets.length === 0) return t('chart.noMedicationsConfigured');
           break;
         case 'injections':
-          if (!injectionSettings?.medications?.length) return 'No injectable medications configured. Add medications in Settings.';
+          if (!injectionSettings?.medications?.length) return t('chart.noInjectableMedications');
           break;
         case 'bodyfat':
-          if (!entries.some(e => e.bodyFat != null)) return 'No body fat entries yet. Add body fat % to your weight entries!';
+          if (!entries.some(e => e.bodyFat != null)) return t('chart.noBodyFatEntries');
           break;
       }
     }
-    return `No ${combination.name.toLowerCase()} data yet.`;
+    return t('chart.noCombinationData', { name: combination.name.toLowerCase() });
   };
 
   // Check if current combination has data
@@ -1533,7 +1535,7 @@ export function WeightChart({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="all">{t('chart.all')}</SelectItem>
                 <SelectItem value="30d">30d</SelectItem>
                 <SelectItem value="14d">14d</SelectItem>
                 <SelectItem value="7d">7d</SelectItem>
@@ -1545,7 +1547,7 @@ export function WeightChart({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="all">{t('chart.all')}</SelectItem>
                 <SelectItem value="6m">6M</SelectItem>
                 <SelectItem value="3m">3M</SelectItem>
                 <SelectItem value="1m">1M</SelectItem>

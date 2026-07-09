@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { previewFormat } from '@/lib/date-utils';
+import { useTranslation } from '@/hooks/use-translation';
 import type { SingleDateFormat, DateLocale, DateFormatPreset, TimeFormatPreset } from '@/lib/types';
 
 interface DateFormatEditorProps {
@@ -38,12 +39,14 @@ const TIME_FORMAT_OPTIONS: { value: TimeFormatPreset; label: string }[] = [
 ];
 
 export function DateFormatEditor({ label, value, locale, onChange }: DateFormatEditorProps) {
+  const { t } = useTranslation();
+
   // Safely preview the format, catching any errors from invalid patterns
   const getPreview = () => {
     try {
       return previewFormat(value, locale);
     } catch {
-      return 'Invalid format pattern';
+      return t('managers.dateFormat.invalidPattern');
     }
   };
 
@@ -65,7 +68,7 @@ export function DateFormatEditor({ label, value, locale, onChange }: DateFormatE
 
       {/* Date Format */}
       <div className="space-y-1">
-        <Label className="text-xs text-muted-foreground">Date Format</Label>
+        <Label className="text-xs text-muted-foreground">{t('managers.dateFormat.dateFormatLabel')}</Label>
         <Select value={value.dateFormat} onValueChange={handleDateFormatChange}>
           <SelectTrigger className="h-8">
             <SelectValue />
@@ -73,7 +76,7 @@ export function DateFormatEditor({ label, value, locale, onChange }: DateFormatE
           <SelectContent>
             {DATE_FORMAT_OPTIONS.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
+                {opt.value === 'custom' ? t('managers.dateFormat.custom') : opt.label}
               </SelectItem>
             ))}
           </SelectContent>
@@ -83,22 +86,22 @@ export function DateFormatEditor({ label, value, locale, onChange }: DateFormatE
       {/* Custom Format Input */}
       {value.dateFormat === 'custom' && (
         <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Custom Pattern</Label>
+          <Label className="text-xs text-muted-foreground">{t('managers.dateFormat.customPatternLabel')}</Label>
           <Input
             value={value.customDateFormat || ''}
             onChange={(e) => handleCustomFormatChange(e.target.value)}
-            placeholder="e.g., dd/MM/yyyy"
+            placeholder={t('managers.dateFormat.customPatternPlaceholder')}
             className="h-8"
           />
           <p className="text-xs text-muted-foreground">
-            dd=day (use lowercase!), MM=month, yyyy=year, EEE=weekday, HH:mm=time
+            {t('managers.dateFormat.patternHelp')}
           </p>
         </div>
       )}
 
       {/* Time Format */}
       <div className="space-y-1">
-        <Label className="text-xs text-muted-foreground">Time Format</Label>
+        <Label className="text-xs text-muted-foreground">{t('managers.dateFormat.timeFormatLabel')}</Label>
         <Select value={value.timeFormat} onValueChange={handleTimeFormatChange}>
           <SelectTrigger className="h-8">
             <SelectValue />
@@ -106,7 +109,7 @@ export function DateFormatEditor({ label, value, locale, onChange }: DateFormatE
           <SelectContent>
             {TIME_FORMAT_OPTIONS.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
+                {opt.value === 'none' ? t('managers.dateFormat.noTime') : opt.label}
               </SelectItem>
             ))}
           </SelectContent>
@@ -115,7 +118,7 @@ export function DateFormatEditor({ label, value, locale, onChange }: DateFormatE
 
       {/* Preview */}
       <div className="p-2 bg-muted rounded text-sm">
-        <span className="text-xs text-muted-foreground">Preview: </span>
+        <span className="text-xs text-muted-foreground">{t('managers.dateFormat.previewLabel')}</span>
         {getPreview()}
       </div>
     </div>

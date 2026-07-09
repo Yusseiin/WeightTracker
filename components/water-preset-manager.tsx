@@ -38,6 +38,7 @@ import { WATER_ICONS } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
 import { formatWaterAmount, ozToMl, mlToOz, validateWaterAmountInput } from '@/lib/water-utils';
+import { useTranslation } from '@/hooks/use-translation';
 
 interface WaterPresetManagerProps {
   presets: WaterPreset[];
@@ -61,6 +62,7 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
   const [deletingPreset, setDeletingPreset] = useState<WaterPreset | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
 
   // Reset local state when dialog opens
   useEffect(() => {
@@ -124,10 +126,10 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
     }
     // ml: whole numbers only, positive
     const trimmed = raw.trim();
-    if (!trimmed) return 'Enter an amount';
+    if (!trimmed) return t('managers.water.enterAmount');
     const num = parseFloat(trimmed);
-    if (!Number.isFinite(num) || num <= 0) return 'Must be greater than 0';
-    if (!Number.isInteger(num)) return 'ml must be a whole number';
+    if (!Number.isFinite(num) || num <= 0) return t('managers.water.mustBePositive');
+    if (!Number.isInteger(num)) return t('managers.water.mlWholeNumber');
     return null;
   };
 
@@ -187,10 +189,10 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
     setIsSaving(true);
     try {
       await onSave(localPresets);
-      showSuccessToast('Water presets saved');
+      showSuccessToast(t('managers.water.saved'));
       setOpen(false);
     } catch {
-      showErrorToast('Failed to save water presets');
+      showErrorToast(t('managers.water.saveFailed'));
     } finally {
       setIsSaving(false);
     }
@@ -251,7 +253,7 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
                     value={editingPreset.label}
                     onChange={(e) => setEditingPreset({ ...editingPreset, label: e.target.value })}
                     className="flex-1"
-                    placeholder="Label"
+                    placeholder={t('managers.water.labelPlaceholder')}
                   />
                   <div className="relative w-30">
                     <Input
@@ -263,7 +265,7 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
                       onChange={(e) => setEditingAmount(e.target.value)}
                       className={cn('pr-8', editingAmountError && 'border-destructive')}
                       aria-invalid={!!editingAmountError}
-                      placeholder="Amount"
+                      placeholder={t('managers.water.amountPlaceholder')}
                     />
                     <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                       {unitLabel}
@@ -367,7 +369,7 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
                 value={newPreset.label}
                 onChange={(e) => setNewPreset({ ...newPreset, label: e.target.value })}
                 className="flex-1"
-                placeholder="Label (e.g., Cup, Bottle)"
+                placeholder={t('managers.water.labelExamplePlaceholder')}
                 autoFocus
               />
               <div className="relative w-30">
@@ -380,7 +382,7 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
                   onChange={(e) => setNewPresetAmount(e.target.value)}
                   className={cn('pr-8', newPresetAmountError && 'border-destructive')}
                   aria-invalid={!!newPresetAmountError}
-                  placeholder="Amount"
+                  placeholder={t('managers.water.amountPlaceholder')}
                 />
                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                   {unitLabel}
@@ -400,16 +402,16 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
           disabled={localPresets.length >= MAX_WATER_PRESETS}
         >
           <Plus className="h-4 w-4 mr-2" />
-          Add Preset
+          {t('managers.water.addPreset')}
           {localPresets.length >= MAX_WATER_PRESETS && (
-            <span className="ml-2 text-muted-foreground">(max {MAX_WATER_PRESETS})</span>
+            <span className="ml-2 text-muted-foreground">{t('managers.common.maxLabel', { max: MAX_WATER_PRESETS })}</span>
           )}
         </Button>
       )}
 
       {/* Info text */}
       <p className="text-xs text-muted-foreground text-center">
-        {localPresets.length} / {MAX_WATER_PRESETS} presets
+        {t('managers.water.countLabel', { current: localPresets.length, max: MAX_WATER_PRESETS })}
       </p>
     </div>
   );
@@ -425,7 +427,7 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
           <span className="text-muted-foreground">+{safePresets.length - 3}</span>
         )}
       </div>
-      <span className="ml-auto text-muted-foreground">Manage</span>
+      <span className="ml-auto text-muted-foreground">{t('managers.common.manage')}</span>
     </Button>
   );
 
@@ -436,7 +438,7 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
           <DrawerTrigger asChild>{TriggerButton}</DrawerTrigger>
           <DrawerContent>
             <DrawerHeader>
-              <DrawerTitle>Manage Water Presets</DrawerTitle>
+              <DrawerTitle>{t('managers.water.title')}</DrawerTitle>
             </DrawerHeader>
             <div className="px-4 pb-4 overflow-y-auto max-h-[60vh]">
               {presetListContent}
@@ -444,10 +446,10 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
             <DrawerFooter>
               <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
                 {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Save Changes
+                {t('managers.common.saveChanges')}
               </Button>
               <DrawerClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline">{t('common.cancel')}</Button>
               </DrawerClose>
             </DrawerFooter>
           </DrawerContent>
@@ -457,14 +459,14 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
         <AlertDialog open={!!deletingPreset} onOpenChange={(open) => !open && setDeletingPreset(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete Preset</AlertDialogTitle>
+              <AlertDialogTitle>{t('managers.water.deleteTitle')}</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete &quot;{deletingPreset?.label}&quot;?
+                {t('managers.common.deleteConfirm', { name: deletingPreset?.label ?? '' })}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={deletePreset}>Delete</AlertDialogAction>
+              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+              <AlertDialogAction onClick={deletePreset}>{t('common.delete')}</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -478,16 +480,16 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
         <DialogTrigger asChild>{TriggerButton}</DialogTrigger>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Manage Water Presets</DialogTitle>
+            <DialogTitle>{t('managers.water.title')}</DialogTitle>
           </DialogHeader>
           {presetListContent}
           <div className="flex justify-end gap-2 mt-4">
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline">{t('common.cancel')}</Button>
             </DialogClose>
             <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Save Changes
+              {t('managers.common.saveChanges')}
             </Button>
           </div>
         </DialogContent>
@@ -497,14 +499,14 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
       <AlertDialog open={!!deletingPreset} onOpenChange={(open) => !open && setDeletingPreset(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Preset</AlertDialogTitle>
+            <AlertDialogTitle>{t('managers.water.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete &quot;{deletingPreset?.label}&quot;?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={deletePreset}>Delete</AlertDialogAction>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={deletePreset}>{t('common.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

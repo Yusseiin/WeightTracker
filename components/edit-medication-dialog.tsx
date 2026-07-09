@@ -40,6 +40,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { DynamicIcon } from './dynamic-icon';
 import { type MedicationEntry, type MedicationPreset } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/hooks/use-translation';
 
 interface EditMedicationDialogProps {
   entry: MedicationEntry | null;
@@ -71,6 +72,7 @@ export function EditMedicationDialog({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const router = useRouter();
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
 
   // Get the medication preset info
   const preset = entry ? medicationPresets.find(p => p.id === entry.medicationId) : null;
@@ -150,13 +152,13 @@ export function EditMedicationDialog({
           />
         </div>
         <div>
-          <div className="font-medium">{preset?.label || 'Unknown Medication'}</div>
+          <div className="font-medium">{preset?.label || t('medication.unknownMedication')}</div>
         </div>
       </div>
 
       {/* Taken status toggle */}
       <div className="space-y-2">
-        <Label>Status</Label>
+        <Label>{t('medication.status')}</Label>
         <div className="flex gap-2">
           <Button
             type="button"
@@ -168,7 +170,7 @@ export function EditMedicationDialog({
             onClick={() => setTakenInput(true)}
           >
             <Check className="h-4 w-4" />
-            Taken
+            {t('medication.taken')}
           </Button>
           <Button
             type="button"
@@ -180,7 +182,7 @@ export function EditMedicationDialog({
             onClick={() => setTakenInput(false)}
           >
             <X className="h-4 w-4" />
-            Not Taken
+            {t('medication.notTaken')}
           </Button>
         </div>
       </div>
@@ -188,25 +190,25 @@ export function EditMedicationDialog({
       {/* Dose input for dosage-mode medications */}
       {preset?.trackingMode === 'dosage' && takenInput && (
         <div className="space-y-2">
-          <Label htmlFor="edit-medication-dose">Dose</Label>
+          <Label htmlFor="edit-medication-dose">{t('medication.dose')}</Label>
           <div className="flex items-center gap-2">
             <Input
               id="edit-medication-dose"
               type="number"
               min="0"
               step="any"
-              placeholder="Enter dose"
+              placeholder={t('medication.enterDose')}
               value={doseInput ?? ''}
               onChange={(e) => setDoseInput(e.target.value ? parseFloat(e.target.value) : undefined)}
               className="text-lg flex-1"
             />
             <span className="text-muted-foreground">
-              {preset.unit || 'units'}
+              {preset.unit || t('medication.units')}
             </span>
           </div>
           {preset.schedule?.expectedDose !== undefined && (
             <p className="text-xs text-muted-foreground">
-              Expected: {preset.schedule.expectedDose} {preset.unit || 'units'}
+              {t('medication.expected', { dose: preset.schedule.expectedDose, unit: preset.unit || t('medication.units') })}
             </p>
           )}
           {preset.schedule?.expectedDose !== undefined &&
@@ -214,7 +216,7 @@ export function EditMedicationDialog({
            doseInput !== preset.schedule.expectedDose && (
             <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-1 rounded">
               <AlertTriangle className="h-3.5 w-3.5" />
-              <span>Dose differs from expected ({preset.schedule.expectedDose} {preset.unit || 'units'})</span>
+              <span>{t('medication.doseDiffersFromExpected', { dose: preset.schedule.expectedDose, unit: preset.unit || t('medication.units') })}</span>
             </div>
           )}
         </div>
@@ -225,7 +227,7 @@ export function EditMedicationDialog({
         <div className="space-y-2">
           <Label htmlFor="edit-medication-date" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
-            Date
+            {t('common.date')}
           </Label>
           <Input
             id="edit-medication-date"
@@ -238,7 +240,7 @@ export function EditMedicationDialog({
         <div className="space-y-2">
           <Label htmlFor="edit-medication-time" className="flex items-center gap-2">
             <Clock className="h-4 w-4" />
-            Time
+            {t('common.time')}
           </Label>
           <Input
             id="edit-medication-time"
@@ -255,11 +257,11 @@ export function EditMedicationDialog({
         <div className="space-y-2">
           <Label htmlFor="edit-medication-notes" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            Notes (optional)
+            {t('common.notes')} ({t('common.optional')})
           </Label>
           <Textarea
             id="edit-medication-notes"
-            placeholder="Any notes about this entry..."
+            placeholder={t('medication.notesAboutEntry')}
             value={notesInput}
             onChange={(e) => setNotesInput(e.target.value)}
             rows={2}
@@ -282,7 +284,7 @@ export function EditMedicationDialog({
             onClick={() => router.push(`/compare-photos?type=medication&entry=${entry.id}`)}
           >
             <ArrowLeftRight className="h-4 w-4 mr-1" />
-            Compare Photos
+            {t('medication.comparePhotos')}
           </Button>
         </>
       )}
@@ -295,7 +297,7 @@ export function EditMedicationDialog({
           onClick={() => setShowDeleteConfirm(true)}
         >
           <Trash2 className="h-4 w-4 mr-2" />
-          Delete Entry
+          {t('medication.deleteEntry')}
         </Button>
       )}
     </div>
@@ -305,15 +307,15 @@ export function EditMedicationDialog({
     <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete medication entry?</AlertDialogTitle>
+          <AlertDialogTitle>{t('medication.deleteConfirmTitle')}</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete this medication entry.
+            {t('medication.deleteConfirmDescription')}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
           <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-            Delete
+            {t('common.delete')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -330,7 +332,7 @@ export function EditMedicationDialog({
             <DrawerHeader className="shrink-0">
               <DrawerTitle className="flex items-center gap-2 justify-center">
                 <Pill className="h-5 w-5 text-purple-500" />
-                Edit Medication Entry
+                {t('medication.editTitle')}
               </DrawerTitle>
             </DrawerHeader>
             <ScrollArea className="flex-1 overflow-auto px-4">
@@ -343,10 +345,10 @@ export function EditMedicationDialog({
                 onClick={handleSave}
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Saving...' : 'Save'}
+                {isSubmitting ? t('common.saving') : t('common.save')}
               </Button>
               <DrawerClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline">{t('common.cancel')}</Button>
               </DrawerClose>
             </DrawerFooter>
           </DrawerContent>
@@ -363,7 +365,7 @@ export function EditMedicationDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Pill className="h-5 w-5 text-purple-500" />
-              Edit Medication Entry
+              {t('medication.editTitle')}
             </DialogTitle>
           </DialogHeader>
           <ScrollArea className="flex-1 -mx-6 px-6">
@@ -371,14 +373,14 @@ export function EditMedicationDialog({
           </ScrollArea>
           <DialogFooter className="flex-col gap-2 sm:flex-row mt-4">
             <DialogClose asChild>
-              <Button variant="outline" className="w-full sm:w-auto">Cancel</Button>
+              <Button variant="outline" className="w-full sm:w-auto">{t('common.cancel')}</Button>
             </DialogClose>
             <Button
               onClick={handleSave}
               disabled={isSubmitting}
               className="w-full sm:w-auto"
             >
-              {isSubmitting ? 'Saving...' : 'Save'}
+              {isSubmitting ? t('common.saving') : t('common.save')}
             </Button>
           </DialogFooter>
         </DialogContent>

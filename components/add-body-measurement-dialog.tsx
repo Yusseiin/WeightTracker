@@ -27,6 +27,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTranslation } from '@/hooks/use-translation';
 import { PhotoCapture } from './photo-capture';
 import {
   BodyMeasurementEntry,
@@ -59,6 +60,7 @@ export function AddBodyMeasurementDialog({
   photosEnabled,
 }: AddBodyMeasurementDialogProps) {
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
   const [dateInput, setDateInput] = useState('');
   const [timeInput, setTimeInput] = useState('');
   const [values, setValues] = useState<Record<string, string>>({});
@@ -103,15 +105,15 @@ export function AddBodyMeasurementDialog({
       if (!raw || raw.trim() === '') continue;
       const num = parseFloat(raw);
       if (!Number.isFinite(num)) {
-        nextErrors[preset.id] = 'Not a number';
+        nextErrors[preset.id] = t('bodyMeasurement.errorNotANumber');
         continue;
       }
       if (num <= 0) {
-        nextErrors[preset.id] = 'Must be greater than 0';
+        nextErrors[preset.id] = t('bodyMeasurement.errorMustBePositive');
         continue;
       }
       if (num > maxDisplayValue) {
-        nextErrors[preset.id] = `Max ${maxDisplayValue.toFixed(1)} ${unit}`;
+        nextErrors[preset.id] = t('bodyMeasurement.errorMax', { max: maxDisplayValue.toFixed(1), unit });
         continue;
       }
       measurements[preset.id] = unit === 'in' ? num * CM_PER_INCH : num;
@@ -120,17 +122,17 @@ export function AddBodyMeasurementDialog({
     setFieldErrors(nextErrors);
 
     if (Object.keys(nextErrors).length > 0) {
-      setFormError('Please fix the highlighted measurements');
+      setFormError(t('bodyMeasurement.errorFixHighlighted'));
       return;
     }
 
     if (Object.keys(measurements).length === 0) {
-      setFormError('Enter at least one measurement');
+      setFormError(t('bodyMeasurement.errorEnterAtLeastOne'));
       return;
     }
 
     if (!dateInput) {
-      setFormError('Pick a date');
+      setFormError(t('bodyMeasurement.errorPickDate'));
       return;
     }
 
@@ -151,7 +153,7 @@ export function AddBodyMeasurementDialog({
 
       // onAdd returns undefined when the request failed — keep dialog open
       if (!entry) {
-        setFormError('Could not save. Check the values and try again.');
+        setFormError(t('bodyMeasurement.errorCouldNotSave'));
         return;
       }
 
@@ -181,7 +183,7 @@ export function AddBodyMeasurementDialog({
       )}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="bm-date">Date</Label>
+          <Label htmlFor="bm-date">{t('common.date')}</Label>
           <Input
             id="bm-date"
             type="date"
@@ -190,7 +192,7 @@ export function AddBodyMeasurementDialog({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="bm-time">Time</Label>
+          <Label htmlFor="bm-time">{t('common.time')}</Label>
           <Input
             id="bm-time"
             type="time"
@@ -202,7 +204,7 @@ export function AddBodyMeasurementDialog({
 
       {sortedPresets.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-4">
-          No measurement presets configured. Add some in Settings.
+          {t('bodyMeasurement.noPresetsAdd')}
         </p>
       ) : (
         <div className="space-y-3">
@@ -255,11 +257,11 @@ export function AddBodyMeasurementDialog({
       <div className="space-y-2">
         <Label htmlFor="bm-notes" className="flex items-center gap-2">
           <FileText className="h-4 w-4" />
-          Notes (optional)
+          {t('common.notes')} ({t('common.optional')})
         </Label>
         <Textarea
           id="bm-notes"
-          placeholder="Any notes..."
+          placeholder={t('bodyMeasurement.notesPlaceholder')}
           value={notesInput}
           onChange={(e) => setNotesInput(e.target.value)}
           rows={2}
@@ -283,10 +285,10 @@ export function AddBodyMeasurementDialog({
           <DrawerHeader className="shrink-0">
             <DrawerTitle className="flex items-center gap-2 justify-center">
               <Ruler className="h-5 w-5" />
-              Add Measurements
+              {t('bodyMeasurement.addTitle')}
             </DrawerTitle>
             <DrawerDescription className="text-center">
-              Record a new body measurement session.
+              {t('bodyMeasurement.addDescription')}
             </DrawerDescription>
           </DrawerHeader>
           <ScrollArea className="flex-1 overflow-auto px-4">
@@ -294,10 +296,10 @@ export function AddBodyMeasurementDialog({
           </ScrollArea>
           <DrawerFooter className="pt-2 border-t shrink-0">
             <Button onClick={handleSave} disabled={isSubmitting || isLoading || !canSave}>
-              {isSubmitting ? 'Saving...' : 'Add'}
+              {isSubmitting ? t('common.saving') : t('common.add')}
             </Button>
             <DrawerClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline">{t('common.cancel')}</Button>
             </DrawerClose>
           </DrawerFooter>
         </DrawerContent>
@@ -311,17 +313,17 @@ export function AddBodyMeasurementDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Ruler className="h-5 w-5" />
-            Add Measurements
+            {t('bodyMeasurement.addTitle')}
           </DialogTitle>
           <DialogDescription>
-            Record a new body measurement session.
+            {t('bodyMeasurement.addDescription')}
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="flex-1 -mx-6 px-6">{formContent}</ScrollArea>
         <DialogFooter className="flex-col gap-2 sm:flex-row mt-4">
           <DialogClose asChild>
             <Button variant="outline" className="w-full sm:w-auto">
-              Cancel
+              {t('common.cancel')}
             </Button>
           </DialogClose>
           <Button
@@ -329,7 +331,7 @@ export function AddBodyMeasurementDialog({
             disabled={isSubmitting || isLoading || !canSave}
             className="w-full sm:w-auto"
           >
-            {isSubmitting ? 'Saving...' : 'Add'}
+            {isSubmitting ? t('common.saving') : t('common.add')}
           </Button>
         </DialogFooter>
       </DialogContent>

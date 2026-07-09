@@ -32,18 +32,9 @@ import { DynamicIcon } from '@/components/dynamic-icon';
 import { PhotoCapture } from '@/components/photo-capture';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTranslation } from '@/hooks/use-translation';
 import type { EntryFormData, CustomActivity } from '@/lib/types';
 import { cn } from '@/lib/utils';
-
-// Form validation schema
-const entrySchema = z.object({
-  weight: z.coerce.number().positive('Weight must be positive'),
-  training: z.string().min(1, 'Activity is required'),
-  sleep: z.enum(['0', '1', '2']),
-  timestamp: z.string().min(1, 'Date is required'),
-  notes: z.string().optional(),
-  bodyFat: z.coerce.number().min(0).max(100).optional().or(z.literal(''))
-});
 
 type FormValues = {
   weight: number;
@@ -70,6 +61,17 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, note
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
+
+  // Form validation schema
+  const entrySchema = z.object({
+    weight: z.coerce.number().positive(t('weight.validation.weightPositive')),
+    training: z.string().min(1, t('weight.validation.activityRequired')),
+    sleep: z.enum(['0', '1', '2']),
+    timestamp: z.string().min(1, t('weight.validation.dateRequired')),
+    notes: z.string().optional(),
+    bodyFat: z.coerce.number().min(0).max(100).optional().or(z.literal(''))
+  });
 
   // Support both controlled and uncontrolled modes
   const isControlled = controlledOpen !== undefined;
@@ -138,12 +140,12 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, note
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       {/* Weight input */}
       <div className="space-y-2">
-        <Label htmlFor="weight">Weight ({unit})</Label>
+        <Label htmlFor="weight">{t('weight.weightLabel', { unit })}</Label>
         <Input
           id="weight"
           type="number"
           step="0.1"
-          placeholder={`e.g., 75.5`}
+          placeholder={t('weight.weightPlaceholder')}
           {...register('weight')}
           className="text-lg"
         />
@@ -155,14 +157,14 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, note
       {/* Body Fat % input */}
       {bodyFatEnabled && (
         <div className="space-y-2">
-          <Label htmlFor="bodyFat">Body Fat %</Label>
+          <Label htmlFor="bodyFat">{t('weight.bodyFat')}</Label>
           <Input
             id="bodyFat"
             type="number"
             step="0.1"
             min="0"
             max="100"
-            placeholder="e.g., 18.5"
+            placeholder={t('weight.bodyFatPlaceholder')}
             {...register('bodyFat')}
             className="text-lg"
           />
@@ -174,7 +176,7 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, note
 
       {/* Activity type toggle */}
       <div className="space-y-2">
-        <Label>Activity</Label>
+        <Label>{t('weight.activity')}</Label>
         <div className="grid grid-cols-4 gap-2">
           {activities.map((activity) => (
             <button
@@ -197,7 +199,7 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, note
 
       {/* Sleep quality toggle */}
       <div className="space-y-2">
-        <Label>Sleep Quality</Label>
+        <Label>{t('weight.sleepQuality')}</Label>
         <div className="grid grid-cols-3 gap-2">
           <button
             type="button"
@@ -210,7 +212,7 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, note
             )}
           >
             <span className="w-3 h-3 rounded-full bg-green-500 mr-2" />
-            Good
+            {t('weight.sleepGood')}
           </button>
           <button
             type="button"
@@ -223,7 +225,7 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, note
             )}
           >
             <span className="w-3 h-3 rounded-full bg-orange-500 mr-2" />
-            Fair
+            {t('weight.sleepFair')}
           </button>
           <button
             type="button"
@@ -236,14 +238,14 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, note
             )}
           >
             <span className="w-3 h-3 rounded-full bg-red-500 mr-2" />
-            Poor
+            {t('weight.sleepPoor')}
           </button>
         </div>
       </div>
 
       {/* Date/time input */}
       <div className="space-y-2">
-        <Label htmlFor="timestamp">Date & Time</Label>
+        <Label htmlFor="timestamp">{t('weight.dateTime')}</Label>
         <Input
           id="timestamp"
           type="datetime-local"
@@ -259,11 +261,11 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, note
         <div className="space-y-2">
           <Label htmlFor="notes" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            Notes (optional)
+            {t('common.notes')} ({t('common.optional')})
           </Label>
           <Textarea
             id="notes"
-            placeholder="Any notes..."
+            placeholder={t('weight.notesPlaceholder')}
             {...register('notes')}
             rows={2}
           />
@@ -288,7 +290,7 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, note
       className="fixed bottom-6 right-6 rounded-full shadow-lg h-14 w-14 z-50 md:relative md:bottom-auto md:right-auto md:rounded-md md:h-auto md:w-auto md:px-4 md:py-2"
     >
       <Plus className="h-6 w-6 md:h-4 md:w-4 md:mr-2" />
-      <span className="sr-only md:not-sr-only">Add Entry</span>
+      <span className="sr-only md:not-sr-only">{t('weight.addEntry')}</span>
     </Button>
   ) : null;
 
@@ -303,7 +305,7 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, note
         )}
         <DrawerContent className="max-h-[85vh] flex flex-col">
           <DrawerHeader className="shrink-0">
-            <DrawerTitle>Add Weight Entry</DrawerTitle>
+            <DrawerTitle>{t('weight.addTitle')}</DrawerTitle>
           </DrawerHeader>
           <ScrollArea className="flex-1 overflow-auto px-4">
             <div className="pb-4">
@@ -316,10 +318,10 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, note
               onClick={handleSubmit(handleFormSubmit)}
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Saving...' : 'Save Entry'}
+              {isSubmitting ? t('common.saving') : t('weight.saveEntry')}
             </Button>
             <DrawerClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline">{t('common.cancel')}</Button>
             </DrawerClose>
           </DrawerFooter>
         </DrawerContent>
@@ -336,14 +338,14 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, note
       )}
       <DialogContent className="max-h-[85vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Add Weight Entry</DialogTitle>
+          <DialogTitle>{t('weight.addTitle')}</DialogTitle>
         </DialogHeader>
         <ScrollArea className="flex-1 -mx-6 px-6">
           {formContent}
         </ScrollArea>
         <DialogFooter className="flex-col gap-2 sm:flex-row mt-4">
           <DialogClose asChild>
-            <Button variant="outline" className="w-full sm:w-auto">Cancel</Button>
+            <Button variant="outline" className="w-full sm:w-auto">{t('common.cancel')}</Button>
           </DialogClose>
           <Button
             type="submit"
@@ -351,7 +353,7 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, note
             disabled={isSubmitting}
             className="w-full sm:w-auto"
           >
-            {isSubmitting ? 'Saving...' : 'Save Entry'}
+            {isSubmitting ? t('common.saving') : t('weight.saveEntry')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -20,6 +20,7 @@ import {
   type CarouselApi,
 } from '@/components/ui/carousel';
 import { compressImage } from '@/lib/image-utils';
+import { useTranslation } from '@/hooks/use-translation';
 
 export type PhotoEntryType = 'weight' | 'medication' | 'injection' | 'steps' | 'pressure' | 'body-measurement';
 
@@ -41,6 +42,7 @@ export function PhotoCapture({
   entryId,
   onPhotosChange,
 }: PhotoCaptureProps) {
+  const { t } = useTranslation();
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
@@ -178,7 +180,7 @@ export function PhotoCapture({
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
-        <span>Loading photos...</span>
+        <span>{t('photos.loadingPhotos')}</span>
       </div>
     );
   }
@@ -212,7 +214,7 @@ export function PhotoCapture({
             <div key={photo.url} className="relative">
               <img
                 src={photo.url}
-                alt={`Photo ${idx + 1}`}
+                alt={t('photos.photoAlt', { n: idx + 1 })}
                 className="h-24 w-full object-cover rounded-md"
                 onError={() => {
                   setPhotos(prev => prev.filter((_, i) => i !== idx));
@@ -252,7 +254,7 @@ export function PhotoCapture({
           className="flex-1"
         >
           <Camera className="h-4 w-4 mr-1" />
-          Camera
+          {t('photos.camera')}
         </Button>
         <Button
           type="button"
@@ -262,7 +264,7 @@ export function PhotoCapture({
           className="flex-1"
         >
           <ImageIcon className="h-4 w-4 mr-1" />
-          Gallery
+          {t('photos.gallery')}
         </Button>
       </div>
 
@@ -336,7 +338,7 @@ export function PhotoCapture({
                       <div className="flex items-center justify-center h-[80vh]">
                         <img
                           src={photo.url}
-                          alt={`Photo ${idx + 1}`}
+                          alt={t('photos.photoAlt', { n: idx + 1 })}
                           className="max-w-full max-h-full object-contain rounded-md"
                           onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                         />
@@ -349,7 +351,7 @@ export function PhotoCapture({
           ) : (
             <img
               src={fullscreenPhoto.url}
-              alt="Full screen photo"
+              alt={t('photos.fullscreenAlt')}
               className="max-w-[95vw] max-h-[90vh] object-contain rounded-md"
               onClick={(e) => e.stopPropagation()}
               onError={() => setFullscreenIndex(null)}
@@ -362,18 +364,18 @@ export function PhotoCapture({
       <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete photo?</AlertDialogTitle>
+            <AlertDialogTitle>{t('photos.deletePhotoTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently remove the photo. This action cannot be undone.
+              {t('photos.deletePhotoDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => { if (deleteTarget !== null) handleRemove(deleteTarget); }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

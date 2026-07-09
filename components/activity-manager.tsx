@@ -39,6 +39,7 @@ import { CustomActivity, MAX_ACTIVITIES, WeightEntry } from '@/lib/types';
 import { ACTIVITY_COLORS } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
+import { useTranslation } from '@/hooks/use-translation';
 
 interface ActivityManagerProps {
   activities: CustomActivity[];
@@ -60,6 +61,7 @@ export function ActivityManager({ activities = [], onSave, entries }: ActivityMa
   const [deletingActivity, setDeletingActivity] = useState<CustomActivity | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
 
   // Reset local state when dialog opens
   useEffect(() => {
@@ -141,7 +143,7 @@ export function ActivityManager({ activities = [], onSave, entries }: ActivityMa
   const handleDeleteClick = (activity: CustomActivity) => {
     const usageCount = getActivityUsageCount(activity.id);
     if (usageCount > 0) {
-      showErrorToast(`Cannot delete: ${usageCount} entries use this activity`);
+      showErrorToast(t('managers.activity.cannotDelete', { count: usageCount }));
       return;
     }
     setDeletingActivity(activity);
@@ -152,10 +154,10 @@ export function ActivityManager({ activities = [], onSave, entries }: ActivityMa
     setIsSaving(true);
     try {
       await onSave(localActivities);
-      showSuccessToast('Activities saved');
+      showSuccessToast(t('managers.activity.saved'));
       setOpen(false);
     } catch {
-      showErrorToast('Failed to save activities');
+      showErrorToast(t('managers.activity.saveFailed'));
     } finally {
       setIsSaving(false);
     }
@@ -211,7 +213,7 @@ export function ActivityManager({ activities = [], onSave, entries }: ActivityMa
                   value={editingActivity.label}
                   onChange={(e) => setEditingActivity({ ...editingActivity, label: e.target.value })}
                   className="w-full"
-                  placeholder="Activity name"
+                  placeholder={t('managers.activity.namePlaceholder')}
                 />
               </div>
             ) : (
@@ -301,7 +303,7 @@ export function ActivityManager({ activities = [], onSave, entries }: ActivityMa
               value={newActivity.label}
               onChange={(e) => setNewActivity({ ...newActivity, label: e.target.value })}
               className="w-full"
-              placeholder="Activity name"
+              placeholder={t('managers.activity.namePlaceholder')}
               autoFocus
             />
           </div>
@@ -314,16 +316,16 @@ export function ActivityManager({ activities = [], onSave, entries }: ActivityMa
           disabled={localActivities.length >= MAX_ACTIVITIES}
         >
           <Plus className="h-4 w-4 mr-2" />
-          Add Activity
+          {t('managers.activity.addActivity')}
           {localActivities.length >= MAX_ACTIVITIES && (
-            <span className="ml-2 text-muted-foreground">(max {MAX_ACTIVITIES})</span>
+            <span className="ml-2 text-muted-foreground">{t('managers.common.maxLabel', { max: MAX_ACTIVITIES })}</span>
           )}
         </Button>
       )}
 
       {/* Info text */}
       <p className="text-xs text-muted-foreground text-center">
-        {localActivities.length} / {MAX_ACTIVITIES} activities
+        {t('managers.activity.countLabel', { current: localActivities.length, max: MAX_ACTIVITIES })}
       </p>
     </div>
   );
@@ -339,7 +341,7 @@ export function ActivityManager({ activities = [], onSave, entries }: ActivityMa
           <span className="text-muted-foreground">+{safeActivities.length - 3}</span>
         )}
       </div>
-      <span className="ml-auto text-muted-foreground">Manage</span>
+      <span className="ml-auto text-muted-foreground">{t('managers.common.manage')}</span>
     </Button>
   );
 
@@ -350,7 +352,7 @@ export function ActivityManager({ activities = [], onSave, entries }: ActivityMa
           <DrawerTrigger asChild>{TriggerButton}</DrawerTrigger>
           <DrawerContent>
             <DrawerHeader>
-              <DrawerTitle>Manage Activities</DrawerTitle>
+              <DrawerTitle>{t('managers.activity.title')}</DrawerTitle>
             </DrawerHeader>
             <div className="px-4 pb-4 overflow-y-auto max-h-[60vh]">
               {activityListContent}
@@ -358,10 +360,10 @@ export function ActivityManager({ activities = [], onSave, entries }: ActivityMa
             <DrawerFooter>
               <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
                 {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Save Changes
+                {t('managers.common.saveChanges')}
               </Button>
               <DrawerClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline">{t('common.cancel')}</Button>
               </DrawerClose>
             </DrawerFooter>
           </DrawerContent>
@@ -371,14 +373,14 @@ export function ActivityManager({ activities = [], onSave, entries }: ActivityMa
         <AlertDialog open={!!deletingActivity} onOpenChange={(open) => !open && setDeletingActivity(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete Activity</AlertDialogTitle>
+              <AlertDialogTitle>{t('managers.activity.deleteTitle')}</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete &quot;{deletingActivity?.label}&quot;?
+                {t('managers.common.deleteConfirm', { name: deletingActivity?.label ?? '' })}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={deleteActivity}>Delete</AlertDialogAction>
+              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+              <AlertDialogAction onClick={deleteActivity}>{t('common.delete')}</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -392,16 +394,16 @@ export function ActivityManager({ activities = [], onSave, entries }: ActivityMa
         <DialogTrigger asChild>{TriggerButton}</DialogTrigger>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Manage Activities</DialogTitle>
+            <DialogTitle>{t('managers.activity.title')}</DialogTitle>
           </DialogHeader>
           {activityListContent}
           <div className="flex justify-end gap-2 mt-4">
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline">{t('common.cancel')}</Button>
             </DialogClose>
             <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Save Changes
+              {t('managers.common.saveChanges')}
             </Button>
           </div>
         </DialogContent>
@@ -411,14 +413,14 @@ export function ActivityManager({ activities = [], onSave, entries }: ActivityMa
       <AlertDialog open={!!deletingActivity} onOpenChange={(open) => !open && setDeletingActivity(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Activity</AlertDialogTitle>
+            <AlertDialogTitle>{t('managers.activity.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete &quot;{deletingActivity?.label}&quot;?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={deleteActivity}>Delete</AlertDialogAction>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={deleteActivity}>{t('common.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -193,6 +193,7 @@ const defaultSettings = (userId: string): UserSettings => ({
   showQuotes: true,
   bodyMeasurementPresets: [],
   measurementUnit: 'cm',
+  language: 'en',
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString()
 });
@@ -304,6 +305,11 @@ export async function getSettings(userId: string = DEFAULT_USER_ID): Promise<Use
     // Add measurementUnit if missing (backward compatibility)
     if (settings.measurementUnit !== 'cm' && settings.measurementUnit !== 'in') {
       settings.measurementUnit = 'cm';
+      needsSave = true;
+    }
+    // Add language if missing (backward compatibility)
+    if (typeof settings.language !== 'string' || settings.language === '') {
+      settings.language = 'en';
       needsSave = true;
     }
     // Add dailyStepsGoal to goals if missing (backward compatibility)

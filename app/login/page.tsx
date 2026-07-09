@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/hooks/use-translation';
 
 const loginSchema = z.object({
   username: z.string().min(1, 'Username is required'),
@@ -25,6 +26,7 @@ type LoginFormValues = {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
 
   const {
@@ -80,12 +82,12 @@ export default function LoginPage() {
             />
           </div>
           <CardTitle className="text-2xl">Weight Tracker</CardTitle>
-          <CardDescription>Sign in to track your progress</CardDescription>
+          <CardDescription>{t('auth.signInSubtitle')}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username">{t('auth.username')}</Label>
               <Input
                 id="username"
                 type="text"
@@ -100,7 +102,7 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t('auth.password')}</Label>
               <Input
                 id="password"
                 type="password"
@@ -116,11 +118,11 @@ export default function LoginPage() {
 
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
-                'Signing in...'
+                t('auth.signingIn')
               ) : (
                 <>
                   <LogIn className="h-4 w-4 mr-2" />
-                  Sign In
+                  {t('auth.signIn')}
                 </>
               )}
             </Button>

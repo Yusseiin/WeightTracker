@@ -246,6 +246,7 @@ export interface UserSettings {
   chartCombinations?: ChartCombination[]; // Custom chart configurations
   bodyMeasurementPresets: BodyMeasurementPreset[]; // User's custom body measurement presets
   measurementUnit: MeasurementUnit;                // Display unit for body measurements (cm/in)
+  language: string;                                // UI language code (matches a dictionary/*.json file)
   createdAt: string;
   updatedAt: string;
 }

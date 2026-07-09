@@ -33,6 +33,7 @@ import {
   CM_PER_INCH,
   MeasurementUnit,
 } from '@/lib/types';
+import { useTranslation } from '@/hooks/use-translation';
 
 // Tailwind color class -> HSL string (matches weight-chart MEDICATION_COLOR_MAP, extended)
 const COLOR_MAP: Record<string, string> = {
@@ -69,6 +70,7 @@ export function BodyMeasurementsChart({
   presets,
   unit,
 }: BodyMeasurementsChartProps) {
+  const { t } = useTranslation();
   const sortedPresets = useMemo(
     () => [...presets].sort((a, b) => a.order - b.order),
     [presets]
@@ -102,11 +104,11 @@ export function BodyMeasurementsChart({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Measurements Over Time</CardTitle>
+          <CardTitle>{t('bodyMeasurements.measurementsOverTime')}</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground text-center py-8">
-            No measurements recorded yet. Add your first entry to see the chart.
+            {t('bodyMeasurements.noMeasurementsChart')}
           </p>
         </CardContent>
       </Card>
@@ -116,13 +118,13 @@ export function BodyMeasurementsChart({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Measurements Over Time</CardTitle>
+        <CardTitle>{t('bodyMeasurements.measurementsOverTime')}</CardTitle>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="combined">
           <TabsList className="mb-4">
-            <TabsTrigger value="combined">Combined</TabsTrigger>
-            <TabsTrigger value="single">Single</TabsTrigger>
+            <TabsTrigger value="combined">{t('bodyMeasurements.combined')}</TabsTrigger>
+            <TabsTrigger value="single">{t('bodyMeasurements.single')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="combined">
@@ -174,7 +176,7 @@ export function BodyMeasurementsChart({
             <div className="space-y-4">
               <Select value={singleId} onValueChange={setSingleId}>
                 <SelectTrigger className="w-full sm:w-64">
-                  <SelectValue placeholder="Pick a measurement" />
+                  <SelectValue placeholder={t('bodyMeasurements.pickMeasurement')} />
                 </SelectTrigger>
                 <SelectContent>
                   {sortedPresets.map((preset) => (
@@ -219,7 +221,7 @@ export function BodyMeasurementsChart({
                         stroke={colorFor(singlePreset)}
                         strokeDasharray="4 4"
                         label={{
-                          value: `avg ${singleAvg.toFixed(1)}`,
+                          value: `${t('bodyMeasurements.avg')} ${singleAvg.toFixed(1)}`,
                           position: 'right',
                           fontSize: 11,
                           fill: colorFor(singlePreset),
@@ -239,7 +241,7 @@ export function BodyMeasurementsChart({
                 </ResponsiveContainer>
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-8">
-                  Pick a measurement to display.
+                  {t('bodyMeasurements.pickMeasurementToDisplay')}
                 </p>
               )}
             </div>

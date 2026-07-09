@@ -37,6 +37,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PhotoCapture } from './photo-capture';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTranslation } from '@/hooks/use-translation';
 import { type StepsEntry } from '@/lib/types';
 
 interface EditStepsDialogProps {
@@ -65,6 +66,7 @@ export function EditStepsDialog({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const router = useRouter();
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
 
   // Format time from ISO timestamp for display
   const formatTimeFromTimestamp = (timestamp: string | undefined): string => {
@@ -129,12 +131,12 @@ export function EditStepsDialog({
       {/* Steps input */}
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="steps">Steps</Label>
+          <Label htmlFor="steps">{t('steps.stepsLabel')}</Label>
           <div className="relative">
             <Input
               id="steps"
               type="number"
-              placeholder="Enter steps (0-99999)"
+              placeholder={t('steps.enterSteps')}
               value={stepsInput}
               onChange={(e) => setStepsInput(e.target.value)}
               className="text-lg text-center pr-16"
@@ -143,14 +145,14 @@ export function EditStepsDialog({
               autoFocus
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-              steps
+              {t('steps.unit')}
             </span>
           </div>
         </div>
 
         {/* Time input */}
         <div className="space-y-2">
-          <Label htmlFor="edit-time">Time</Label>
+          <Label htmlFor="edit-time">{t('common.time')}</Label>
           <Input
             id="edit-time"
             type="time"
@@ -164,11 +166,11 @@ export function EditStepsDialog({
           <div className="space-y-2">
             <Label htmlFor="edit-steps-notes" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Notes (optional)
+              {t('common.notes')} ({t('common.optional')})
             </Label>
             <Textarea
               id="edit-steps-notes"
-              placeholder="Any notes about this entry..."
+              placeholder={t('steps.notesEditPlaceholder')}
               value={notesInput}
               onChange={(e) => setNotesInput(e.target.value)}
               rows={2}
@@ -191,7 +193,7 @@ export function EditStepsDialog({
               onClick={() => router.push(`/compare-photos?type=steps&entry=${entry.id}`)}
             >
               <ArrowLeftRight className="h-4 w-4 mr-1" />
-              Compare Photos
+              {t('steps.comparePhotos')}
             </Button>
           </>
         )}
@@ -204,7 +206,7 @@ export function EditStepsDialog({
             onClick={() => setShowDeleteConfirm(true)}
           >
             <Trash2 className="h-4 w-4 mr-2" />
-            Delete Entry
+            {t('steps.deleteEntry')}
           </Button>
         )}
       </div>
@@ -215,15 +217,15 @@ export function EditStepsDialog({
     <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete steps entry?</AlertDialogTitle>
+          <AlertDialogTitle>{t('steps.deleteTitle')}</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete this steps entry.
+            {t('steps.deleteDescription')}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
           <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-            Delete
+            {t('common.delete')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -240,7 +242,7 @@ export function EditStepsDialog({
             <DrawerHeader className="shrink-0">
               <DrawerTitle className="flex items-center gap-2 justify-center">
                 <Footprints className="h-5 w-5 text-green-500" />
-                Edit Steps
+                {t('steps.editTitle')}
               </DrawerTitle>
             </DrawerHeader>
             <ScrollArea className="flex-1 overflow-auto px-4">
@@ -253,10 +255,10 @@ export function EditStepsDialog({
                 onClick={handleSave}
                 disabled={isSubmitting || !canSave}
               >
-                {isSubmitting ? 'Saving...' : 'Save'}
+                {isSubmitting ? t('common.saving') : t('common.save')}
               </Button>
               <DrawerClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline">{t('common.cancel')}</Button>
               </DrawerClose>
             </DrawerFooter>
           </DrawerContent>
@@ -273,7 +275,7 @@ export function EditStepsDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Footprints className="h-5 w-5 text-green-500" />
-              Edit Steps
+              {t('steps.editTitle')}
             </DialogTitle>
           </DialogHeader>
           <ScrollArea className="flex-1 -mx-6 px-6">
@@ -281,14 +283,14 @@ export function EditStepsDialog({
           </ScrollArea>
           <DialogFooter className="flex-col gap-2 sm:flex-row mt-4">
             <DialogClose asChild>
-              <Button variant="outline" className="w-full sm:w-auto">Cancel</Button>
+              <Button variant="outline" className="w-full sm:w-auto">{t('common.cancel')}</Button>
             </DialogClose>
             <Button
               onClick={handleSave}
               disabled={isSubmitting || !canSave}
               className="w-full sm:w-auto"
             >
-              {isSubmitting ? 'Saving...' : 'Save'}
+              {isSubmitting ? t('common.saving') : t('common.save')}
             </Button>
           </DialogFooter>
         </DialogContent>

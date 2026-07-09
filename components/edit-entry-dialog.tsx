@@ -39,6 +39,7 @@ import { DynamicIcon } from '@/components/dynamic-icon';
 import { PhotoCapture } from './photo-capture';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTranslation } from '@/hooks/use-translation';
 import type { WeightEntry, EntryFormData, WaterDayTotal, WaterUnit, CustomActivity } from '@/lib/types';
 import { mlToOz, ozToMl } from '@/lib/water-utils';
 import { formatDateForTooltip } from '@/lib/date-utils';
@@ -92,6 +93,7 @@ export function EditEntryDialog({
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
 
   // Reset form when entry changes
   useEffect(() => {
@@ -176,7 +178,7 @@ export function EditEntryDialog({
       {/* Date and Time inputs */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="edit-date">Date</Label>
+          <Label htmlFor="edit-date">{t('common.date')}</Label>
           <Input
             id="edit-date"
             type="date"
@@ -185,7 +187,7 @@ export function EditEntryDialog({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="edit-time">Time</Label>
+          <Label htmlFor="edit-time">{t('common.time')}</Label>
           <Input
             id="edit-time"
             type="time"
@@ -198,7 +200,7 @@ export function EditEntryDialog({
       {/* Weight and Water inputs */}
       <div className={cn("grid gap-4", waterHistoryEnabled ? "grid-cols-1" : "grid-cols-2")}>
         <div className="space-y-2">
-          <Label htmlFor="edit-weight">Weight ({unit})</Label>
+          <Label htmlFor="edit-weight">{t('weight.weightLabel', { unit })}</Label>
           <Input
             id="edit-weight"
             type="number"
@@ -213,7 +215,7 @@ export function EditEntryDialog({
           <div className="space-y-2">
             <Label htmlFor="edit-water" className="flex items-center gap-1">
               <Droplets className="h-4 w-4 text-blue-500 pointer-events-none" />
-              Water ({waterUnit})
+              {t('water.waterLabel', { unit: waterUnit })}
             </Label>
             <Input
               id="edit-water"
@@ -232,7 +234,7 @@ export function EditEntryDialog({
       {/* Body Fat % */}
       {bodyFatEnabled && (
         <div className="space-y-2">
-          <Label htmlFor="edit-bodyFat">Body Fat %</Label>
+          <Label htmlFor="edit-bodyFat">{t('weight.bodyFat')}</Label>
           <Input
             id="edit-bodyFat"
             type="number"
@@ -241,7 +243,7 @@ export function EditEntryDialog({
             max="100"
             value={bodyFatInput}
             onChange={(e) => setBodyFatInput(e.target.value)}
-            placeholder="e.g., 18.5"
+            placeholder={t('weight.bodyFatPlaceholder')}
             className="text-lg text-center"
           />
         </div>
@@ -249,7 +251,7 @@ export function EditEntryDialog({
 
       {/* Activity type toggle */}
       <div className="space-y-2">
-        <Label>Activity</Label>
+        <Label>{t('weight.activity')}</Label>
         <div className="grid grid-cols-4 gap-2">
           {activities.map((activity) => (
             <button
@@ -272,7 +274,7 @@ export function EditEntryDialog({
 
       {/* Sleep quality toggle */}
       <div className="space-y-2">
-        <Label>Sleep Quality</Label>
+        <Label>{t('weight.sleepQuality')}</Label>
         <div className="grid grid-cols-3 gap-2">
           <button
             type="button"
@@ -285,7 +287,7 @@ export function EditEntryDialog({
             )}
           >
             <span className="w-3 h-3 rounded-full bg-green-500 mr-2" />
-            Good
+            {t('weight.sleepGood')}
           </button>
           <button
             type="button"
@@ -298,7 +300,7 @@ export function EditEntryDialog({
             )}
           >
             <span className="w-3 h-3 rounded-full bg-orange-500 mr-2" />
-            Fair
+            {t('weight.sleepFair')}
           </button>
           <button
             type="button"
@@ -311,7 +313,7 @@ export function EditEntryDialog({
             )}
           >
             <span className="w-3 h-3 rounded-full bg-red-500 mr-2" />
-            Poor
+            {t('weight.sleepPoor')}
           </button>
         </div>
       </div>
@@ -321,11 +323,11 @@ export function EditEntryDialog({
         <div className="space-y-2">
           <Label htmlFor="edit-notes" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            Notes (optional)
+            {t('common.notes')} ({t('common.optional')})
           </Label>
           <Textarea
             id="edit-notes"
-            placeholder="Any notes about this entry..."
+            placeholder={t('weight.notesEditPlaceholder')}
             value={notesInput}
             onChange={(e) => setNotesInput(e.target.value)}
             rows={2}
@@ -348,7 +350,7 @@ export function EditEntryDialog({
             onClick={() => router.push(`/compare-photos?type=weight&entry=${entry.id}`)}
           >
             <ArrowLeftRight className="h-4 w-4 mr-1" />
-            Compare Photos
+            {t('weight.comparePhotos')}
           </Button>
         </>
       )}
@@ -364,20 +366,19 @@ export function EditEntryDialog({
             disabled={isDeleting || isSaving}
             className="flex-1"
           >
-            {isDeleting ? 'Deleting...' : 'Delete'}
+            {isDeleting ? t('common.deleting') : t('common.delete')}
           </Button>
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Entry?</AlertDialogTitle>
+            <AlertDialogTitle>{t('weight.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the weight entry from {formattedDate}.
-              This action cannot be undone.
+              {t('weight.deleteDescription', { date: formattedDate })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>{t('common.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -386,7 +387,7 @@ export function EditEntryDialog({
         disabled={isSaving || isDeleting || !weight}
         className="flex-1"
       >
-        {isSaving ? 'Saving...' : 'Save'}
+        {isSaving ? t('common.saving') : t('common.save')}
       </Button>
     </div>
   );
@@ -397,7 +398,7 @@ export function EditEntryDialog({
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent className="max-h-[85vh] flex flex-col">
           <DrawerHeader className="shrink-0">
-            <DrawerTitle>Edit Entry</DrawerTitle>
+            <DrawerTitle>{t('weight.editTitle')}</DrawerTitle>
           </DrawerHeader>
           <ScrollArea className="flex-1 overflow-auto px-4">
             <div className="pb-4">
@@ -407,7 +408,7 @@ export function EditEntryDialog({
           <DrawerFooter className="pt-2 border-t shrink-0">
             {footerButtons}
             <DrawerClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline">{t('common.cancel')}</Button>
             </DrawerClose>
           </DrawerFooter>
         </DrawerContent>
@@ -419,14 +420,14 @@ export function EditEntryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Edit Entry</DialogTitle>
+          <DialogTitle>{t('weight.editTitle')}</DialogTitle>
         </DialogHeader>
         <ScrollArea className="flex-1 -mx-6 px-6">
           {formContent}
         </ScrollArea>
         <DialogFooter className="flex-col gap-2 sm:flex-row mt-4">
           <DialogClose asChild>
-            <Button variant="outline" className="w-full sm:w-auto">Cancel</Button>
+            <Button variant="outline" className="w-full sm:w-auto">{t('common.cancel')}</Button>
           </DialogClose>
           {footerButtons}
         </DialogFooter>

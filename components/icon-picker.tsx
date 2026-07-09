@@ -20,6 +20,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { DynamicIcon } from './dynamic-icon';
 import { ACTIVITY_ICON_CATEGORIES } from '@/lib/icons';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/hooks/use-translation';
 
 interface IconPickerProps {
   value: string;
@@ -31,6 +32,7 @@ export function IconPicker({ value, onChange, colorClass = 'text-foreground' }: 
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
 
   const filteredCategories = ACTIVITY_ICON_CATEGORIES.map((category) => ({
     ...category,
@@ -51,7 +53,7 @@ export function IconPicker({ value, onChange, colorClass = 'text-foreground' }: 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Search icons..."
+          placeholder={t('managers.iconPicker.searchPlaceholder')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-9"
@@ -59,7 +61,7 @@ export function IconPicker({ value, onChange, colorClass = 'text-foreground' }: 
       </div>
       <div className="max-h-75 overflow-y-auto space-y-4">
         {filteredCategories.length === 0 ? (
-          <p className="text-center text-muted-foreground py-4">No icons found</p>
+          <p className="text-center text-muted-foreground py-4">{t('managers.iconPicker.noIconsFound')}</p>
         ) : (
           filteredCategories.map((category) => (
             <div key={category.name}>
@@ -98,7 +100,7 @@ export function IconPicker({ value, onChange, colorClass = 'text-foreground' }: 
         <DrawerTrigger asChild>{TriggerButton}</DrawerTrigger>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Choose Icon</DrawerTitle>
+            <DrawerTitle>{t('managers.iconPicker.title')}</DrawerTitle>
           </DrawerHeader>
           <div className="px-4 pb-6">
             {iconGridContent}

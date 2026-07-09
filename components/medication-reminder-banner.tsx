@@ -6,6 +6,7 @@ import { AlertCircle, Check, Pill } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DynamicIcon } from './dynamic-icon';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/hooks/use-translation';
 import type { MedicationPreset, MedicationEntry, MedicationSchedule } from '@/lib/types';
 
 interface MedicationReminderBannerProps {
@@ -62,6 +63,7 @@ export function MedicationReminderBanner({
   todayMedications,
   onOpenMedicationDialog
 }: MedicationReminderBannerProps) {
+  const { t } = useTranslation();
   const today = useMemo(() => new Date(), []);
   const todayDate = useMemo(() => format(today, 'yyyy-MM-dd'), [today]);
 
@@ -89,7 +91,7 @@ export function MedicationReminderBanner({
         <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
           <h3 className="font-medium text-amber-700 dark:text-amber-300">
-            Medications due today
+            {t('dashboard.medicationReminder.title')}
           </h3>
           <ul className="mt-2 space-y-1.5">
             {dueMedications.map(preset => (
@@ -117,7 +119,7 @@ export function MedicationReminderBanner({
           onClick={onOpenMedicationDialog}
         >
           <Check className="h-4 w-4 mr-1" />
-          Mark Taken
+          {t('dashboard.medicationReminder.markTaken')}
         </Button>
       </div>
     </div>

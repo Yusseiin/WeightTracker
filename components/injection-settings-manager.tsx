@@ -38,6 +38,7 @@ import { InjectableMedication, InjectionSitePreset, InjectionSettings, MAX_INJEC
 import { ACTIVITY_COLORS } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
+import { useTranslation } from '@/hooks/use-translation';
 
 interface InjectionSettingsManagerProps {
   settings: InjectionSettings;
@@ -73,6 +74,7 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
   const [deletingSite, setDeletingSite] = useState<InjectionSitePreset | null>(null);
 
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
 
   // Reset local state when dialog opens
   useEffect(() => {
@@ -195,7 +197,7 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
   const handleDeleteMedicationClick = (medication: InjectableMedication) => {
     const usageCount = getMedicationUsageCount(medication.id);
     if (usageCount > 0) {
-      showErrorToast(`Cannot delete: ${usageCount} entries use this medication`);
+      showErrorToast(t('managers.injection.cannotDeleteMedication', { count: usageCount }));
       return;
     }
     setDeletingMedication(medication);
@@ -259,7 +261,7 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
   const handleDeleteSiteClick = (site: InjectionSitePreset) => {
     const usageCount = getSiteUsageCount(site.id);
     if (usageCount > 0) {
-      showErrorToast(`Cannot delete: ${usageCount} entries use this site`);
+      showErrorToast(t('managers.injection.cannotDeleteSite', { count: usageCount }));
       return;
     }
     setDeletingSite(site);
@@ -270,10 +272,10 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
     setIsSaving(true);
     try {
       await onSave(localSettings);
-      showSuccessToast('Injection settings saved');
+      showSuccessToast(t('managers.injection.saved'));
       setOpen(false);
     } catch {
-      showErrorToast('Failed to save settings');
+      showErrorToast(t('managers.injection.saveFailed'));
     } finally {
       setIsSaving(false);
     }
@@ -298,7 +300,7 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
                   <Input
                     value={editingMedication.name}
                     onChange={(e) => setEditingMedication({ ...editingMedication, name: e.target.value })}
-                    placeholder="Medication name"
+                    placeholder={t('managers.injection.medicationNamePlaceholder')}
                     className="flex-1"
                   />
                   <div className="flex gap-1">
@@ -311,11 +313,11 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Label className="text-xs text-muted-foreground">Unit:</Label>
+                  <Label className="text-xs text-muted-foreground">{t('managers.injection.unitLabel')}</Label>
                   <Input
                     value={editingMedication.unit}
                     onChange={(e) => setEditingMedication({ ...editingMedication, unit: e.target.value })}
-                    placeholder="mg"
+                    placeholder={t('managers.injection.unitPlaceholder')}
                     className="w-20"
                   />
                   <div className="flex gap-1 ml-2">
@@ -334,7 +336,7 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground">Doses ({editingMedication.unit}):</Label>
+                  <Label className="text-xs text-muted-foreground">{t('managers.injection.dosesLabel', { unit: editingMedication.unit })}</Label>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {editingMedication.availableDoses.map((dose) => (
                       <span key={dose} className="inline-flex items-center gap-1 px-2 py-1 bg-muted rounded text-sm">
@@ -351,11 +353,11 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
                       step="0.01"
                       value={editingDoseInput}
                       onChange={(e) => setEditingDoseInput(e.target.value)}
-                      placeholder="Add dose"
+                      placeholder={t('managers.injection.addDosePlaceholder')}
                       className="w-24"
                       onKeyDown={(e) => e.key === 'Enter' && addDoseToEditing()}
                     />
-                    <Button size="sm" variant="outline" onClick={addDoseToEditing}>Add</Button>
+                    <Button size="sm" variant="outline" onClick={addDoseToEditing}>{t('common.add')}</Button>
                   </div>
                 </div>
               </div>
@@ -388,7 +390,7 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
             <Input
               value={newMedication.name}
               onChange={(e) => setNewMedication({ ...newMedication, name: e.target.value })}
-              placeholder="Medication name"
+              placeholder={t('managers.injection.medicationNamePlaceholder')}
               className="flex-1"
               autoFocus
             />
@@ -402,11 +404,11 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Label className="text-xs text-muted-foreground">Unit:</Label>
+            <Label className="text-xs text-muted-foreground">{t('managers.injection.unitLabel')}</Label>
             <Input
               value={newMedication.unit}
               onChange={(e) => setNewMedication({ ...newMedication, unit: e.target.value })}
-              placeholder="mg"
+              placeholder={t('managers.injection.unitPlaceholder')}
               className="w-20"
             />
             <div className="flex gap-1 ml-2">
@@ -425,7 +427,7 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
             </div>
           </div>
           <div>
-            <Label className="text-xs text-muted-foreground">Doses ({newMedication.unit}):</Label>
+            <Label className="text-xs text-muted-foreground">{t('managers.injection.dosesLabel', { unit: newMedication.unit })}</Label>
             <div className="flex flex-wrap gap-1 mt-1">
               {newMedication.availableDoses.map((dose) => (
                 <span key={dose} className="inline-flex items-center gap-1 px-2 py-1 bg-muted rounded text-sm">
@@ -442,11 +444,11 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
                 step="0.01"
                 value={newDoseInput}
                 onChange={(e) => setNewDoseInput(e.target.value)}
-                placeholder="Add dose"
+                placeholder={t('managers.injection.addDosePlaceholder')}
                 className="w-24"
                 onKeyDown={(e) => e.key === 'Enter' && addDoseToNew()}
               />
-              <Button size="sm" variant="outline" onClick={addDoseToNew}>Add</Button>
+              <Button size="sm" variant="outline" onClick={addDoseToNew}>{t('common.add')}</Button>
             </div>
           </div>
         </div>
@@ -458,12 +460,12 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
           disabled={localSettings.medications.length >= MAX_INJECTABLE_MEDICATIONS}
         >
           <Plus className="h-4 w-4 mr-2" />
-          Add Medication
+          {t('managers.injection.addMedication')}
         </Button>
       )}
 
       <p className="text-xs text-muted-foreground text-center">
-        {localSettings.medications.length} / {MAX_INJECTABLE_MEDICATIONS} medications
+        {t('managers.injection.medicationCountLabel', { current: localSettings.medications.length, max: MAX_INJECTABLE_MEDICATIONS })}
       </p>
     </div>
   );
@@ -487,7 +489,7 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
                 <Input
                   value={editingSite.label}
                   onChange={(e) => setEditingSite({ ...editingSite, label: e.target.value })}
-                  placeholder="Site name"
+                  placeholder={t('managers.injection.siteNamePlaceholder')}
                   className="flex-1"
                   autoFocus
                 />
@@ -523,7 +525,7 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
             <Input
               value={newSite.label}
               onChange={(e) => setNewSite({ ...newSite, label: e.target.value })}
-              placeholder="Site name (e.g., Left Thigh)"
+              placeholder={t('managers.injection.siteNameExamplePlaceholder')}
               className="flex-1"
               autoFocus
               onKeyDown={(e) => e.key === 'Enter' && addSite()}
@@ -544,12 +546,12 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
           disabled={localSettings.injectionSites.length >= MAX_INJECTION_SITES}
         >
           <Plus className="h-4 w-4 mr-2" />
-          Add Site
+          {t('managers.injection.addSite')}
         </Button>
       )}
 
       <p className="text-xs text-muted-foreground text-center">
-        {localSettings.injectionSites.length} / {MAX_INJECTION_SITES} injection sites
+        {t('managers.injection.siteCountLabel', { current: localSettings.injectionSites.length, max: MAX_INJECTION_SITES })}
       </p>
     </div>
   );
@@ -557,8 +559,8 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
   const mainContent = (
     <Tabs defaultValue="medications" className="w-full">
       <TabsList className="w-full grid grid-cols-2">
-        <TabsTrigger value="medications">Medications</TabsTrigger>
-        <TabsTrigger value="sites">Injection Sites</TabsTrigger>
+        <TabsTrigger value="medications">{t('managers.injection.medicationsTab')}</TabsTrigger>
+        <TabsTrigger value="sites">{t('managers.injection.sitesTab')}</TabsTrigger>
       </TabsList>
       <TabsContent value="medications" className="mt-4">
         {medicationsContent}
@@ -573,9 +575,9 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
     <Button variant="outline" className="w-full justify-start">
       <div className="flex items-center gap-2">
         <Syringe className="h-4 w-4 text-teal-500" />
-        <span>{settings.medications.length} medications configured</span>
+        <span>{t('managers.injection.medicationsConfigured', { count: settings.medications.length })}</span>
       </div>
-      <span className="ml-auto text-muted-foreground">Manage</span>
+      <span className="ml-auto text-muted-foreground">{t('managers.common.manage')}</span>
     </Button>
   );
 
@@ -586,7 +588,7 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
           <DrawerTrigger asChild>{TriggerButton}</DrawerTrigger>
           <DrawerContent>
             <DrawerHeader>
-              <DrawerTitle>Injection Settings</DrawerTitle>
+              <DrawerTitle>{t('managers.injection.title')}</DrawerTitle>
             </DrawerHeader>
             <div className="px-4 pb-4 overflow-y-auto max-h-[60vh]">
               {mainContent}
@@ -594,10 +596,10 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
             <DrawerFooter>
               <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
                 {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Save Changes
+                {t('managers.common.saveChanges')}
               </Button>
               <DrawerClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline">{t('common.cancel')}</Button>
               </DrawerClose>
             </DrawerFooter>
           </DrawerContent>
@@ -606,14 +608,14 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
         <AlertDialog open={!!deletingMedication} onOpenChange={(open) => !open && setDeletingMedication(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete Medication</AlertDialogTitle>
+              <AlertDialogTitle>{t('managers.injection.deleteMedicationTitle')}</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete &quot;{deletingMedication?.name}&quot;?
+                {t('managers.common.deleteConfirm', { name: deletingMedication?.name ?? '' })}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={deleteMedication}>Delete</AlertDialogAction>
+              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+              <AlertDialogAction onClick={deleteMedication}>{t('common.delete')}</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -621,14 +623,14 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
         <AlertDialog open={!!deletingSite} onOpenChange={(open) => !open && setDeletingSite(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete Injection Site</AlertDialogTitle>
+              <AlertDialogTitle>{t('managers.injection.deleteSiteTitle')}</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete &quot;{deletingSite?.label}&quot;?
+                {t('managers.common.deleteConfirm', { name: deletingSite?.label ?? '' })}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={deleteSite}>Delete</AlertDialogAction>
+              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+              <AlertDialogAction onClick={deleteSite}>{t('common.delete')}</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -642,16 +644,16 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
         <DialogTrigger asChild>{TriggerButton}</DialogTrigger>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Injection Settings</DialogTitle>
+            <DialogTitle>{t('managers.injection.title')}</DialogTitle>
           </DialogHeader>
           {mainContent}
           <div className="flex justify-end gap-2 mt-4">
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline">{t('common.cancel')}</Button>
             </DialogClose>
             <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Save Changes
+              {t('managers.common.saveChanges')}
             </Button>
           </div>
         </DialogContent>
@@ -660,14 +662,14 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
       <AlertDialog open={!!deletingMedication} onOpenChange={(open) => !open && setDeletingMedication(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Medication</AlertDialogTitle>
+            <AlertDialogTitle>{t('managers.injection.deleteMedicationTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete &quot;{deletingMedication?.name}&quot;?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={deleteMedication}>Delete</AlertDialogAction>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={deleteMedication}>{t('common.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -675,14 +677,14 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
       <AlertDialog open={!!deletingSite} onOpenChange={(open) => !open && setDeletingSite(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Injection Site</AlertDialogTitle>
+            <AlertDialogTitle>{t('managers.injection.deleteSiteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete &quot;{deletingSite?.label}&quot;?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={deleteSite}>Delete</AlertDialogAction>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={deleteSite}>{t('common.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

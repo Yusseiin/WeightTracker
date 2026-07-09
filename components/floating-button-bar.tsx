@@ -3,6 +3,7 @@
 import { Scale, Droplets, Footprints, HeartPulse, Pill, Syringe, Ruler } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { FeatureToggles } from '@/lib/types';
+import { useTranslation } from '@/hooks/use-translation';
 
 interface FloatingButtonBarProps {
   onWeightClick: () => void;
@@ -25,6 +26,7 @@ export function FloatingButtonBar({
   onBodyMeasurementsClick,
   features
 }: FloatingButtonBarProps) {
+  const { t } = useTranslation();
   const waterEnabled = features?.waterEnabled ?? true;
   const stepsEnabled = features?.stepsEnabled ?? false;
   const pressureEnabled = features?.pressureEnabled ?? false;
@@ -43,7 +45,7 @@ export function FloatingButtonBar({
           className="rounded-full h-12 w-12 border-blue-500/50"
         >
           <Droplets className="h-5 w-5 text-blue-500" />
-          <span className="sr-only">Add water</span>
+          <span className="sr-only">{t('dashboard.buttons.addWater')}</span>
         </Button>
       )}
 
@@ -56,7 +58,7 @@ export function FloatingButtonBar({
           className="rounded-full h-12 w-12 border-green-500/50"
         >
           <Footprints className="h-5 w-5 text-green-500" />
-          <span className="sr-only">Add steps</span>
+          <span className="sr-only">{t('dashboard.buttons.addSteps')}</span>
         </Button>
       )}
 
@@ -67,7 +69,7 @@ export function FloatingButtonBar({
         className="rounded-full h-14 w-14"
       >
         <Scale className="h-6 w-6" />
-        <span className="sr-only">Add weight entry</span>
+        <span className="sr-only">{t('dashboard.buttons.addWeight')}</span>
       </Button>
 
       {/* Pressure button - only if enabled */}
@@ -79,7 +81,7 @@ export function FloatingButtonBar({
           className="rounded-full h-12 w-12 border-red-500/50"
         >
           <HeartPulse className="h-5 w-5 text-red-500" />
-          <span className="sr-only">Add blood pressure</span>
+          <span className="sr-only">{t('dashboard.buttons.addPressure')}</span>
         </Button>
       )}
 
@@ -92,7 +94,7 @@ export function FloatingButtonBar({
           className="rounded-full h-12 w-12 border-purple-500/50"
         >
           <Pill className="h-5 w-5 text-purple-500" />
-          <span className="sr-only">Add medication</span>
+          <span className="sr-only">{t('dashboard.buttons.addMedication')}</span>
         </Button>
       )}
 
@@ -105,7 +107,7 @@ export function FloatingButtonBar({
           className="rounded-full h-12 w-12 border-teal-500/50"
         >
           <Syringe className="h-5 w-5 text-teal-500" />
-          <span className="sr-only">Add injection</span>
+          <span className="sr-only">{t('dashboard.buttons.addInjection')}</span>
         </Button>
       )}
 
@@ -118,7 +120,7 @@ export function FloatingButtonBar({
           className="rounded-full h-12 w-12 border-cyan-500/50"
         >
           <Ruler className="h-5 w-5 text-cyan-500" />
-          <span className="sr-only">Body measurements</span>
+          <span className="sr-only">{t('dashboard.buttons.bodyMeasurements')}</span>
         </Button>
       )}
     </div>

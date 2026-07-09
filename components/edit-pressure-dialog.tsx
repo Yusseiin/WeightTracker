@@ -37,6 +37,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PhotoCapture } from './photo-capture';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTranslation } from '@/hooks/use-translation';
 import { type PressureEntry } from '@/lib/types';
 import { getPressureCategory } from '@/lib/pressure-utils';
 import { cn } from '@/lib/utils';
@@ -68,6 +69,7 @@ export function EditPressureDialog({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const router = useRouter();
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
 
   // Format time from ISO timestamp for display
   const formatTimeFromTimestamp = (timestamp: string | undefined): string => {
@@ -147,11 +149,11 @@ export function EditPressureDialog({
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="edit-systolic">Systolic (upper)</Label>
+            <Label htmlFor="edit-systolic">{t('pressure.systolic')}</Label>
             <Input
               id="edit-systolic"
               type="number"
-              placeholder="e.g. 120"
+              placeholder={t('pressure.systolicPlaceholder')}
               value={systolicInput}
               onChange={(e) => setSystolicInput(e.target.value)}
               className="text-lg text-center"
@@ -161,11 +163,11 @@ export function EditPressureDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-diastolic">Diastolic (lower)</Label>
+            <Label htmlFor="edit-diastolic">{t('pressure.diastolic')}</Label>
             <Input
               id="edit-diastolic"
               type="number"
-              placeholder="e.g. 80"
+              placeholder={t('pressure.diastolicPlaceholder')}
               value={diastolicInput}
               onChange={(e) => setDiastolicInput(e.target.value)}
               className="text-lg text-center"
@@ -178,13 +180,13 @@ export function EditPressureDialog({
         {/* Preview category */}
         {previewCategory && (
           <div className={cn("text-center text-sm", previewCategory.color)}>
-            Category: {previewCategory.label}
+            {t('pressure.category', { category: previewCategory.label })}
           </div>
         )}
 
         {/* Time input */}
         <div className="space-y-2">
-          <Label htmlFor="edit-pressure-time">Time</Label>
+          <Label htmlFor="edit-pressure-time">{t('common.time')}</Label>
           <Input
             id="edit-pressure-time"
             type="time"
@@ -198,11 +200,11 @@ export function EditPressureDialog({
           <div className="space-y-2">
             <Label htmlFor="edit-pressure-notes" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Notes (optional)
+              {t('common.notes')} ({t('common.optional')})
             </Label>
             <Textarea
               id="edit-pressure-notes"
-              placeholder="Any notes about this entry..."
+              placeholder={t('pressure.notesEditPlaceholder')}
               value={notesInput}
               onChange={(e) => setNotesInput(e.target.value)}
               rows={2}
@@ -225,7 +227,7 @@ export function EditPressureDialog({
               onClick={() => router.push(`/compare-photos?type=pressure&entry=${entry.id}`)}
             >
               <ArrowLeftRight className="h-4 w-4 mr-1" />
-              Compare Photos
+              {t('pressure.comparePhotos')}
             </Button>
           </>
         )}
@@ -238,7 +240,7 @@ export function EditPressureDialog({
             onClick={() => setShowDeleteConfirm(true)}
           >
             <Trash2 className="h-4 w-4 mr-2" />
-            Delete Entry
+            {t('pressure.deleteEntry')}
           </Button>
         )}
       </div>
@@ -249,15 +251,15 @@ export function EditPressureDialog({
     <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete pressure entry?</AlertDialogTitle>
+          <AlertDialogTitle>{t('pressure.deleteTitle')}</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete this blood pressure entry.
+            {t('pressure.deleteDescription')}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
           <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-            Delete
+            {t('common.delete')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -274,7 +276,7 @@ export function EditPressureDialog({
             <DrawerHeader className="shrink-0">
               <DrawerTitle className="flex items-center gap-2 justify-center">
                 <HeartPulse className="h-5 w-5 text-red-500" />
-                Edit Blood Pressure
+                {t('pressure.editTitle')}
               </DrawerTitle>
             </DrawerHeader>
             <ScrollArea className="flex-1 overflow-auto px-4">
@@ -287,10 +289,10 @@ export function EditPressureDialog({
                 onClick={handleSave}
                 disabled={isSubmitting || !canSave}
               >
-                {isSubmitting ? 'Saving...' : 'Save'}
+                {isSubmitting ? t('common.saving') : t('common.save')}
               </Button>
               <DrawerClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline">{t('common.cancel')}</Button>
               </DrawerClose>
             </DrawerFooter>
           </DrawerContent>
@@ -307,7 +309,7 @@ export function EditPressureDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <HeartPulse className="h-5 w-5 text-red-500" />
-              Edit Blood Pressure
+              {t('pressure.editTitle')}
             </DialogTitle>
           </DialogHeader>
           <ScrollArea className="flex-1 -mx-6 px-6">
@@ -315,14 +317,14 @@ export function EditPressureDialog({
           </ScrollArea>
           <DialogFooter className="flex-col gap-2 sm:flex-row mt-4">
             <DialogClose asChild>
-              <Button variant="outline" className="w-full sm:w-auto">Cancel</Button>
+              <Button variant="outline" className="w-full sm:w-auto">{t('common.cancel')}</Button>
             </DialogClose>
             <Button
               onClick={handleSave}
               disabled={isSubmitting || !canSave}
               className="w-full sm:w-auto"
             >
-              {isSubmitting ? 'Saving...' : 'Save'}
+              {isSubmitting ? t('common.saving') : t('common.save')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -27,6 +27,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTranslation } from '@/hooks/use-translation';
 import { PhotoCapture } from './photo-capture';
 
 interface AddStepsDialogProps {
@@ -59,6 +60,7 @@ export function AddStepsDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
 
   // Initialize inputs when dialog opens
   useEffect(() => {
@@ -116,7 +118,7 @@ export function AddStepsDialog({
           <div className="relative">
             <Input
               type="number"
-              placeholder="Enter steps (0-99999)"
+              placeholder={t('steps.enterSteps')}
               value={stepsInput}
               onChange={(e) => setStepsInput(e.target.value)}
               className="text-lg text-center pr-16"
@@ -125,18 +127,18 @@ export function AddStepsDialog({
               autoFocus
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-              steps
+              {t('steps.unit')}
             </span>
           </div>
           <p className="text-xs text-muted-foreground text-center">
-            Max 5 digits (99,999)
+            {t('steps.maxDigits')}
           </p>
         </div>
 
         {/* Date and Time inputs */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="date">Date</Label>
+            <Label htmlFor="date">{t('common.date')}</Label>
             <Input
               id="date"
               type="date"
@@ -145,7 +147,7 @@ export function AddStepsDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="time">Time</Label>
+            <Label htmlFor="time">{t('common.time')}</Label>
             <Input
               id="time"
               type="time"
@@ -161,11 +163,11 @@ export function AddStepsDialog({
         <div className="space-y-2">
           <Label htmlFor="notes" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            Notes (optional)
+            {t('common.notes')} ({t('common.optional')})
           </Label>
           <Textarea
             id="notes"
-            placeholder="Any notes..."
+            placeholder={t('steps.notesPlaceholder')}
             value={notesInput}
             onChange={(e) => setNotesInput(e.target.value)}
             rows={2}
@@ -188,7 +190,7 @@ export function AddStepsDialog({
       className="fixed bottom-6 left-24 rounded-full shadow-lg h-14 w-14 z-50 border-green-500/50"
     >
       <Footprints className="h-6 w-6 text-green-500" />
-      <span className="sr-only">Add steps</span>
+      <span className="sr-only">{t('steps.addAria')}</span>
     </Button>
   ) : null;
 
@@ -205,7 +207,7 @@ export function AddStepsDialog({
           <DrawerHeader className="shrink-0">
             <DrawerTitle className="flex items-center gap-2 justify-center">
               <Footprints className="h-5 w-5 text-green-500" />
-              Add Steps
+              {t('steps.addTitle')}
             </DrawerTitle>
           </DrawerHeader>
           <ScrollArea className="flex-1 overflow-auto px-4">
@@ -218,10 +220,10 @@ export function AddStepsDialog({
               onClick={handleSave}
               disabled={isSubmitting || isLoading || !canSave}
             >
-              {isSubmitting ? 'Saving...' : 'Add Steps'}
+              {isSubmitting ? t('common.saving') : t('steps.addTitle')}
             </Button>
             <DrawerClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline">{t('common.cancel')}</Button>
             </DrawerClose>
           </DrawerFooter>
         </DrawerContent>
@@ -240,7 +242,7 @@ export function AddStepsDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Footprints className="h-5 w-5 text-green-500" />
-            Add Steps
+            {t('steps.addTitle')}
           </DialogTitle>
         </DialogHeader>
         <ScrollArea className="flex-1 -mx-6 px-6">
@@ -248,14 +250,14 @@ export function AddStepsDialog({
         </ScrollArea>
         <DialogFooter className="flex-col gap-2 sm:flex-row mt-4">
           <DialogClose asChild>
-            <Button variant="outline" className="w-full sm:w-auto">Cancel</Button>
+            <Button variant="outline" className="w-full sm:w-auto">{t('common.cancel')}</Button>
           </DialogClose>
           <Button
             onClick={handleSave}
             disabled={isSubmitting || isLoading || !canSave}
             className="w-full sm:w-auto"
           >
-            {isSubmitting ? 'Saving...' : 'Add Steps'}
+            {isSubmitting ? t('common.saving') : t('steps.addTitle')}
           </Button>
         </DialogFooter>
       </DialogContent>

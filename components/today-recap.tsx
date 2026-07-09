@@ -11,6 +11,7 @@ import { formatDateForRecap } from '@/lib/date-utils';
 import { calculateWaterStreak, calculateProgress, getCurrentWeekWeightChange, getCurrentMonthWeightChange } from '@/lib/goals';
 import { getPressureCategory } from '@/lib/pressure-utils';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/hooks/use-translation';
 
 // Check if a medication is due today based on its schedule
 function isMedicationDueToday(schedule: MedicationSchedule | undefined, today: Date): boolean {
@@ -65,6 +66,7 @@ export function TodayRecap({
   injectionEntries = [],
   injectionSettings
 }: TodayRecapProps) {
+  const { t } = useTranslation();
   const { todayWeight, lastWeight, lastWeightDate } = useMemo(() => {
     if (entries.length === 0) {
       return { todayWeight: null, lastWeight: null, lastWeightDate: null };
@@ -242,20 +244,20 @@ export function TodayRecap({
 
       return {
         id: entry.id,
-        medicationName: medication?.name || 'Unknown',
+        medicationName: medication?.name || t('dashboard.recap.unknown'),
         dose: entry.dose,
         unit: medication?.unit || 'mg',
         timestamp: `${dateStr} ${timeStr}`,
         color: medication?.color || 'text-teal-500'
       };
     });
-  }, [injectionEntries, injectionSettings]);
+  }, [injectionEntries, injectionSettings, t]);
 
   return (
     <Card className="py-2 shrink-0">
       <CardContent className="py-0">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-muted-foreground">Today</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">{t('common.today')}</h3>
           <Button
             variant="ghost"
             size="sm"
@@ -264,12 +266,12 @@ export function TodayRecap({
           >
             {isCollapsed ? (
               <>
-                <span className="text-xs mr-1">Show</span>
+                <span className="text-xs mr-1">{t('dashboard.show')}</span>
                 <ChevronDown className="h-4 w-4" />
               </>
             ) : (
               <>
-                <span className="text-xs mr-1">Hide</span>
+                <span className="text-xs mr-1">{t('dashboard.hide')}</span>
                 <ChevronUp className="h-4 w-4" />
               </>
             )}
@@ -291,7 +293,7 @@ export function TodayRecap({
                     </div>
                     {lastWeightDate && (
                       <div className="text-xs text-muted-foreground">
-                        last: {lastWeightDate}
+                        {t('dashboard.recap.last', { date: lastWeightDate })}
                       </div>
                     )}
                     {/* Weight changes */}
@@ -313,7 +315,7 @@ export function TodayRecap({
                     )}
                   </>
                 ) : (
-                  <div className="text-sm text-muted-foreground">No entries</div>
+                  <div className="text-sm text-muted-foreground">{t('dashboard.recap.noEntries')}</div>
                 )}
               </div>
             </div>
@@ -350,10 +352,10 @@ export function TodayRecap({
                   {dailyWaterGoal && waterStreak > 0 ? (
                     <div className="mt-1 flex items-center gap-1 text-xs text-orange-500">
                       <Flame className="h-3 w-3" />
-                      <span>{waterStreak} day streak</span>
+                      <span>{t('dashboard.recap.dayStreak', { n: waterStreak })}</span>
                     </div>
                   ) : (
-                    <div className="text-xs text-muted-foreground">water</div>
+                    <div className="text-xs text-muted-foreground">{t('dashboard.recap.water')}</div>
                   )}
                 </div>
               </div>
@@ -388,7 +390,7 @@ export function TodayRecap({
                   </div>
                 )}
 
-                <div className="text-xs text-muted-foreground">steps</div>
+                <div className="text-xs text-muted-foreground">{t('dashboard.recap.steps')}</div>
               </div>
             </div>
           )}
@@ -416,8 +418,8 @@ export function TodayRecap({
                       </>
                     ) : (
                       <>
-                        <div className="text-sm text-muted-foreground">Not recorded</div>
-                        <div className="text-xs text-muted-foreground">pressure</div>
+                        <div className="text-sm text-muted-foreground">{t('dashboard.recap.notRecorded')}</div>
+                        <div className="text-xs text-muted-foreground">{t('dashboard.recap.pressure')}</div>
                       </>
                     )}
                   </div>
@@ -433,13 +435,13 @@ export function TodayRecap({
                   <div className="flex-1">
                     {medicationPresets.length === 0 ? (
                       <>
-                        <div className="text-sm text-muted-foreground">No meds set</div>
-                        <div className="text-xs text-muted-foreground">medication</div>
+                        <div className="text-sm text-muted-foreground">{t('dashboard.recap.noMedsSet')}</div>
+                        <div className="text-xs text-muted-foreground">{t('dashboard.recap.medication')}</div>
                       </>
                     ) : medicationCount.total === 0 ? (
                       <>
-                        <div className="text-sm text-muted-foreground">None due</div>
-                        <div className="text-xs text-muted-foreground">medication</div>
+                        <div className="text-sm text-muted-foreground">{t('dashboard.recap.noneDue')}</div>
+                        <div className="text-xs text-muted-foreground">{t('dashboard.recap.medication')}</div>
                       </>
                     ) : (
                       <>
@@ -455,10 +457,10 @@ export function TodayRecap({
                             : "text-muted-foreground"
                         )}>
                           {medicationCount.taken === medicationCount.total
-                            ? "all taken"
+                            ? t('dashboard.recap.allTaken')
                             : medicationCount.taken > 0
-                            ? "partially taken"
-                            : "none taken"}
+                            ? t('dashboard.recap.partiallyTaken')
+                            : t('dashboard.recap.noneTaken')}
                         </div>
                       </>
                     )}
@@ -475,7 +477,7 @@ export function TodayRecap({
                 <div className="p-2 rounded-full bg-teal-500/10">
                   <Syringe className="h-5 w-5 text-teal-500" />
                 </div>
-                <span className="text-sm font-medium text-muted-foreground">Injections</span>
+                <span className="text-sm font-medium text-muted-foreground">{t('dashboard.recap.injections')}</span>
               </div>
               {recentInjections.length > 0 ? (
                 <div className="space-y-1 pl-10">
@@ -498,8 +500,8 @@ export function TodayRecap({
               ) : (
                 <div className="pl-10 text-sm text-muted-foreground">
                   {injectionSettings?.medications?.length
-                    ? 'No injections logged'
-                    : 'No medications set'}
+                    ? t('dashboard.recap.noInjectionsLogged')
+                    : t('dashboard.recap.noMedicationsSet')}
                 </div>
               )}
             </div>

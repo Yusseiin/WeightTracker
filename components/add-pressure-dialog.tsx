@@ -27,6 +27,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTranslation } from '@/hooks/use-translation';
 import { getPressureCategory } from '@/lib/pressure-utils';
 import { cn } from '@/lib/utils';
 import { PhotoCapture } from './photo-capture';
@@ -62,6 +63,7 @@ export function AddPressureDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
 
   // Initialize inputs when dialog opens
   useEffect(() => {
@@ -132,11 +134,11 @@ export function AddPressureDialog({
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="systolic">Systolic (upper)</Label>
+            <Label htmlFor="systolic">{t('pressure.systolic')}</Label>
             <Input
               id="systolic"
               type="number"
-              placeholder="e.g. 120"
+              placeholder={t('pressure.systolicPlaceholder')}
               value={systolicInput}
               onChange={(e) => setSystolicInput(e.target.value)}
               className="text-lg text-center"
@@ -146,11 +148,11 @@ export function AddPressureDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="diastolic">Diastolic (lower)</Label>
+            <Label htmlFor="diastolic">{t('pressure.diastolic')}</Label>
             <Input
               id="diastolic"
               type="number"
-              placeholder="e.g. 80"
+              placeholder={t('pressure.diastolicPlaceholder')}
               value={diastolicInput}
               onChange={(e) => setDiastolicInput(e.target.value)}
               className="text-lg text-center"
@@ -163,14 +165,14 @@ export function AddPressureDialog({
         {/* Preview category */}
         {previewCategory && (
           <div className={cn("text-center text-sm", previewCategory.color)}>
-            Category: {previewCategory.label}
+            {t('pressure.category', { category: previewCategory.label })}
           </div>
         )}
 
         {/* Date and Time inputs */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="date">Date</Label>
+            <Label htmlFor="date">{t('common.date')}</Label>
             <Input
               id="date"
               type="date"
@@ -179,7 +181,7 @@ export function AddPressureDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="time">Time</Label>
+            <Label htmlFor="time">{t('common.time')}</Label>
             <Input
               id="time"
               type="time"
@@ -195,11 +197,11 @@ export function AddPressureDialog({
         <div className="space-y-2">
           <Label htmlFor="notes" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            Notes (optional)
+            {t('common.notes')} ({t('common.optional')})
           </Label>
           <Textarea
             id="notes"
-            placeholder="Any notes..."
+            placeholder={t('pressure.notesPlaceholder')}
             value={notesInput}
             onChange={(e) => setNotesInput(e.target.value)}
             rows={2}
@@ -222,7 +224,7 @@ export function AddPressureDialog({
       className="fixed bottom-6 left-42 rounded-full shadow-lg h-14 w-14 z-50 border-red-500/50"
     >
       <HeartPulse className="h-6 w-6 text-red-500" />
-      <span className="sr-only">Add blood pressure</span>
+      <span className="sr-only">{t('pressure.addAria')}</span>
     </Button>
   ) : null;
 
@@ -239,7 +241,7 @@ export function AddPressureDialog({
           <DrawerHeader className="shrink-0">
             <DrawerTitle className="flex items-center gap-2 justify-center">
               <HeartPulse className="h-5 w-5 text-red-500" />
-              Add Blood Pressure
+              {t('pressure.addTitle')}
             </DrawerTitle>
           </DrawerHeader>
           <ScrollArea className="flex-1 overflow-auto px-4">
@@ -252,10 +254,10 @@ export function AddPressureDialog({
               onClick={handleSave}
               disabled={isSubmitting || isLoading || !canSave}
             >
-              {isSubmitting ? 'Saving...' : 'Add'}
+              {isSubmitting ? t('common.saving') : t('common.add')}
             </Button>
             <DrawerClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline">{t('common.cancel')}</Button>
             </DrawerClose>
           </DrawerFooter>
         </DrawerContent>
@@ -274,7 +276,7 @@ export function AddPressureDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <HeartPulse className="h-5 w-5 text-red-500" />
-            Add Blood Pressure
+            {t('pressure.addTitle')}
           </DialogTitle>
         </DialogHeader>
         <ScrollArea className="flex-1 -mx-6 px-6">
@@ -282,14 +284,14 @@ export function AddPressureDialog({
         </ScrollArea>
         <DialogFooter className="flex-col gap-2 sm:flex-row mt-4">
           <DialogClose asChild>
-            <Button variant="outline" className="w-full sm:w-auto">Cancel</Button>
+            <Button variant="outline" className="w-full sm:w-auto">{t('common.cancel')}</Button>
           </DialogClose>
           <Button
             onClick={handleSave}
             disabled={isSubmitting || isLoading || !canSave}
             className="w-full sm:w-auto"
           >
-            {isSubmitting ? 'Saving...' : 'Add'}
+            {isSubmitting ? t('common.saving') : t('common.add')}
           </Button>
         </DialogFooter>
       </DialogContent>

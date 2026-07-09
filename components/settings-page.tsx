@@ -33,6 +33,8 @@ import { DEFAULT_GOALS, WEEK_DAYS, DEFAULT_FEATURE_TOGGLES, DEFAULT_INJECTION_SE
 import { mlToOz, ozToMl } from '@/lib/water-utils';
 import { ChartCombinationManager } from '@/components/chart-combination-manager';
 import { BodyMeasurementPresetManager } from '@/components/body-measurement-preset-manager';
+import { useTranslation } from '@/hooks/use-translation';
+import { getLanguageName } from '@/lib/i18n-shared';
 
 interface SettingsPageProps {
   session: SessionUser;
@@ -67,7 +69,34 @@ function ensureValidDateFormat(settings?: Partial<DateFormatSettings>): DateForm
 
 export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
   const router = useRouter();
+  const { t, locale, languages } = useTranslation();
   const [settings, setSettings] = useState(initialSettings);
+  const [isChangingLanguage, setIsChangingLanguage] = useState(false);
+
+  // Persist the chosen UI language and reload so the server re-renders with the
+  // new dictionary (the dictionary is loaded in the root layout).
+  const handleLanguageChange = async (newLanguage: string) => {
+    if (newLanguage === locale) return;
+    setIsChangingLanguage(true);
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ language: newLanguage }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        setSettings(prev => ({ ...prev, language: newLanguage }));
+        router.refresh();
+      } else {
+        showErrorToast(result.error || t('settings.toasts.changeLanguageError'));
+      }
+    } catch {
+      showErrorToast(t('settings.toasts.changeLanguageError'));
+    } finally {
+      setIsChangingLanguage(false);
+    }
+  };
   const [entries, setEntries] = useState<WeightEntry[]>([]);
   const [medicationEntries, setMedicationEntries] = useState<MedicationEntry[]>([]);
   const [injectionEntries, setInjectionEntries] = useState<InjectionEntry[]>([]);
@@ -197,10 +226,10 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
         router.push('/login');
         router.refresh();
       } else {
-        showErrorToast('Failed to logout');
+        showErrorToast(t('settings.toasts.logoutError'));
       }
     } catch {
-      showErrorToast('Failed to logout');
+      showErrorToast(t('settings.toasts.logoutError'));
     } finally {
       setIsLoggingOut(false);
     }
@@ -233,12 +262,12 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
 
       if (result.success) {
         setSettings(result.data);
-        showSuccessToast('Settings saved');
+        showSuccessToast(t('settings.toasts.saved'));
       } else {
-        showErrorToast(result.error || 'Failed to save settings');
+        showErrorToast(result.error || t('settings.toasts.saveError'));
       }
     } catch {
-      showErrorToast('Failed to save settings');
+      showErrorToast(t('settings.toasts.saveError'));
     } finally {
       setIsSaving(false);
     }
@@ -295,7 +324,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
     if (result.success) {
       setSettings(result.data);
     } else {
-      throw new Error(result.error || 'Failed to save activities');
+      throw new Error(result.error || t('settings.toasts.saveActivitiesError'));
     }
   };
 
@@ -311,7 +340,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
     if (result.success) {
       setSettings(result.data);
     } else {
-      throw new Error(result.error || 'Failed to save water presets');
+      throw new Error(result.error || t('settings.toasts.saveWaterPresetsError'));
     }
   };
 
@@ -327,7 +356,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
     if (result.success) {
       setSettings(result.data);
     } else {
-      throw new Error(result.error || 'Failed to save medication presets');
+      throw new Error(result.error || t('settings.toasts.saveMedicationPresetsError'));
     }
   };
 
@@ -343,7 +372,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
     if (result.success) {
       setSettings(result.data);
     } else {
-      throw new Error(result.error || 'Failed to save medication presets');
+      throw new Error(result.error || t('settings.toasts.saveInjectionSettingsError'));
     }
   };
 
@@ -359,7 +388,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
     if (result.success) {
       setSettings(result.data);
     } else {
-      throw new Error(result.error || 'Failed to save body measurement presets');
+      throw new Error(result.error || t('settings.toasts.saveBodyMeasurementPresetsError'));
     }
   };
 
@@ -392,7 +421,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
     if (result.success) {
       setSettings(result.data);
     } else {
-      throw new Error(result.error || 'Failed to save chart combinations');
+      throw new Error(result.error || t('settings.toasts.saveChartCombinationsError'));
     }
   };
 
@@ -405,7 +434,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
             <Button variant="ghost" size="icon" onClick={handleGoBack}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-lg font-semibold">Settings</h1>
+            <h1 className="text-lg font-semibold">{t('settings.title')}</h1>
           </div>
           <Button
             onClick={handleSave}
@@ -417,7 +446,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}
-            {isSaving ? 'Saving...' : 'Save'}
+            {isSaving ? t('common.saving') : t('common.save')}
           </Button>
         </div>
       </header>
@@ -430,10 +459,10 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
             {/* Units Card */}
             <Card className="py-4">
               <CardContent className="space-y-4">
-                <h3 className="font-medium text-base">Units</h3>
+                <h3 className="font-medium text-base">{t('settings.units.title')}</h3>
                 {/* Weight Unit */}
                 <div className="space-y-2">
-                  <Label>Weight Unit</Label>
+                  <Label>{t('settings.units.weightUnit')}</Label>
                   <ToggleGroup
                     type="single"
                     value={localUnit}
@@ -452,7 +481,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
 
                 {/* Water Unit */}
                 <div className="space-y-2">
-                  <Label>Water Unit</Label>
+                  <Label>{t('settings.units.waterUnit')}</Label>
                   <ToggleGroup
                     type="single"
                     value={localWaterUnit}
@@ -471,7 +500,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
 
                 {/* Measurement Unit (body measurements) */}
                 <div className="space-y-2">
-                  <Label>Measurement Unit</Label>
+                  <Label>{t('settings.units.measurementUnit')}</Label>
                   <ToggleGroup
                     type="single"
                     value={localMeasurementUnit}
@@ -490,11 +519,11 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
 
                 {/* Target Weight */}
                 <div className="space-y-2">
-                  <Label>Target Weight ({localUnit})</Label>
+                  <Label>{t('settings.units.targetWeight', { unit: localUnit })}</Label>
                   <Input
                     type="number"
                     step="0.1"
-                    placeholder="Optional"
+                    placeholder={t('common.optional')}
                     value={localTargetWeight}
                     onChange={handleTargetWeightChange}
                     className="max-w-32"
@@ -506,9 +535,9 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
             {/* Display Card */}
             <Card className="py-4">
               <CardContent className="space-y-4">
-                <h3 className="font-medium text-base">Display</h3>
+                <h3 className="font-medium text-base">{t('settings.display.title')}</h3>
                 <div className="space-y-2">
-                  <Label>Chart Color</Label>
+                  <Label>{t('settings.display.chartColor')}</Label>
                   <ToggleGroup
                     type="single"
                     value={localChartColor}
@@ -523,7 +552,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                         className="gap-2 px-3"
                       >
                         <span className={`w-3 h-3 rounded-full ${option.color}`} />
-                        {option.label}
+                        {t(`settings.display.chartColors.${option.value}`)}
                       </ToggleGroupItem>
                     ))}
                   </ToggleGroup>
@@ -536,7 +565,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                     onCheckedChange={(checked) => setLocalShowQuotes(checked === true)}
                   />
                   <Label htmlFor="showQuotes" className="cursor-pointer">
-                    Show motivational quotes
+                    {t('settings.display.showQuotes')}
                   </Label>
                 </div>
               </CardContent>
@@ -545,9 +574,9 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
             {/* Chart Configuration Card */}
             <Card className="py-4">
               <CardContent className="space-y-4">
-                <h3 className="font-medium text-base">Chart Configuration</h3>
+                <h3 className="font-medium text-base">{t('settings.chartConfig.title')}</h3>
                 <p className="text-xs text-muted-foreground">
-                  Customize which charts appear on the homepage and combine compatible charts together
+                  {t('settings.chartConfig.description')}
                 </p>
                 <ChartCombinationManager
                   combinations={settings.chartCombinations || DEFAULT_CHART_COMBINATIONS}
@@ -561,8 +590,8 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
             {/* Optional Features Card */}
             <Card className="py-4">
               <CardContent className="space-y-4">
-                <h3 className="font-medium text-base">Optional Features</h3>
-                <p className="text-xs text-muted-foreground">Enable additional tracking buttons</p>
+                <h3 className="font-medium text-base">{t('settings.features.title')}</h3>
+                <p className="text-xs text-muted-foreground">{t('settings.features.description')}</p>
 
                 {/* Water Tracking */}
                 <div className="flex items-center space-x-2">
@@ -575,7 +604,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                     }))}
                   />
                   <Label htmlFor="waterEnabled" className="cursor-pointer">
-                    Enable water tracking
+                    {t('settings.features.water')}
                   </Label>
                 </div>
 
@@ -591,7 +620,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                       }))}
                     />
                     <Label htmlFor="waterHistoryEnabled" className="cursor-pointer">
-                      Log water as individual entries (pick a time, edit/delete in history)
+                      {t('settings.features.waterHistory')}
                     </Label>
                   </div>
                 )}
@@ -607,7 +636,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                     }))}
                   />
                   <Label htmlFor="stepsEnabled" className="cursor-pointer">
-                    Enable steps tracking
+                    {t('settings.features.steps')}
                   </Label>
                 </div>
 
@@ -622,7 +651,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                     }))}
                   />
                   <Label htmlFor="pressureEnabled" className="cursor-pointer">
-                    Enable blood pressure tracking
+                    {t('settings.features.pressure')}
                   </Label>
                 </div>
 
@@ -637,7 +666,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                     }))}
                   />
                   <Label htmlFor="medicationEnabled" className="cursor-pointer">
-                    Enable medication tracking
+                    {t('settings.features.medication')}
                   </Label>
                 </div>
 
@@ -652,7 +681,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                     }))}
                   />
                   <Label htmlFor="injectionsEnabled" className="cursor-pointer">
-                    Enable injection tracking (GLP-1, insulin, etc.)
+                    {t('settings.features.injections')}
                   </Label>
                 </div>
 
@@ -667,7 +696,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                     }))}
                   />
                   <Label htmlFor="photosEnabled" className="cursor-pointer">
-                    Enable photo attachments on entries
+                    {t('settings.features.photos')}
                   </Label>
                 </div>
 
@@ -682,7 +711,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                     }))}
                   />
                   <Label htmlFor="bodyFatEnabled" className="cursor-pointer">
-                    Enable body fat % tracking on weight entries
+                    {t('settings.features.bodyFat')}
                   </Label>
                 </div>
 
@@ -696,12 +725,12 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                     }
                   />
                   <Label htmlFor="bodyMeasurementsEnabled" className="cursor-pointer">
-                    Enable body measurements tracking
+                    {t('settings.features.bodyMeasurements')}
                   </Label>
                 </div>
 
-                <h3 className="font-medium text-base pt-2">Notes</h3>
-                <p className="text-xs text-muted-foreground">Show a notes text field on entry forms</p>
+                <h3 className="font-medium text-base pt-2">{t('settings.notes.title')}</h3>
+                <p className="text-xs text-muted-foreground">{t('settings.notes.description')}</p>
 
                 {/* Weight Notes */}
                 <div className="flex items-center space-x-2">
@@ -714,7 +743,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                     }))}
                   />
                   <Label htmlFor="weightNotesEnabled" className="cursor-pointer">
-                    Weight entries
+                    {t('settings.notes.weight')}
                   </Label>
                 </div>
 
@@ -730,7 +759,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                       }))}
                     />
                     <Label htmlFor="stepsNotesEnabled" className="cursor-pointer">
-                      Steps entries
+                      {t('settings.notes.steps')}
                     </Label>
                   </div>
                 )}
@@ -747,7 +776,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                       }))}
                     />
                     <Label htmlFor="pressureNotesEnabled" className="cursor-pointer">
-                      Blood pressure entries
+                      {t('settings.notes.pressure')}
                     </Label>
                   </div>
                 )}
@@ -764,7 +793,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                       }))}
                     />
                     <Label htmlFor="medicationNotesEnabled" className="cursor-pointer">
-                      Medication entries
+                      {t('settings.notes.medication')}
                     </Label>
                   </div>
                 )}
@@ -781,7 +810,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                       }))}
                     />
                     <Label htmlFor="injectionNotesEnabled" className="cursor-pointer">
-                      Injection entries
+                      {t('settings.notes.injection')}
                     </Label>
                   </div>
                 )}
@@ -791,19 +820,19 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
             {/* Goals Card */}
             <Card className="py-4">
               <CardContent className="space-y-4">
-                <h3 className="font-medium text-base">Goals</h3>
-                <p className="text-xs text-muted-foreground">Optional goals for gamification</p>
+                <h3 className="font-medium text-base">{t('settings.goals.title')}</h3>
+                <p className="text-xs text-muted-foreground">{t('settings.goals.description')}</p>
 
                 {/* Daily Water Goal - only show if water feature is enabled */}
                 {localFeatures.waterEnabled && (
                   <div className="space-y-2">
-                    <Label>Daily Water Goal ({localWaterUnit === 'ml' ? 'ml' : 'oz'})</Label>
+                    <Label>{t('settings.goals.dailyWater', { unit: localWaterUnit === 'ml' ? 'ml' : 'oz' })}</Label>
                     <Input
                       type="number"
                       step={localWaterUnit === 'ml' ? '100' : '0.1'}
                       min="0"
                       inputMode="decimal"
-                      placeholder={localWaterUnit === 'ml' ? 'e.g. 2000' : 'e.g. 83.2'}
+                      placeholder={localWaterUnit === 'ml' ? t('settings.goals.dailyWaterPlaceholderMl') : t('settings.goals.dailyWaterPlaceholderOz')}
                       value={waterGoalInput}
                       onChange={(e) => {
                         const raw = e.target.value;
@@ -825,11 +854,11 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                 {/* Daily Steps Goal - only show if steps feature is enabled */}
                 {localFeatures.stepsEnabled && (
                   <div className="space-y-2">
-                    <Label>Daily Steps Goal</Label>
+                    <Label>{t('settings.goals.dailySteps')}</Label>
                     <Input
                       type="number"
                       step="1000"
-                      placeholder="e.g. 10000"
+                      placeholder={t('settings.goals.dailyStepsPlaceholder')}
                       value={localGoals.dailyStepsGoal ?? ''}
                       onChange={(e) => setLocalGoals(prev => ({
                         ...prev,
@@ -842,11 +871,11 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
 
                 {/* Weekly Weight Goal */}
                 <div className="space-y-2">
-                  <Label>Weekly Weight Goal ({localUnit}/week)</Label>
+                  <Label>{t('settings.goals.weeklyWeight', { unit: localUnit })}</Label>
                   <Input
                     type="number"
                     step="0.1"
-                    placeholder="e.g. -0.5"
+                    placeholder={t('settings.goals.weeklyWeightPlaceholder')}
                     value={localGoals.weeklyWeightGoal ?? ''}
                     onChange={(e) => setLocalGoals(prev => ({
                       ...prev,
@@ -854,16 +883,16 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                     }))}
                     className="max-w-32"
                   />
-                  <p className="text-xs text-muted-foreground">Negative for weight loss</p>
+                  <p className="text-xs text-muted-foreground">{t('settings.goals.negativeHint')}</p>
                 </div>
 
                 {/* Monthly Weight Goal */}
                 <div className="space-y-2">
-                  <Label>Monthly Weight Goal ({localUnit}/month)</Label>
+                  <Label>{t('settings.goals.monthlyWeight', { unit: localUnit })}</Label>
                   <Input
                     type="number"
                     step="0.5"
-                    placeholder="e.g. -2"
+                    placeholder={t('settings.goals.monthlyWeightPlaceholder')}
                     value={localGoals.monthlyWeightGoal ?? ''}
                     onChange={(e) => setLocalGoals(prev => ({
                       ...prev,
@@ -871,12 +900,12 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                     }))}
                     className="max-w-32"
                   />
-                  <p className="text-xs text-muted-foreground">Negative for weight loss</p>
+                  <p className="text-xs text-muted-foreground">{t('settings.goals.negativeHint')}</p>
                 </div>
 
                 {/* Week Starts On */}
                 <div className="space-y-2">
-                  <Label>Week Starts On</Label>
+                  <Label>{t('settings.goals.weekStartsOn')}</Label>
                   <Select
                     value={String(localGoals.weekStartsOn ?? 1)}
                     onValueChange={(value) => {
@@ -892,7 +921,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                     <SelectContent>
                       {WEEK_DAYS.map((day) => (
                         <SelectItem key={day.value} value={String(day.value)}>
-                          {day.label}
+                          {t(`settings.weekDays.${day.value}`)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -904,9 +933,9 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
             {/* Activities Card */}
             <Card className="py-4">
               <CardContent className="space-y-4">
-                <h3 className="font-medium text-base">Activities</h3>
+                <h3 className="font-medium text-base">{t('settings.activities.title')}</h3>
                 <div className="space-y-2">
-                  <Label>Custom Activities</Label>
+                  <Label>{t('settings.activities.custom')}</Label>
                   <ActivityManager
                     activities={settings.activities}
                     onSave={handleActivitiesSave}
@@ -920,9 +949,9 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
             {localFeatures.waterEnabled && (
               <Card className="py-4">
                 <CardContent className="space-y-4">
-                  <h3 className="font-medium text-base">Water Presets</h3>
+                  <h3 className="font-medium text-base">{t('settings.waterPresets.title')}</h3>
                   <div className="space-y-2">
-                    <Label>Quick-add Buttons</Label>
+                    <Label>{t('settings.waterPresets.quickAdd')}</Label>
                     <WaterPresetManager
                       presets={settings.waterPresets}
                       onSave={handleWaterPresetsSave}
@@ -937,9 +966,9 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
             {localFeatures.medicationEnabled && (
               <Card className="py-4">
                 <CardContent className="space-y-4">
-                  <h3 className="font-medium text-base">Medication Presets</h3>
+                  <h3 className="font-medium text-base">{t('settings.medicationPresets.title')}</h3>
                   <div className="space-y-2">
-                    <Label>Medications to Track</Label>
+                    <Label>{t('settings.medicationPresets.toTrack')}</Label>
                     <MedicationManager
                       medications={settings.medicationPresets || []}
                       onSave={handleMedicationPresetsSave}
@@ -954,10 +983,10 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
             {localFeatures.injectionsEnabled && (
               <Card className="py-4">
                 <CardContent className="space-y-4">
-                  <h3 className="font-medium text-base">Injection Settings</h3>
-                  <p className="text-xs text-muted-foreground">Configure medications and injection sites for tracking</p>
+                  <h3 className="font-medium text-base">{t('settings.injectionSettings.title')}</h3>
+                  <p className="text-xs text-muted-foreground">{t('settings.injectionSettings.description')}</p>
                   <div className="space-y-2">
-                    <Label>Injectable Medications</Label>
+                    <Label>{t('settings.injectionSettings.injectableMedications')}</Label>
                     <InjectionSettingsManager
                       settings={settings.injectionSettings || DEFAULT_INJECTION_SETTINGS}
                       onSave={handleInjectionSettingsSave}
@@ -972,8 +1001,8 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
             {localFeatures.bodyMeasurementsEnabled && (
               <Card className="py-4">
                 <CardContent className="space-y-4">
-                  <h3 className="font-medium text-base">Body Measurements</h3>
-                  <p className="text-xs text-muted-foreground">Configure the body parts you want to track</p>
+                  <h3 className="font-medium text-base">{t('settings.bodyMeasurements.title')}</h3>
+                  <p className="text-xs text-muted-foreground">{t('settings.bodyMeasurements.description')}</p>
                   <BodyMeasurementPresetManager
                     presets={settings.bodyMeasurementPresets || []}
                     onSave={handleBodyMeasurementPresetsSave}
@@ -988,11 +1017,11 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
             {/* Date Format Card */}
             <Card className="py-4">
               <CardContent className="space-y-4">
-                <h3 className="font-medium text-base">Date Format</h3>
+                <h3 className="font-medium text-base">{t('settings.dateFormat.title')}</h3>
 
                 {/* Locale Selector */}
                 <div className="space-y-2">
-                  <Label>Language</Label>
+                  <Label>{t('settings.language')}</Label>
                   <Select value={localDateFormat.locale} onValueChange={handleLocaleChange}>
                     <SelectTrigger className="w-full">
                       <SelectValue />
@@ -1009,21 +1038,21 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
 
                 {/* 3 Date Format Editors */}
                 <DateFormatEditor
-                  label="History Table"
+                  label={t('settings.dateFormat.historyTable')}
                   value={localDateFormat.tableFormat}
                   locale={localDateFormat.locale}
                   onChange={handleTableFormatChange}
                 />
 
                 <DateFormatEditor
-                  label="Chart Tooltip"
+                  label={t('settings.dateFormat.chartTooltip')}
                   value={localDateFormat.tooltipFormat}
                   locale={localDateFormat.locale}
                   onChange={handleTooltipFormatChange}
                 />
 
                 <DateFormatEditor
-                  label="Chart X-Axis"
+                  label={t('settings.dateFormat.chartAxis')}
                   value={localDateFormat.axisFormat}
                   locale={localDateFormat.locale}
                   onChange={handleAxisFormatChange}
@@ -1037,17 +1066,35 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
             {/* Account Card */}
             <Card className="py-4">
               <CardContent className="space-y-3">
-                <h3 className="font-medium text-base">Account</h3>
+                <h3 className="font-medium text-base">{t('settings.account')}</h3>
                 <div className="text-sm text-muted-foreground mb-2">
-                  Logged in as <span className="font-medium text-foreground">{session.nickname}</span>
+                  {t('settings.loggedInAs')} <span className="font-medium text-foreground">{session.nickname}</span>
                 </div>
+
+                {/* Language selector (populated from available dictionaries) */}
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="language-select">{t('settings.language')}</Label>
+                  <Select value={locale} onValueChange={handleLanguageChange} disabled={isChangingLanguage}>
+                    <SelectTrigger id="language-select" className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {languages.map((code) => (
+                        <SelectItem key={code} value={code}>
+                          {getLanguageName(code)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <Button
                   variant="outline"
                   className="w-full justify-start"
                   onClick={() => setChangeUsernameOpen(true)}
                 >
                   <AtSign className="mr-2 h-4 w-4" />
-                  Change Username
+                  {t('settings.changeUsername')}
                 </Button>
                 <Button
                   variant="outline"
@@ -1055,7 +1102,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                   onClick={() => setChangeNicknameOpen(true)}
                 >
                   <UserPen className="mr-2 h-4 w-4" />
-                  Change Nickname
+                  {t('settings.changeNickname')}
                 </Button>
                 <Button
                   variant="outline"
@@ -1063,21 +1110,21 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                   onClick={() => setChangePasswordOpen(true)}
                 >
                   <Key className="mr-2 h-4 w-4" />
-                  Change Password
+                  {t('settings.changePassword')}
                 </Button>
 
                 {/* Admin Section */}
                 {session.role === 'admin' && (
                   <>
                     <Separator className="my-3" />
-                    <div className="text-sm text-muted-foreground mb-2">Administration</div>
+                    <div className="text-sm text-muted-foreground mb-2">{t('settings.administration')}</div>
                     <Button
                       variant="outline"
                       className="w-full justify-start"
                       onClick={() => setUserManagementOpen(true)}
                     >
                       <Users className="mr-2 h-4 w-4" />
-                      Manage Users
+                      {t('settings.manageUsers')}
                     </Button>
                   </>
                 )}
@@ -1090,7 +1137,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                   disabled={isLoggingOut}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  {isLoggingOut ? 'Logging out...' : 'Logout'}
+                  {isLoggingOut ? t('settings.loggingOut') : t('settings.logout')}
                 </Button>
               </CardContent>
             </Card>

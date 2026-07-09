@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import { LogOut } from 'lucide-react';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/hooks/use-translation';
 
 export function LogoutButton() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -21,14 +23,14 @@ export function LogoutButton() {
       const result = await response.json();
 
       if (result.success) {
-        showSuccessToast('Logged out successfully');
+        showSuccessToast(t('account.logoutSuccess'));
         router.push('/login');
         router.refresh();
       } else {
-        showErrorToast(result.error || 'Logout failed');
+        showErrorToast(result.error || t('account.logoutError'));
       }
     } catch {
-      showErrorToast('An error occurred');
+      showErrorToast(t('account.errorOccurred'));
     } finally {
       setIsLoading(false);
     }
@@ -40,7 +42,7 @@ export function LogoutButton() {
       size="icon"
       onClick={handleLogout}
       disabled={isLoading}
-      aria-label="Logout"
+      aria-label={t('account.logout')}
     >
       <LogOut className="h-5 w-5" />
     </Button>
