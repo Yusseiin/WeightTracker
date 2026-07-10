@@ -34,7 +34,9 @@
     "username": "Nombre de usuario",
     "password": "Contraseña",
     "signIn": "Iniciar sesión",
-    "signingIn": "Iniciando sesión..."
+    "signingIn": "Iniciando sesión...",
+    "usernamePlaceholder": "Introduce tu nombre de usuario",
+    "passwordPlaceholder": "Introduce tu contraseña"
   },
   "nav": {
     "chart": "Gráfico",
@@ -611,7 +613,16 @@
     "logout": "Cerrar sesión",
     "logoutSuccess": "Sesión cerrada correctamente",
     "logoutError": "Error al cerrar sesión",
-    "errorOccurred": "Se produjo un error"
+    "errorOccurred": "Se produjo un error",
+    "nickname": "Apodo",
+    "nicknamePlaceholder": "Introduce tu apodo",
+    "username": "Nombre de usuario",
+    "usernamePlaceholder": "Introduce tu nombre de usuario",
+    "changeNicknameSuccess": "Apodo cambiado correctamente",
+    "changeNicknameError": "No se pudo cambiar el apodo",
+    "changeUsernameSuccess": "Nombre de usuario cambiado correctamente",
+    "changeUsernameError": "No se pudo cambiar el nombre de usuario",
+    "changeUsernameDescription": "Este es el nombre con el que inicias sesión. Cambiarlo mueve todos tus datos registrados (peso, agua, fotos y más) al nuevo nombre de usuario."
   },
   "users": {
     "fetchError": "No se pudieron obtener los usuarios",
@@ -715,5 +726,43 @@
       "deleteError": "No se pudo eliminar la entrada",
       "settingsError": "No se pudieron guardar los ajustes"
     }
+  },
+  "goalsMessages": {
+    "milestone": {
+      "achieved": "¡Objetivo logrado! ¡Increíble trabajo!",
+      "seventyFive": "¡75% alcanzado! ¡Sigue así!",
+      "half": "¡Vas por la mitad de tu objetivo!",
+      "quarter": "¡Buen comienzo! ¡25% hecho!",
+      "overachiever": "¡Fuera de serie! ¡{percent}% del objetivo!"
+    },
+    "weekly": {
+      "0": "¡Bien hecho, de verdad!",
+      "1": "¡Te cuidaste muy bien, guau!",
+      "2": "¡Siéntete orgulloso!",
+      "3": "¡Arrasando esta semana!",
+      "4": "¡Tu dedicación se nota!",
+      "5": "¡Progreso increíble!"
+    },
+    "monthly": {
+      "0": "¡Objetivo mensual logrado! ¡Sobresaliente!",
+      "1": "¡Qué mes! ¡Eres increíble!",
+      "2": "¡Todo un mes de éxito!",
+      "3": "¡Aprovechaste este mes!",
+      "4": "¡La constancia da frutos!"
+    }
+  },
+  "validation": {
+    "usernameRequired": "El nombre de usuario es obligatorio",
+    "passwordRequired": "La contraseña es obligatoria",
+    "currentPasswordRequired": "La contraseña actual es obligatoria",
+    "passwordMin": "La contraseña debe tener al menos 6 caracteres",
+    "confirmPassword": "Confirma tu contraseña",
+    "passwordsNoMatch": "Las contraseñas no coinciden",
+    "nicknameRequired": "El apodo es obligatorio",
+    "nicknameMax": "El apodo puede tener como máximo 50 caracteres",
+    "usernameMin": "El nombre de usuario debe tener al menos 3 caracteres",
+    "usernameMax": "El nombre de usuario puede tener como máximo 20 caracteres",
+    "usernameChars": "El nombre de usuario solo puede contener letras, números y guiones bajos",
+    "usernameFormat": "El nombre de usuario debe tener 3-20 letras, números o guiones bajos"
   }
 }

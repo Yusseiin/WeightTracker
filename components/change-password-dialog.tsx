@@ -24,16 +24,11 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
 
-const formSchema = z.object({
-  currentPassword: z.string().min(1, 'Current password is required'),
-  newPassword: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string().min(1, 'Please confirm your password'),
-}).refine(data => data.newPassword === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ['confirmPassword'],
-});
-
-type FormData = z.infer<typeof formSchema>;
+type FormData = {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+};
 
 interface ChangePasswordDialogProps {
   open: boolean;
@@ -43,6 +38,15 @@ interface ChangePasswordDialogProps {
 export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialogProps) {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
+
+  const formSchema = z.object({
+    currentPassword: z.string().min(1, t('validation.currentPasswordRequired')),
+    newPassword: z.string().min(6, t('validation.passwordMin')),
+    confirmPassword: z.string().min(1, t('validation.confirmPassword')),
+  }).refine(data => data.newPassword === data.confirmPassword, {
+    message: t('validation.passwordsNoMatch'),
+    path: ['confirmPassword'],
+  });
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),

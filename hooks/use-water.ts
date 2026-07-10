@@ -88,7 +88,7 @@ export function useWater(
 
           const milestone = getProgressMilestone(prevPercent, newPercent);
           if (milestone) {
-            showSuccessToast(`${milestone.emoji} ${milestone.message}`);
+            showSuccessToast(`${milestone.emoji} ${t(milestone.messageKey, milestone.vars)}`);
           } else {
             showSuccessToast(t('toasts.water.added', { amount: formatWaterAmount(amount, waterUnit) }));
           }

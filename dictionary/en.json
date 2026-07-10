@@ -33,7 +33,9 @@
     "username": "Username",
     "password": "Password",
     "signIn": "Sign In",
-    "signingIn": "Signing in..."
+    "signingIn": "Signing in...",
+    "usernamePlaceholder": "Enter your username",
+    "passwordPlaceholder": "Enter your password"
   },
   "nav": {
     "chart": "Chart",
@@ -610,7 +612,16 @@
     "logout": "Logout",
     "logoutSuccess": "Logged out successfully",
     "logoutError": "Logout failed",
-    "errorOccurred": "An error occurred"
+    "errorOccurred": "An error occurred",
+    "nickname": "Nickname",
+    "nicknamePlaceholder": "Enter your nickname",
+    "username": "Username",
+    "usernamePlaceholder": "Enter your username",
+    "changeNicknameSuccess": "Nickname changed successfully",
+    "changeNicknameError": "Failed to change nickname",
+    "changeUsernameSuccess": "Username changed successfully",
+    "changeUsernameError": "Failed to change username",
+    "changeUsernameDescription": "This is the name you log in with. Changing it moves all of your tracked data (weight, water, photos, and more) to the new username."
   },
   "users": {
     "fetchError": "Failed to fetch users",
@@ -714,5 +725,43 @@
       "deleteError": "Failed to delete entry",
       "settingsError": "Failed to update settings"
     }
+  },
+  "goalsMessages": {
+    "milestone": {
+      "achieved": "Goal achieved! Amazing work!",
+      "seventyFive": "75% there! Keep it up!",
+      "half": "Halfway to your goal!",
+      "quarter": "Great start! 25% done!",
+      "overachiever": "Overachiever! {percent}% of goal!"
+    },
+    "weekly": {
+      "0": "Nice one, really!",
+      "1": "You treated yourself well, wow!",
+      "2": "Be proud of yourself!",
+      "3": "Crushing it this week!",
+      "4": "Your dedication shows!",
+      "5": "Amazing progress!"
+    },
+    "monthly": {
+      "0": "Monthly goal achieved! Outstanding!",
+      "1": "What a month! You're incredible!",
+      "2": "A whole month of success!",
+      "3": "You made this month count!",
+      "4": "Consistency pays off!"
+    }
+  },
+  "validation": {
+    "usernameRequired": "Username is required",
+    "passwordRequired": "Password is required",
+    "currentPasswordRequired": "Current password is required",
+    "passwordMin": "Password must be at least 6 characters",
+    "confirmPassword": "Please confirm your password",
+    "passwordsNoMatch": "Passwords don't match",
+    "nicknameRequired": "Nickname is required",
+    "nicknameMax": "Nickname must be at most 50 characters",
+    "usernameMin": "Username must be at least 3 characters",
+    "usernameMax": "Username must be at most 20 characters",
+    "usernameChars": "Username can only contain letters, numbers, and underscores",
+    "usernameFormat": "Username must be 3-20 letters, numbers, or underscores"
   }
 }

@@ -28,6 +28,13 @@ const changelog: ChangelogEntry[] = [
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
     date: "2026-07-07",
     changes: [
+      { type: "changed", description: "Completed translation coverage: goal-milestone and weekly/monthly achievement messages, the Change Username and Change Nickname dialogs, and all form validation messages now appear in your selected language." },
+    ],
+  },
+  {
+    version: "v0.0.27",
+    date: "2026-07-07",
+    changes: [
       { type: "fixed", description: "The water meter on the dashboard could briefly flip to 0 after logging a drink (usually in the evening for non-UTC users) until you refreshed. Today's total is now always read from the server, so it stays correct." },
       { type: "fixed", description: "The 'water added' confirmation showed the amount in millilitres even when your unit is ounces; it now uses your chosen unit (e.g. 'Added 10oz')." },
       { type: "changed", description: "Toast notifications (added/updated/deleted confirmations and errors) are now translated in your selected language." },

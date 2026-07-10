@@ -33,7 +33,9 @@
     "username": "Nome utente",
     "password": "Password",
     "signIn": "Accedi",
-    "signingIn": "Accesso in corso..."
+    "signingIn": "Accesso in corso...",
+    "usernamePlaceholder": "Inserisci il tuo nome utente",
+    "passwordPlaceholder": "Inserisci la tua password"
   },
   "nav": {
     "chart": "Grafico",
@@ -610,7 +612,16 @@
     "logout": "Esci",
     "logoutSuccess": "Disconnessione effettuata con successo",
     "logoutError": "Disconnessione non riuscita",
-    "errorOccurred": "Si è verificato un errore"
+    "errorOccurred": "Si è verificato un errore",
+    "nickname": "Nickname",
+    "nicknamePlaceholder": "Inserisci il tuo nickname",
+    "username": "Nome utente",
+    "usernamePlaceholder": "Inserisci il tuo nome utente",
+    "changeNicknameSuccess": "Nickname cambiato correttamente",
+    "changeNicknameError": "Impossibile cambiare il nickname",
+    "changeUsernameSuccess": "Nome utente cambiato correttamente",
+    "changeUsernameError": "Impossibile cambiare il nome utente",
+    "changeUsernameDescription": "Questo è il nome con cui accedi. Modificandolo, tutti i tuoi dati registrati (peso, acqua, foto e altro) verranno spostati sul nuovo nome utente."
   },
   "users": {
     "fetchError": "Impossibile recuperare gli utenti",
@@ -714,5 +725,43 @@
       "deleteError": "Impossibile eliminare la voce",
       "settingsError": "Impossibile aggiornare le impostazioni"
     }
+  },
+  "goalsMessages": {
+    "milestone": {
+      "achieved": "Obiettivo raggiunto! Fantastico!",
+      "seventyFive": "Sei al 75%! Continua così!",
+      "half": "Sei a metà del tuo obiettivo!",
+      "quarter": "Ottimo inizio! 25% fatto!",
+      "overachiever": "Fenomeno! {percent}% dell'obiettivo!"
+    },
+    "weekly": {
+      "0": "Bravo, davvero!",
+      "1": "Ti sei trattato bene, wow!",
+      "2": "Sii orgoglioso di te!",
+      "3": "Stai spaccando questa settimana!",
+      "4": "La tua dedizione si vede!",
+      "5": "Progressi fantastici!"
+    },
+    "monthly": {
+      "0": "Obiettivo mensile raggiunto! Straordinario!",
+      "1": "Che mese! Sei incredibile!",
+      "2": "Un intero mese di successi!",
+      "3": "Hai reso questo mese speciale!",
+      "4": "La costanza paga!"
+    }
+  },
+  "validation": {
+    "usernameRequired": "Il nome utente è obbligatorio",
+    "passwordRequired": "La password è obbligatoria",
+    "currentPasswordRequired": "La password attuale è obbligatoria",
+    "passwordMin": "La password deve contenere almeno 6 caratteri",
+    "confirmPassword": "Conferma la password",
+    "passwordsNoMatch": "Le password non coincidono",
+    "nicknameRequired": "Il nickname è obbligatorio",
+    "nicknameMax": "Il nickname può contenere al massimo 50 caratteri",
+    "usernameMin": "Il nome utente deve contenere almeno 3 caratteri",
+    "usernameMax": "Il nome utente può contenere al massimo 20 caratteri",
+    "usernameChars": "Il nome utente può contenere solo lettere, numeri e trattini bassi",
+    "usernameFormat": "Il nome utente deve avere 3-20 tra lettere, numeri o trattini bassi"
   }
 }

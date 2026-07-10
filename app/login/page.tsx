@@ -14,11 +14,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTranslation } from '@/hooks/use-translation';
 
-const loginSchema = z.object({
-  username: z.string().min(1, 'Username is required'),
-  password: z.string().min(1, 'Password is required')
-});
-
 type LoginFormValues = {
   username: string;
   password: string;
@@ -28,6 +23,11 @@ export default function LoginPage() {
   const router = useRouter();
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
+
+  const loginSchema = z.object({
+    username: z.string().min(1, t('validation.usernameRequired')),
+    password: z.string().min(1, t('validation.passwordRequired'))
+  });
 
   const {
     register,
@@ -91,7 +91,7 @@ export default function LoginPage() {
               <Input
                 id="username"
                 type="text"
-                placeholder="Enter your username"
+                placeholder={t('auth.usernamePlaceholder')}
                 autoComplete="username"
                 disabled={isLoading}
                 {...register('username')}
@@ -106,7 +106,7 @@ export default function LoginPage() {
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter your password"
+                placeholder={t('auth.passwordPlaceholder')}
                 autoComplete="current-password"
                 disabled={isLoading}
                 {...register('password')}

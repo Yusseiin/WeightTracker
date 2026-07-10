@@ -77,9 +77,9 @@ export function useWeightEntries(
 
         // Show motivational toasts for goal achievements
         if (monthlyAchievement?.achieved) {
-          showSuccessToast(`🏆 ${monthlyAchievement.message}`);
+          showSuccessToast(`🏆 ${t(monthlyAchievement.messageKey)}`);
         } else if (weeklyAchievement?.achieved) {
-          showSuccessToast(`🔥 ${weeklyAchievement.message}`);
+          showSuccessToast(`🔥 ${t(weeklyAchievement.messageKey)}`);
         } else {
           showSuccessToast(t('toasts.weight.added'));
         }

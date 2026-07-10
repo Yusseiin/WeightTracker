@@ -24,13 +24,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from '@/hooks/use-translation';
 
-const formSchema = z.object({
-  username: z.string()
-    .regex(/^[a-zA-Z0-9_]{3,20}$/, 'Username must be 3-20 letters, numbers, or underscores'),
-});
-
-type FormData = z.infer<typeof formSchema>;
+type FormData = {
+  username: string;
+};
 
 interface ChangeUsernameDialogProps {
   open: boolean;
@@ -40,7 +38,13 @@ interface ChangeUsernameDialogProps {
 
 export function ChangeUsernameDialog({ open, onOpenChange, currentUsername }: ChangeUsernameDialogProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
+
+  const formSchema = z.object({
+    username: z.string()
+      .regex(/^[a-zA-Z0-9_]{3,20}$/, t('validation.usernameFormat')),
+  });
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -68,14 +72,14 @@ export function ChangeUsernameDialog({ open, onOpenChange, currentUsername }: Ch
       const result = await response.json();
 
       if (result.success) {
-        showSuccessToast('Username changed successfully');
+        showSuccessToast(t('account.changeUsernameSuccess'));
         onOpenChange(false);
         router.refresh();
       } else {
-        showErrorToast(result.error || 'Failed to change username');
+        showErrorToast(result.error || t('account.changeUsernameError'));
       }
     } catch {
-      showErrorToast('Failed to change username');
+      showErrorToast(t('account.changeUsernameError'));
     } finally {
       setIsLoading(false);
     }
@@ -85,10 +89,9 @@ export function ChangeUsernameDialog({ open, onOpenChange, currentUsername }: Ch
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-100">
         <DialogHeader>
-          <DialogTitle>Change Username</DialogTitle>
+          <DialogTitle>{t('settings.changeUsername')}</DialogTitle>
           <DialogDescription>
-            This is the name you log in with. Changing it moves all of your tracked
-            data (weight, water, photos, and more) to the new username.
+            {t('account.changeUsernameDescription')}
           </DialogDescription>
         </DialogHeader>
 
@@ -99,10 +102,10 @@ export function ChangeUsernameDialog({ open, onOpenChange, currentUsername }: Ch
               name="username"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Username</FormLabel>
+                  <FormLabel>{t('account.username')}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Enter your username"
+                      placeholder={t('account.usernamePlaceholder')}
                       autoComplete="off"
                       {...field}
                     />
@@ -119,11 +122,11 @@ export function ChangeUsernameDialog({ open, onOpenChange, currentUsername }: Ch
                 onClick={() => onOpenChange(false)}
                 disabled={isLoading}
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin pointer-events-none" />}
-                Save
+                {t('common.save')}
               </Button>
             </div>
           </form>

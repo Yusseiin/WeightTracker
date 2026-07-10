@@ -80,26 +80,28 @@ export function calculateRawProgress(current: number, goal: number): number {
 /**
  * Get motivational message based on progress milestone
  */
+// Returns a translation key (+ optional vars) rather than a literal message, so
+// the calling hook can localize it via useTranslation.
 export function getProgressMilestone(
   prevPercent: number,
   newPercent: number
-): { message: string; emoji: string } | null {
+): { emoji: string; messageKey: string; vars?: Record<string, string | number> } | null {
   // Check if we crossed a milestone
   if (newPercent >= 100 && prevPercent < 100) {
-    return { message: "Goal achieved! Amazing work!", emoji: "🎉" };
+    return { emoji: "🎉", messageKey: "goalsMessages.milestone.achieved" };
   }
   if (newPercent >= 75 && prevPercent < 75) {
-    return { message: "75% there! Keep it up!", emoji: "💪" };
+    return { emoji: "💪", messageKey: "goalsMessages.milestone.seventyFive" };
   }
   if (newPercent >= 50 && prevPercent < 50) {
-    return { message: "Halfway to your goal!", emoji: "🌊" };
+    return { emoji: "🌊", messageKey: "goalsMessages.milestone.half" };
   }
   if (newPercent >= 25 && prevPercent < 25) {
-    return { message: "Great start! 25% done!", emoji: "👍" };
+    return { emoji: "👍", messageKey: "goalsMessages.milestone.quarter" };
   }
   // Overachiever message for going beyond 100%
   if (newPercent > 100 && prevPercent <= 100) {
-    return { message: `Overachiever! ${newPercent}% of goal!`, emoji: "🏆" };
+    return { emoji: "🏆", messageKey: "goalsMessages.milestone.overachiever", vars: { percent: newPercent } };
   }
 
   return null;
@@ -269,7 +271,7 @@ export function checkWeeklyGoalAchievement(
   newEntry: WeightEntry,
   weeklyGoal: number,
   weekStartsOn: WeekStartsOn = 1
-): { achieved: boolean; message: string } | null {
+): { achieved: boolean; messageKey: string } | null {
   if (!weeklyGoal) return null;
 
   // Include the new entry
@@ -277,17 +279,11 @@ export function checkWeeklyGoalAchievement(
   const currentWeekChange = getWeeklyWeightChange(allEntries, new Date(), weekStartsOn);
 
   if (meetsWeightGoal(currentWeekChange, weeklyGoal)) {
-    const messages = [
-      "Nice one, really!",
-      "You treated yourself well, wow!",
-      "Be proud of yourself!",
-      "Crushing it this week!",
-      "Your dedication shows!",
-      "Amazing progress!",
-    ];
+    // 6 weekly messages exist in the dictionary (goalsMessages.weekly.0..5)
+    const idx = Math.floor(Math.random() * 6);
     return {
       achieved: true,
-      message: messages[Math.floor(Math.random() * messages.length)]
+      messageKey: `goalsMessages.weekly.${idx}`
     };
   }
 
@@ -301,7 +297,7 @@ export function checkMonthlyGoalAchievement(
   entries: WeightEntry[],
   newEntry: WeightEntry,
   monthlyGoal: number
-): { achieved: boolean; message: string } | null {
+): { achieved: boolean; messageKey: string } | null {
   if (!monthlyGoal) return null;
 
   // Include the new entry
@@ -309,16 +305,11 @@ export function checkMonthlyGoalAchievement(
   const currentMonthChange = getMonthlyWeightChange(allEntries, new Date());
 
   if (meetsWeightGoal(currentMonthChange, monthlyGoal)) {
-    const messages = [
-      "Monthly goal achieved! Outstanding!",
-      "What a month! You're incredible!",
-      "A whole month of success!",
-      "You made this month count!",
-      "Consistency pays off!",
-    ];
+    // 5 monthly messages exist in the dictionary (goalsMessages.monthly.0..4)
+    const idx = Math.floor(Math.random() * 5);
     return {
       achieved: true,
-      message: messages[Math.floor(Math.random() * messages.length)]
+      messageKey: `goalsMessages.monthly.${idx}`
     };
   }
 

@@ -23,14 +23,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from '@/hooks/use-translation';
 
-const formSchema = z.object({
-  nickname: z.string()
-    .min(1, 'Nickname is required')
-    .max(50, 'Nickname must be at most 50 characters'),
-});
-
-type FormData = z.infer<typeof formSchema>;
+type FormData = {
+  nickname: string;
+};
 
 interface ChangeNicknameDialogProps {
   open: boolean;
@@ -40,7 +37,14 @@ interface ChangeNicknameDialogProps {
 
 export function ChangeNicknameDialog({ open, onOpenChange, currentNickname }: ChangeNicknameDialogProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
+
+  const formSchema = z.object({
+    nickname: z.string()
+      .min(1, t('validation.nicknameRequired'))
+      .max(50, t('validation.nicknameMax')),
+  });
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -68,14 +72,14 @@ export function ChangeNicknameDialog({ open, onOpenChange, currentNickname }: Ch
       const result = await response.json();
 
       if (result.success) {
-        showSuccessToast('Nickname changed successfully');
+        showSuccessToast(t('account.changeNicknameSuccess'));
         onOpenChange(false);
         router.refresh();
       } else {
-        showErrorToast(result.error || 'Failed to change nickname');
+        showErrorToast(result.error || t('account.changeNicknameError'));
       }
     } catch {
-      showErrorToast('Failed to change nickname');
+      showErrorToast(t('account.changeNicknameError'));
     } finally {
       setIsLoading(false);
     }
@@ -85,7 +89,7 @@ export function ChangeNicknameDialog({ open, onOpenChange, currentNickname }: Ch
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-100">
         <DialogHeader>
-          <DialogTitle>Change Nickname</DialogTitle>
+          <DialogTitle>{t('settings.changeNickname')}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -95,10 +99,10 @@ export function ChangeNicknameDialog({ open, onOpenChange, currentNickname }: Ch
               name="nickname"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nickname</FormLabel>
+                  <FormLabel>{t('account.nickname')}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Enter your nickname"
+                      placeholder={t('account.nicknamePlaceholder')}
                       {...field}
                     />
                   </FormControl>
@@ -114,11 +118,11 @@ export function ChangeNicknameDialog({ open, onOpenChange, currentNickname }: Ch
                 onClick={() => onOpenChange(false)}
                 disabled={isLoading}
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin pointer-events-none" />}
-                Save
+                {t('common.save')}
               </Button>
             </div>
           </form>

@@ -45,23 +45,16 @@ import { useTranslation } from '@/hooks/use-translation';
 
 type UserWithoutPassword = Omit<User, 'password'>;
 
-const createUserSchema = z.object({
-  username: z.string()
-    .min(3, 'Username must be at least 3 characters')
-    .max(20, 'Username must be at most 20 characters')
-    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  nickname: z.string().min(1, 'Nickname is required'),
-  role: z.enum(['admin', 'user']),
-});
-
-const editUserSchema = z.object({
-  nickname: z.string().min(1, 'Nickname is required'),
-  role: z.enum(['admin', 'user']),
-});
-
-type CreateUserFormData = z.infer<typeof createUserSchema>;
-type EditUserFormData = z.infer<typeof editUserSchema>;
+type CreateUserFormData = {
+  username: string;
+  password: string;
+  nickname: string;
+  role: 'admin' | 'user';
+};
+type EditUserFormData = {
+  nickname: string;
+  role: 'admin' | 'user';
+};
 
 interface UserManagementDialogProps {
   open: boolean;
@@ -71,6 +64,21 @@ interface UserManagementDialogProps {
 
 export function UserManagementDialog({ open, onOpenChange, currentUsername }: UserManagementDialogProps) {
   const { t } = useTranslation();
+
+  const createUserSchema = z.object({
+    username: z.string()
+      .min(3, t('validation.usernameMin'))
+      .max(20, t('validation.usernameMax'))
+      .regex(/^[a-zA-Z0-9_]+$/, t('validation.usernameChars')),
+    password: z.string().min(6, t('validation.passwordMin')),
+    nickname: z.string().min(1, t('validation.nicknameRequired')),
+    role: z.enum(['admin', 'user']),
+  });
+
+  const editUserSchema = z.object({
+    nickname: z.string().min(1, t('validation.nicknameRequired')),
+    role: z.enum(['admin', 'user']),
+  });
   const [users, setUsers] = useState<UserWithoutPassword[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
