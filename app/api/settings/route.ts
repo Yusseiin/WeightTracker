@@ -32,6 +32,8 @@ function isValidDateFormatSettings(settings: unknown): settings is DateFormatSet
   if (!isValidSingleDateFormat(s.tableFormat)) return false;
   if (!isValidSingleDateFormat(s.tooltipFormat)) return false;
   if (!isValidSingleDateFormat(s.axisFormat)) return false;
+  // recapFormat is optional for backward compatibility with older clients
+  if (s.recapFormat !== undefined && !isValidSingleDateFormat(s.recapFormat)) return false;
 
   return true;
 }

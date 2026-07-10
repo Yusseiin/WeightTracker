@@ -156,7 +156,8 @@
       "title": "Date Format",
       "historyTable": "History Table",
       "chartTooltip": "Chart Tooltip",
-      "chartAxis": "Chart X-Axis"
+      "chartAxis": "Chart X-Axis",
+      "recap": "Dashboard recap"
     }
   },
   "weight": {

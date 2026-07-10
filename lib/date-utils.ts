@@ -34,6 +34,11 @@ export const DEFAULT_DATE_FORMAT: DateFormatSettings = {
     timeFormat: 'none',
     showWeekday: false,
   },
+  recapFormat: {
+    dateFormat: 'MMM dd',
+    timeFormat: 'none',
+    showWeekday: true,
+  },
 };
 
 // Helper to capitalize first letter
@@ -108,6 +113,7 @@ function ensureValidSettings(settings?: DateFormatSettings): DateFormatSettings 
     tableFormat: settings.tableFormat || DEFAULT_DATE_FORMAT.tableFormat,
     tooltipFormat: settings.tooltipFormat || DEFAULT_DATE_FORMAT.tooltipFormat,
     axisFormat: settings.axisFormat || DEFAULT_DATE_FORMAT.axisFormat,
+    recapFormat: settings.recapFormat || DEFAULT_DATE_FORMAT.recapFormat,
   };
 }
 
@@ -132,13 +138,7 @@ export function formatDateForAxis(date: Date | string, settings?: DateFormatSett
 // Format for recap: uses table format without time
 export function formatDateForRecap(date: Date | string, settings?: DateFormatSettings): string {
   const s = ensureValidSettings(settings);
-  // Use table format but force no time
-  const recapFormat: SingleDateFormat = {
-    ...s.tableFormat,
-    timeFormat: 'none',
-    showWeekday: true,
-  };
-  return formatWithSettings(date, recapFormat, s.locale);
+  return formatWithSettings(date, s.recapFormat, s.locale);
 }
 
 // Preview a format with current date

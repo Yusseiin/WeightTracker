@@ -64,6 +64,7 @@ function ensureValidDateFormat(settings?: Partial<DateFormatSettings>): DateForm
     tableFormat: settings.tableFormat || DEFAULT_DATE_FORMAT.tableFormat,
     tooltipFormat: settings.tooltipFormat || DEFAULT_DATE_FORMAT.tooltipFormat,
     axisFormat: settings.axisFormat || DEFAULT_DATE_FORMAT.axisFormat,
+    recapFormat: settings.recapFormat || DEFAULT_DATE_FORMAT.recapFormat,
   };
 }
 
@@ -310,6 +311,10 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
 
   const handleAxisFormatChange = (value: SingleDateFormat) => {
     setLocalDateFormat(prev => ({ ...prev, axisFormat: value }));
+  };
+
+  const handleRecapFormatChange = (value: SingleDateFormat) => {
+    setLocalDateFormat(prev => ({ ...prev, recapFormat: value }));
   };
 
   const handleActivitiesSave = async (activities: CustomActivity[]) => {
@@ -1056,6 +1061,13 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                   value={localDateFormat.axisFormat}
                   locale={localDateFormat.locale}
                   onChange={handleAxisFormatChange}
+                />
+
+                <DateFormatEditor
+                  label={t('settings.dateFormat.recap')}
+                  value={localDateFormat.recapFormat}
+                  locale={localDateFormat.locale}
+                  onChange={handleRecapFormatChange}
                 />
               </CardContent>
             </Card>

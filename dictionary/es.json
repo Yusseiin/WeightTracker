@@ -157,7 +157,8 @@
       "title": "Formato de fecha",
       "historyTable": "Tabla de historial",
       "chartTooltip": "Información del gráfico",
-      "chartAxis": "Eje X del gráfico"
+      "chartAxis": "Eje X del gráfico",
+      "recap": "Resumen del panel"
     }
   },
   "weight": {

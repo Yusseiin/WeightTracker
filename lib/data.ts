@@ -244,6 +244,11 @@ export async function getSettings(userId: string = DEFAULT_USER_ID): Promise<Use
       settings.dateFormat = DEFAULT_DATE_FORMAT;
       needsSave = true;
     }
+    // Add recapFormat if missing (backward compatibility)
+    if (settings.dateFormat && !settings.dateFormat.recapFormat) {
+      settings.dateFormat.recapFormat = DEFAULT_DATE_FORMAT.recapFormat;
+      needsSave = true;
+    }
     // Add activities if missing (backward compatibility)
     if (!settings.activities || !Array.isArray(settings.activities) || settings.activities.length === 0) {
       settings.activities = DEFAULT_ACTIVITIES;

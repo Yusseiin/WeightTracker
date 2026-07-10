@@ -156,7 +156,8 @@
       "title": "Formato data",
       "historyTable": "Tabella cronologia",
       "chartTooltip": "Tooltip del grafico",
-      "chartAxis": "Asse X del grafico"
+      "chartAxis": "Asse X del grafico",
+      "recap": "Riepilogo dashboard"
     }
   },
   "weight": {

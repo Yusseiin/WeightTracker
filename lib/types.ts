@@ -120,6 +120,7 @@ export interface DateFormatSettings {
   tableFormat: SingleDateFormat;  // Format for history table
   tooltipFormat: SingleDateFormat; // Format for chart tooltip
   axisFormat: SingleDateFormat;   // Format for chart X-axis
+  recapFormat: SingleDateFormat;  // Format for the dashboard "last weigh-in" recap date
 }
 
 // Week start day options (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
