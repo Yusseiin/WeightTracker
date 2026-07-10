@@ -18,7 +18,7 @@ export function getLocale(localeCode: DateLocale) {
 
 // Default date format settings
 export const DEFAULT_DATE_FORMAT: DateFormatSettings = {
-  locale: 'it',
+  locale: 'en',
   tableFormat: {
     dateFormat: 'EEE.dd/MM',
     timeFormat: 'HH:mm',

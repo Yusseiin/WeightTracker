@@ -40,7 +40,7 @@ import { PhotoCapture } from './photo-capture';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from '@/hooks/use-translation';
-import type { WeightEntry, EntryFormData, WaterDayTotal, WaterUnit, CustomActivity } from '@/lib/types';
+import type { WeightEntry, EntryFormData, WaterDayTotal, WaterUnit, CustomActivity, DateFormatSettings } from '@/lib/types';
 import { mlToOz, ozToMl } from '@/lib/water-utils';
 import { formatDateForTooltip } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
@@ -63,6 +63,7 @@ interface EditEntryDialogProps {
   // history table, so the per-day water field is hidden here (editing it would
   // collapse a day's individual inserts into one).
   waterHistoryEnabled?: boolean;
+  dateFormat?: DateFormatSettings;
 }
 
 export function EditEntryDialog({
@@ -79,7 +80,8 @@ export function EditEntryDialog({
   photosEnabled,
   notesEnabled,
   bodyFatEnabled,
-  waterHistoryEnabled
+  waterHistoryEnabled,
+  dateFormat
 }: EditEntryDialogProps) {
   const [weight, setWeight] = useState<string>('');
   const [training, setTraining] = useState<string>('');
@@ -170,7 +172,7 @@ export function EditEntryDialog({
   };
 
   const formattedDate = entry
-    ? formatDateForTooltip(entry.timestamp)
+    ? formatDateForTooltip(entry.timestamp, dateFormat)
     : '';
 
   const formContent = (

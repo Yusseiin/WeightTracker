@@ -28,6 +28,14 @@ const changelog: ChangelogEntry[] = [
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
     date: "2026-07-07",
     changes: [
+      { type: "fixed", description: "The dashboard's 'last weigh-in' date ignored your date settings and always showed the Italian weekday in day/month format. It now uses your configured date locale and format (set them in Settings → Date Format)." },
+      { type: "changed", description: "The default date locale is now English (was Italian), matching the default interface language. Existing users keep their saved date settings." },
+    ],
+  },
+  {
+    version: "v0.0.24",
+    date: "2026-07-07",
+    changes: [
       { type: "added", description: "Multi-language support. Pick your language in Settings → Account → Language — English, Italiano and Español are included. The whole interface is translated, and new languages can be added by dropping a JSON file into the dictionary folder and restarting (the app detects available languages automatically)." },
     ],
   },

@@ -254,6 +254,7 @@ export function WeightTracker({
               features={features}
               injectionEntries={injectionEntries}
               injectionSettings={settings.injectionSettings}
+              dateFormat={settings.dateFormat}
             />
           )}
 
@@ -330,6 +331,7 @@ export function WeightTracker({
         notesEnabled={features.weightNotesEnabled}
         bodyFatEnabled={features.bodyFatEnabled}
         waterHistoryEnabled={features.waterHistoryEnabled}
+        dateFormat={settings.dateFormat}
       />
 
       {/* Floating Button Bar */}

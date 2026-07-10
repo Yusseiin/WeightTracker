@@ -5,7 +5,7 @@ import { isToday, parseISO, differenceInDays, format } from 'date-fns';
 import { Scale, Droplets, Flame, Footprints, HeartPulse, Pill, Syringe, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import type { WeightEntry, WaterDayTotal, WaterUnit, GoalSettings, StepsEntry, PressureEntry, FeatureToggles, MedicationEntry, MedicationPreset, MedicationSchedule, InjectionEntry, InjectionSettings } from '@/lib/types';
+import type { WeightEntry, WaterDayTotal, WaterUnit, GoalSettings, StepsEntry, PressureEntry, FeatureToggles, MedicationEntry, MedicationPreset, MedicationSchedule, InjectionEntry, InjectionSettings, DateFormatSettings } from '@/lib/types';
 import { formatWaterAmount } from '@/lib/water-utils';
 import { formatDateForRecap } from '@/lib/date-utils';
 import { calculateWaterStreak, calculateProgress, getCurrentWeekWeightChange, getCurrentMonthWeightChange } from '@/lib/goals';
@@ -49,6 +49,7 @@ interface TodayRecapProps {
   features?: FeatureToggles;
   injectionEntries?: InjectionEntry[];
   injectionSettings?: InjectionSettings;
+  dateFormat?: DateFormatSettings;
 }
 
 export function TodayRecap({
@@ -64,7 +65,8 @@ export function TodayRecap({
   medicationPresets = [],
   features,
   injectionEntries = [],
-  injectionSettings
+  injectionSettings,
+  dateFormat
 }: TodayRecapProps) {
   const { t } = useTranslation();
   const { todayWeight, lastWeight, lastWeightDate } = useMemo(() => {
@@ -93,9 +95,9 @@ export function TodayRecap({
     return {
       todayWeight: null,
       lastWeight: latest.weight,
-      lastWeightDate: formatDateForRecap(latestDate)
+      lastWeightDate: formatDateForRecap(latestDate, dateFormat)
     };
-  }, [entries]);
+  }, [entries, dateFormat]);
 
   const waterAmount = todayWater?.amount || 0;
   const hasWeight = todayWeight !== null || lastWeight !== null;
