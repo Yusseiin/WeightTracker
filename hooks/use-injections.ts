@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
+import { useTranslation } from '@/hooks/use-translation';
 import type { InjectionEntry } from '@/lib/types';
 
 interface UseInjectionsReturn {
@@ -29,6 +30,7 @@ export function useInjections(
   const [todayInjections, setTodayInjections] = useState<InjectionEntry[]>(initialTodayInjections);
   const [injectionEntries, setInjectionEntries] = useState<InjectionEntry[]>(safeInitialEntries);
   const [isLoading, setIsLoading] = useState(false);
+  const { t } = useTranslation();
 
   // Calculate last injection from all entries (use initialLastInjection as fallback for SSR)
   const lastInjection = injectionEntries.length > 0
@@ -114,24 +116,24 @@ export function useInjections(
         }
         setInjectionEntries(replaceEntry);
 
-        showSuccessToast('Injection logged');
+        showSuccessToast(t('toasts.injection.logged'));
 
         return result.data as InjectionEntry;
       } else {
         // Rollback
         setTodayInjections(previousTodayInjections);
         setInjectionEntries(previousEntries);
-        showErrorToast(result.error || 'Failed to log injection');
+        showErrorToast(result.error || t('toasts.injection.logError'));
       }
     } catch {
       // Rollback
       setTodayInjections(previousTodayInjections);
       setInjectionEntries(previousEntries);
-      showErrorToast('Failed to log injection');
+      showErrorToast(t('toasts.injection.logError'));
     } finally {
       setIsLoading(false);
     }
-  }, [todayInjections, injectionEntries]);
+  }, [todayInjections, injectionEntries, t]);
 
   const updateInjectionById = useCallback(async (
     id: string,
@@ -196,22 +198,22 @@ export function useInjections(
         setTodayInjections(replaceEntry);
         setInjectionEntries(replaceEntry);
 
-        showSuccessToast('Injection updated');
+        showSuccessToast(t('toasts.injection.updated'));
       } else {
         // Rollback
         setTodayInjections(previousTodayInjections);
         setInjectionEntries(previousEntries);
-        showErrorToast(result.error || 'Failed to update injection');
+        showErrorToast(result.error || t('toasts.injection.updateError'));
       }
     } catch {
       // Rollback
       setTodayInjections(previousTodayInjections);
       setInjectionEntries(previousEntries);
-      showErrorToast('Failed to update injection');
+      showErrorToast(t('toasts.injection.updateError'));
     } finally {
       setIsLoading(false);
     }
-  }, [todayInjections, injectionEntries]);
+  }, [todayInjections, injectionEntries, t]);
 
   const deleteInjection = useCallback(async (id: string) => {
     setIsLoading(true);
@@ -233,22 +235,22 @@ export function useInjections(
       const result = await response.json();
 
       if (result.success) {
-        showSuccessToast('Injection entry deleted');
+        showSuccessToast(t('toasts.injection.deleted'));
       } else {
         // Rollback
         setTodayInjections(previousTodayInjections);
         setInjectionEntries(previousEntries);
-        showErrorToast(result.error || 'Failed to delete injection');
+        showErrorToast(result.error || t('toasts.injection.deleteError'));
       }
     } catch {
       // Rollback
       setTodayInjections(previousTodayInjections);
       setInjectionEntries(previousEntries);
-      showErrorToast('Failed to delete injection');
+      showErrorToast(t('toasts.injection.deleteError'));
     } finally {
       setIsLoading(false);
     }
-  }, [todayInjections, injectionEntries]);
+  }, [todayInjections, injectionEntries, t]);
 
   return {
     todayInjections,

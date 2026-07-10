@@ -28,6 +28,15 @@ const changelog: ChangelogEntry[] = [
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
     date: "2026-07-07",
     changes: [
+      { type: "fixed", description: "The water meter on the dashboard could briefly flip to 0 after logging a drink (usually in the evening for non-UTC users) until you refreshed. Today's total is now always read from the server, so it stays correct." },
+      { type: "fixed", description: "The 'water added' confirmation showed the amount in millilitres even when your unit is ounces; it now uses your chosen unit (e.g. 'Added 10oz')." },
+      { type: "changed", description: "Toast notifications (added/updated/deleted confirmations and errors) are now translated in your selected language." },
+    ],
+  },
+  {
+    version: "v0.0.26",
+    date: "2026-07-07",
+    changes: [
       { type: "added", description: "You can now set a dedicated date format for the dashboard recap (Settings → Date Format → Dashboard recap), separate from the history table — including whether to show the weekday." },
     ],
   },

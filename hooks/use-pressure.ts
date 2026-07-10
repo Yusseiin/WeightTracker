@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
+import { useTranslation } from '@/hooks/use-translation';
 import type { PressureEntry } from '@/lib/types';
 
 interface UsePressureReturn {
@@ -21,6 +22,7 @@ export function usePressure(
   const [todayPressure, setTodayPressure] = useState<PressureEntry[]>(initialTodayPressure);
   const [pressureEntries, setPressureEntries] = useState<PressureEntry[]>(initialPressureEntries);
   const [isLoading, setIsLoading] = useState(false);
+  const { t } = useTranslation();
 
   const refreshPressure = useCallback(async () => {
     try {
@@ -81,24 +83,24 @@ export function usePressure(
           prev.map(e => e.id === optimisticEntry.id ? result.data : e)
         );
 
-        showSuccessToast(`Blood pressure: ${systolic}/${diastolic}`);
+        showSuccessToast(t('toasts.pressure.added', { systolic, diastolic }));
 
         return result.data as PressureEntry;
       } else {
         // Rollback
         setTodayPressure(previousTodayPressure);
         setPressureEntries(previousEntries);
-        showErrorToast(result.error || 'Failed to add pressure');
+        showErrorToast(result.error || t('toasts.pressure.addError'));
       }
     } catch {
       // Rollback
       setTodayPressure(previousTodayPressure);
       setPressureEntries(previousEntries);
-      showErrorToast('Failed to add pressure');
+      showErrorToast(t('toasts.pressure.addError'));
     } finally {
       setIsLoading(false);
     }
-  }, [todayPressure, pressureEntries]);
+  }, [todayPressure, pressureEntries, t]);
 
   const updatePressureById = useCallback(async (id: string, systolic: number, diastolic: number, timestamp?: string, notes?: string) => {
     setIsLoading(true);
@@ -135,22 +137,22 @@ export function usePressure(
         setTodayPressure(replaceEntry);
         setPressureEntries(replaceEntry);
 
-        showSuccessToast('Blood pressure updated');
+        showSuccessToast(t('toasts.pressure.updated'));
       } else {
         // Rollback
         setTodayPressure(previousTodayPressure);
         setPressureEntries(previousEntries);
-        showErrorToast(result.error || 'Failed to update pressure');
+        showErrorToast(result.error || t('toasts.pressure.updateError'));
       }
     } catch {
       // Rollback
       setTodayPressure(previousTodayPressure);
       setPressureEntries(previousEntries);
-      showErrorToast('Failed to update pressure');
+      showErrorToast(t('toasts.pressure.updateError'));
     } finally {
       setIsLoading(false);
     }
-  }, [todayPressure, pressureEntries]);
+  }, [todayPressure, pressureEntries, t]);
 
   const deletePressure = useCallback(async (id: string) => {
     setIsLoading(true);
@@ -172,22 +174,22 @@ export function usePressure(
       const result = await response.json();
 
       if (result.success) {
-        showSuccessToast('Pressure entry deleted');
+        showSuccessToast(t('toasts.pressure.deleted'));
       } else {
         // Rollback
         setTodayPressure(previousTodayPressure);
         setPressureEntries(previousEntries);
-        showErrorToast(result.error || 'Failed to delete pressure');
+        showErrorToast(result.error || t('toasts.pressure.deleteError'));
       }
     } catch {
       // Rollback
       setTodayPressure(previousTodayPressure);
       setPressureEntries(previousEntries);
-      showErrorToast('Failed to delete pressure');
+      showErrorToast(t('toasts.pressure.deleteError'));
     } finally {
       setIsLoading(false);
     }
-  }, [todayPressure, pressureEntries]);
+  }, [todayPressure, pressureEntries, t]);
 
   return {
     todayPressure,

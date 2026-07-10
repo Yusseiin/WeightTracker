@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
+import { useTranslation } from '@/hooks/use-translation';
 import type { MedicationEntry } from '@/lib/types';
 
 interface UseMedicationsReturn {
@@ -21,6 +22,7 @@ export function useMedications(
   const [todayMedications, setTodayMedications] = useState<MedicationEntry[]>(initialTodayMedications);
   const [medicationEntries, setMedicationEntries] = useState<MedicationEntry[]>(initialMedicationEntries);
   const [isLoading, setIsLoading] = useState(false);
+  const { t } = useTranslation();
 
   const refreshMedications = useCallback(async () => {
     try {
@@ -104,24 +106,24 @@ export function useMedications(
         }
         setMedicationEntries(replaceOrAdd);
 
-        showSuccessToast(taken ? 'Medication taken' : 'Medication updated');
+        showSuccessToast(taken ? t('toasts.medication.taken') : t('toasts.medication.updated'));
 
         return result.data as MedicationEntry;
       } else {
         // Rollback
         setTodayMedications(previousTodayMedications);
         setMedicationEntries(previousEntries);
-        showErrorToast(result.error || 'Failed to update medication');
+        showErrorToast(result.error || t('toasts.medication.updateError'));
       }
     } catch {
       // Rollback
       setTodayMedications(previousTodayMedications);
       setMedicationEntries(previousEntries);
-      showErrorToast('Failed to update medication');
+      showErrorToast(t('toasts.medication.updateError'));
     } finally {
       setIsLoading(false);
     }
-  }, [todayMedications, medicationEntries]);
+  }, [todayMedications, medicationEntries, t]);
 
   const updateMedicationById = useCallback(async (id: string, taken: boolean, timestamp?: string, date?: string, dose?: number | null, notes?: string) => {
     setIsLoading(true);
@@ -183,22 +185,22 @@ export function useMedications(
         setTodayMedications(replaceEntry);
         setMedicationEntries(replaceEntry);
 
-        showSuccessToast('Medication updated');
+        showSuccessToast(t('toasts.medication.updated'));
       } else {
         // Rollback
         setTodayMedications(previousTodayMedications);
         setMedicationEntries(previousEntries);
-        showErrorToast(result.error || 'Failed to update medication');
+        showErrorToast(result.error || t('toasts.medication.updateError'));
       }
     } catch {
       // Rollback
       setTodayMedications(previousTodayMedications);
       setMedicationEntries(previousEntries);
-      showErrorToast('Failed to update medication');
+      showErrorToast(t('toasts.medication.updateError'));
     } finally {
       setIsLoading(false);
     }
-  }, [todayMedications, medicationEntries]);
+  }, [todayMedications, medicationEntries, t]);
 
   const deleteMedication = useCallback(async (id: string) => {
     setIsLoading(true);
@@ -220,22 +222,22 @@ export function useMedications(
       const result = await response.json();
 
       if (result.success) {
-        showSuccessToast('Medication entry deleted');
+        showSuccessToast(t('toasts.medication.deleted'));
       } else {
         // Rollback
         setTodayMedications(previousTodayMedications);
         setMedicationEntries(previousEntries);
-        showErrorToast(result.error || 'Failed to delete medication');
+        showErrorToast(result.error || t('toasts.medication.deleteError'));
       }
     } catch {
       // Rollback
       setTodayMedications(previousTodayMedications);
       setMedicationEntries(previousEntries);
-      showErrorToast('Failed to delete medication');
+      showErrorToast(t('toasts.medication.deleteError'));
     } finally {
       setIsLoading(false);
     }
-  }, [todayMedications, medicationEntries]);
+  }, [todayMedications, medicationEntries, t]);
 
   return {
     todayMedications,

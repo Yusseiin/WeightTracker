@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from 'react';
 import { useI18n } from '@/components/i18n-provider';
 
 type Vars = Record<string, string | number>;
@@ -17,7 +18,9 @@ export function useTranslation() {
 
   // t('a.b.c', { name: 'x' }) -> looks up the key, interpolates {name},
   // and falls back to the key itself if the string is missing.
-  const t = (key: string, vars?: Vars): string => {
+  // Memoized on the dictionary so it's stable across renders (safe to use in
+  // useCallback/useEffect dependency arrays).
+  const t = useCallback((key: string, vars?: Vars): string => {
     const found = resolve(dictionary, key);
     let str = typeof found === 'string' ? found : key;
     if (vars) {
@@ -26,7 +29,7 @@ export function useTranslation() {
       }
     }
     return str;
-  };
+  }, [dictionary]);
 
   return { t, locale, languages };
 }

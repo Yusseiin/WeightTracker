@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
+import { useTranslation } from '@/hooks/use-translation';
 import type { BodyMeasurementEntry } from '@/lib/types';
 
 interface UseBodyMeasurementsReturn {
@@ -31,6 +32,7 @@ export function useBodyMeasurements(
 ): UseBodyMeasurementsReturn {
   const [entries, setEntries] = useState<BodyMeasurementEntry[]>(initialEntries);
   const [isLoading, setIsLoading] = useState(false);
+  const { t } = useTranslation();
 
   const refresh = useCallback(async () => {
     try {
@@ -70,19 +72,19 @@ export function useBodyMeasurements(
           setEntries((prev) =>
             sortDesc(prev.map((e) => (e.id === optimistic.id ? result.data : e)))
           );
-          showSuccessToast('Measurement saved');
+          showSuccessToast(t('toasts.bodyMeasurement.saved'));
           return result.data as BodyMeasurementEntry;
         }
         setEntries(previous);
-        showErrorToast(result.error || 'Failed to save measurement');
+        showErrorToast(result.error || t('toasts.bodyMeasurement.saveError'));
       } catch {
         setEntries(previous);
-        showErrorToast('Failed to save measurement');
+        showErrorToast(t('toasts.bodyMeasurement.saveError'));
       } finally {
         setIsLoading(false);
       }
     },
-    [entries]
+    [entries, t]
   );
 
   const updateEntry = useCallback(
@@ -118,21 +120,21 @@ export function useBodyMeasurements(
         const result = await response.json();
         if (result.success) {
           setEntries((prev) => sortDesc(prev.map((e) => (e.id === id ? result.data : e))));
-          showSuccessToast('Measurement updated');
+          showSuccessToast(t('toasts.bodyMeasurement.updated'));
           return true;
         }
         setEntries(previous);
-        showErrorToast(result.error || 'Failed to update measurement');
+        showErrorToast(result.error || t('toasts.bodyMeasurement.updateError'));
         return false;
       } catch {
         setEntries(previous);
-        showErrorToast('Failed to update measurement');
+        showErrorToast(t('toasts.bodyMeasurement.updateError'));
         return false;
       } finally {
         setIsLoading(false);
       }
     },
-    [entries]
+    [entries, t]
   );
 
   const deleteEntry = useCallback(
@@ -147,19 +149,19 @@ export function useBodyMeasurements(
         });
         const result = await response.json();
         if (result.success) {
-          showSuccessToast('Measurement deleted');
+          showSuccessToast(t('toasts.bodyMeasurement.deleted'));
         } else {
           setEntries(previous);
-          showErrorToast(result.error || 'Failed to delete measurement');
+          showErrorToast(result.error || t('toasts.bodyMeasurement.deleteError'));
         }
       } catch {
         setEntries(previous);
-        showErrorToast('Failed to delete measurement');
+        showErrorToast(t('toasts.bodyMeasurement.deleteError'));
       } finally {
         setIsLoading(false);
       }
     },
-    [entries]
+    [entries, t]
   );
 
   return { entries, isLoading, addEntry, updateEntry, deleteEntry, refresh };

@@ -653,5 +653,66 @@
     "fullscreenAlt": "Full screen photo",
     "deletePhotoTitle": "Delete photo?",
     "deletePhotoDescription": "This will permanently remove the photo. This action cannot be undone."
+  },
+  "toasts": {
+    "water": {
+      "added": "Added {amount}",
+      "reset": "Water reset to 0",
+      "updated": "Water updated",
+      "deleted": "Water entry deleted",
+      "addError": "Failed to add water",
+      "resetError": "Failed to reset water",
+      "updateError": "Failed to update water",
+      "deleteError": "Failed to delete water entry"
+    },
+    "steps": {
+      "added": "Steps: {count}",
+      "updated": "Steps updated",
+      "deleted": "Steps entry deleted",
+      "addError": "Failed to add steps",
+      "updateError": "Failed to update steps",
+      "deleteError": "Failed to delete steps"
+    },
+    "pressure": {
+      "added": "Blood pressure: {systolic}/{diastolic}",
+      "updated": "Blood pressure updated",
+      "deleted": "Pressure entry deleted",
+      "addError": "Failed to add pressure",
+      "updateError": "Failed to update pressure",
+      "deleteError": "Failed to delete pressure"
+    },
+    "medication": {
+      "taken": "Medication taken",
+      "updated": "Medication updated",
+      "deleted": "Medication entry deleted",
+      "updateError": "Failed to update medication",
+      "deleteError": "Failed to delete medication"
+    },
+    "injection": {
+      "logged": "Injection logged",
+      "updated": "Injection updated",
+      "deleted": "Injection entry deleted",
+      "logError": "Failed to log injection",
+      "updateError": "Failed to update injection",
+      "deleteError": "Failed to delete injection"
+    },
+    "bodyMeasurement": {
+      "saved": "Measurement saved",
+      "updated": "Measurement updated",
+      "deleted": "Measurement deleted",
+      "saveError": "Failed to save measurement",
+      "updateError": "Failed to update measurement",
+      "deleteError": "Failed to delete measurement"
+    },
+    "weight": {
+      "added": "Entry added successfully!",
+      "updated": "Entry updated",
+      "deleted": "Entry deleted",
+      "settingsUpdated": "Settings updated",
+      "addError": "Failed to add entry",
+      "updateError": "Failed to update entry",
+      "deleteError": "Failed to delete entry",
+      "settingsError": "Failed to update settings"
+    }
   }
 }

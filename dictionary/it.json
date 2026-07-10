@@ -653,5 +653,66 @@
     "fullscreenAlt": "Foto a schermo intero",
     "deletePhotoTitle": "Eliminare la foto?",
     "deletePhotoDescription": "Questo rimuoverà definitivamente la foto. Questa azione non può essere annullata."
+  },
+  "toasts": {
+    "water": {
+      "added": "Aggiunti {amount}",
+      "reset": "Acqua azzerata",
+      "updated": "Acqua aggiornata",
+      "deleted": "Voce di acqua eliminata",
+      "addError": "Impossibile aggiungere l'acqua",
+      "resetError": "Impossibile azzerare l'acqua",
+      "updateError": "Impossibile aggiornare l'acqua",
+      "deleteError": "Impossibile eliminare la voce di acqua"
+    },
+    "steps": {
+      "added": "Passi: {count}",
+      "updated": "Passi aggiornati",
+      "deleted": "Voce dei passi eliminata",
+      "addError": "Impossibile aggiungere i passi",
+      "updateError": "Impossibile aggiornare i passi",
+      "deleteError": "Impossibile eliminare i passi"
+    },
+    "pressure": {
+      "added": "Pressione sanguigna: {systolic}/{diastolic}",
+      "updated": "Pressione sanguigna aggiornata",
+      "deleted": "Voce di pressione eliminata",
+      "addError": "Impossibile aggiungere la pressione",
+      "updateError": "Impossibile aggiornare la pressione",
+      "deleteError": "Impossibile eliminare la pressione"
+    },
+    "medication": {
+      "taken": "Farmaco assunto",
+      "updated": "Farmaco aggiornato",
+      "deleted": "Voce del farmaco eliminata",
+      "updateError": "Impossibile aggiornare il farmaco",
+      "deleteError": "Impossibile eliminare il farmaco"
+    },
+    "injection": {
+      "logged": "Iniezione registrata",
+      "updated": "Iniezione aggiornata",
+      "deleted": "Voce dell'iniezione eliminata",
+      "logError": "Impossibile registrare l'iniezione",
+      "updateError": "Impossibile aggiornare l'iniezione",
+      "deleteError": "Impossibile eliminare l'iniezione"
+    },
+    "bodyMeasurement": {
+      "saved": "Misura salvata",
+      "updated": "Misura aggiornata",
+      "deleted": "Misura eliminata",
+      "saveError": "Impossibile salvare la misura",
+      "updateError": "Impossibile aggiornare la misura",
+      "deleteError": "Impossibile eliminare la misura"
+    },
+    "weight": {
+      "added": "Voce aggiunta correttamente!",
+      "updated": "Voce aggiornata",
+      "deleted": "Voce eliminata",
+      "settingsUpdated": "Impostazioni aggiornate",
+      "addError": "Impossibile aggiungere la voce",
+      "updateError": "Impossibile aggiornare la voce",
+      "deleteError": "Impossibile eliminare la voce",
+      "settingsError": "Impossibile aggiornare le impostazioni"
+    }
   }
 }

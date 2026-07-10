@@ -654,5 +654,66 @@
     "fullscreenAlt": "Foto a pantalla completa",
     "deletePhotoTitle": "¿Eliminar foto?",
     "deletePhotoDescription": "Esto eliminará permanentemente la foto. Esta acción no se puede deshacer."
+  },
+  "toasts": {
+    "water": {
+      "added": "Añadido {amount}",
+      "reset": "Agua restablecida a 0",
+      "updated": "Agua actualizada",
+      "deleted": "Entrada de agua eliminada",
+      "addError": "No se pudo añadir el agua",
+      "resetError": "No se pudo restablecer el agua",
+      "updateError": "No se pudo actualizar el agua",
+      "deleteError": "No se pudo eliminar la entrada de agua"
+    },
+    "steps": {
+      "added": "Pasos: {count}",
+      "updated": "Pasos actualizados",
+      "deleted": "Entrada de pasos eliminada",
+      "addError": "No se pudieron añadir los pasos",
+      "updateError": "No se pudieron actualizar los pasos",
+      "deleteError": "No se pudieron eliminar los pasos"
+    },
+    "pressure": {
+      "added": "Presión arterial: {systolic}/{diastolic}",
+      "updated": "Presión arterial actualizada",
+      "deleted": "Entrada de presión eliminada",
+      "addError": "No se pudo añadir la presión",
+      "updateError": "No se pudo actualizar la presión",
+      "deleteError": "No se pudo eliminar la presión"
+    },
+    "medication": {
+      "taken": "Medicación tomada",
+      "updated": "Medicación actualizada",
+      "deleted": "Entrada de medicación eliminada",
+      "updateError": "No se pudo actualizar la medicación",
+      "deleteError": "No se pudo eliminar la medicación"
+    },
+    "injection": {
+      "logged": "Inyección registrada",
+      "updated": "Inyección actualizada",
+      "deleted": "Entrada de inyección eliminada",
+      "logError": "No se pudo registrar la inyección",
+      "updateError": "No se pudo actualizar la inyección",
+      "deleteError": "No se pudo eliminar la inyección"
+    },
+    "bodyMeasurement": {
+      "saved": "Medida guardada",
+      "updated": "Medida actualizada",
+      "deleted": "Medida eliminada",
+      "saveError": "No se pudo guardar la medida",
+      "updateError": "No se pudo actualizar la medida",
+      "deleteError": "No se pudo eliminar la medida"
+    },
+    "weight": {
+      "added": "¡Entrada añadida correctamente!",
+      "updated": "Entrada actualizada",
+      "deleted": "Entrada eliminada",
+      "settingsUpdated": "Ajustes guardados",
+      "addError": "No se pudo añadir la entrada",
+      "updateError": "No se pudo actualizar la entrada",
+      "deleteError": "No se pudo eliminar la entrada",
+      "settingsError": "No se pudieron guardar los ajustes"
+    }
   }
 }

@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
+import { useTranslation } from '@/hooks/use-translation';
 import type { StepsEntry } from '@/lib/types';
 
 interface UseStepsReturn {
@@ -21,6 +22,7 @@ export function useSteps(
   const [todaySteps, setTodaySteps] = useState<StepsEntry[]>(initialTodaySteps);
   const [stepsEntries, setStepsEntries] = useState<StepsEntry[]>(initialStepsEntries);
   const [isLoading, setIsLoading] = useState(false);
+  const { t } = useTranslation();
 
   const refreshSteps = useCallback(async () => {
     try {
@@ -80,24 +82,24 @@ export function useSteps(
           prev.map(e => e.id === optimisticEntry.id ? result.data : e)
         );
 
-        showSuccessToast(`Steps: ${steps.toLocaleString()}`);
+        showSuccessToast(t('toasts.steps.added', { count: steps.toLocaleString() }));
 
         return result.data as StepsEntry;
       } else {
         // Rollback
         setTodaySteps(previousTodaySteps);
         setStepsEntries(previousEntries);
-        showErrorToast(result.error || 'Failed to add steps');
+        showErrorToast(result.error || t('toasts.steps.addError'));
       }
     } catch {
       // Rollback
       setTodaySteps(previousTodaySteps);
       setStepsEntries(previousEntries);
-      showErrorToast('Failed to add steps');
+      showErrorToast(t('toasts.steps.addError'));
     } finally {
       setIsLoading(false);
     }
-  }, [todaySteps, stepsEntries]);
+  }, [todaySteps, stepsEntries, t]);
 
   const updateStepsById = useCallback(async (id: string, steps: number, timestamp?: string, notes?: string) => {
     setIsLoading(true);
@@ -135,22 +137,22 @@ export function useSteps(
         setTodaySteps(replaceEntry);
         setStepsEntries(replaceEntry);
 
-        showSuccessToast('Steps updated');
+        showSuccessToast(t('toasts.steps.updated'));
       } else {
         // Rollback
         setTodaySteps(previousTodaySteps);
         setStepsEntries(previousEntries);
-        showErrorToast(result.error || 'Failed to update steps');
+        showErrorToast(result.error || t('toasts.steps.updateError'));
       }
     } catch {
       // Rollback
       setTodaySteps(previousTodaySteps);
       setStepsEntries(previousEntries);
-      showErrorToast('Failed to update steps');
+      showErrorToast(t('toasts.steps.updateError'));
     } finally {
       setIsLoading(false);
     }
-  }, [todaySteps, stepsEntries]);
+  }, [todaySteps, stepsEntries, t]);
 
   const deleteSteps = useCallback(async (id: string) => {
     setIsLoading(true);
@@ -172,22 +174,22 @@ export function useSteps(
       const result = await response.json();
 
       if (result.success) {
-        showSuccessToast('Steps entry deleted');
+        showSuccessToast(t('toasts.steps.deleted'));
       } else {
         // Rollback
         setTodaySteps(previousTodaySteps);
         setStepsEntries(previousEntries);
-        showErrorToast(result.error || 'Failed to delete steps');
+        showErrorToast(result.error || t('toasts.steps.deleteError'));
       }
     } catch {
       // Rollback
       setTodaySteps(previousTodaySteps);
       setStepsEntries(previousEntries);
-      showErrorToast('Failed to delete steps');
+      showErrorToast(t('toasts.steps.deleteError'));
     } finally {
       setIsLoading(false);
     }
-  }, [todaySteps, stepsEntries]);
+  }, [todaySteps, stepsEntries, t]);
 
   return {
     todaySteps,

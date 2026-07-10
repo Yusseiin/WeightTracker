@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
+import { useTranslation } from '@/hooks/use-translation';
 import type { WeightEntry, EntryFormData, UserSettings } from '@/lib/types';
 import { checkWeeklyGoalAchievement, checkMonthlyGoalAchievement } from '@/lib/goals';
 
@@ -25,6 +26,7 @@ export function useWeightEntries(
   const [settings, setSettings] = useState<UserSettings>(initialSettings);
   const [isLoading, setIsLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const refreshEntries = useCallback(async () => {
     try {
@@ -79,22 +81,22 @@ export function useWeightEntries(
         } else if (weeklyAchievement?.achieved) {
           showSuccessToast(`🔥 ${weeklyAchievement.message}`);
         } else {
-          showSuccessToast('Entry added successfully!');
+          showSuccessToast(t('toasts.weight.added'));
         }
 
         return newEntry;
       } else {
-        showErrorToast(result.error || 'Failed to add entry');
+        showErrorToast(result.error || t('toasts.weight.addError'));
         throw new Error(result.error);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to add entry';
+      const message = error instanceof Error ? error.message : t('toasts.weight.addError');
       showErrorToast(message);
       throw error;
     } finally {
       setIsLoading(false);
     }
-  }, [entries, settings]);
+  }, [entries, settings, t]);
 
   const updateEntry = useCallback(async (id: string, data: Partial<EntryFormData>) => {
     const previousEntries = entries;
@@ -121,18 +123,18 @@ export function useWeightEntries(
             (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
           );
         });
-        showSuccessToast('Entry updated');
+        showSuccessToast(t('toasts.weight.updated'));
       } else {
         // Rollback on failure
         setEntries(previousEntries);
-        showErrorToast(result.error || 'Failed to update entry');
+        showErrorToast(result.error || t('toasts.weight.updateError'));
       }
     } catch {
       // Rollback on error
       setEntries(previousEntries);
-      showErrorToast('Failed to update entry');
+      showErrorToast(t('toasts.weight.updateError'));
     }
-  }, [entries]);
+  }, [entries, t]);
 
   const deleteEntry = useCallback(async (id: string) => {
     setDeletingId(id);
@@ -149,20 +151,20 @@ export function useWeightEntries(
       const result = await response.json();
 
       if (result.success) {
-        showSuccessToast('Entry deleted');
+        showSuccessToast(t('toasts.weight.deleted'));
       } else {
         // Rollback on failure
         setEntries(previousEntries);
-        showErrorToast(result.error || 'Failed to delete entry');
+        showErrorToast(result.error || t('toasts.weight.deleteError'));
       }
     } catch {
       // Rollback on error
       setEntries(previousEntries);
-      showErrorToast('Failed to delete entry');
+      showErrorToast(t('toasts.weight.deleteError'));
     } finally {
       setDeletingId(null);
     }
-  }, [entries]);
+  }, [entries, t]);
 
   const updateSettings = useCallback(async (data: Partial<UserSettings>) => {
     setIsLoading(true);
@@ -182,20 +184,20 @@ export function useWeightEntries(
 
       if (result.success) {
         setSettings(result.data);
-        showSuccessToast('Settings updated');
+        showSuccessToast(t('toasts.weight.settingsUpdated'));
       } else {
         // Rollback on failure
         setSettings(previousSettings);
-        showErrorToast(result.error || 'Failed to update settings');
+        showErrorToast(result.error || t('toasts.weight.settingsError'));
       }
     } catch {
       // Rollback on error
       setSettings(previousSettings);
-      showErrorToast('Failed to update settings');
+      showErrorToast(t('toasts.weight.settingsError'));
     } finally {
       setIsLoading(false);
     }
-  }, [settings]);
+  }, [settings, t]);
 
   return {
     entries,

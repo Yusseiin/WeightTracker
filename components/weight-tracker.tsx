@@ -85,7 +85,7 @@ export function WeightTracker({
     createWaterEntry,
     updateWaterById,
     deleteWaterById
-  } = useWater(initialWater, initialWaterEntries, settings.goals?.dailyWaterGoal, initialWaterInserts);
+  } = useWater(initialWater, initialWaterEntries, settings.goals?.dailyWaterGoal, initialWaterInserts, settings.waterUnit || 'ml');
 
   const {
     todaySteps,
