@@ -12,7 +12,7 @@ import { format, subDays, addHours, startOfDay } from 'date-fns';
 
 // Config directory
 const CONFIG_PATH = process.env.CONFIG_PATH || './config';
-const TEST_USER = 'testuser';
+const TEST_USER = process.env.TEST_USER || process.argv[2] || 'admin';
 
 // Helper to generate random number in range
 function randomInRange(min: number, max: number): number {

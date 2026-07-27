@@ -193,8 +193,11 @@ cd weight-tracker/nextjserision
 # Install dependencies
 pnpm install
 
-# Start development server
-pnpm dev
+# Start development server (with local config directory)
+pnpm dev:test
+
+# Generate fake test data for the admin user account
+pnpm generate-fake-data
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
@@ -923,8 +926,11 @@ When using custom date format, these tokens are available (date-fns format):
 ## Development
 
 ```bash
-# Run development server
-pnpm dev
+# Generate fake data for the 'admin' user account in the './config' folder.
+pnpm generate-fake-data
+
+# Run development server (uses local './config' folder)
+pnpm dev:test
 
 # Build for production
 pnpm build
@@ -935,6 +941,22 @@ pnpm start
 # Type checking
 pnpm tsc --noEmit
 ```
+
+### Generating Mock Data
+
+Run `pnpm generate-fake-data` to populate 90 days of sample entries (weight,
+water, steps, blood pressure, medications, and enabled settings) into the
+**`admin`** user account. Test the application by logging in with the default
+`admin` credentials (password: `changeme`).
+
+**Tip:** you can also generate fake data for other user accounts with:
+
+```
+pnpm generate-fake-data <USERNAME>
+```
+
+You will still need to create this user account in the admin settings in order
+to see this test data.
 
 ## License
 
