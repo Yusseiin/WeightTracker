@@ -344,6 +344,9 @@ export function WeightTracker({
         onInjectionClick={features.injectionsEnabled ? () => setInjectionDialogOpen(true) : undefined}
         onBodyMeasurementsClick={features.bodyMeasurementsEnabled ? () => router.push('/body-measurements') : undefined}
         features={features}
+        buttonBarOrder={settings.buttonBarOrder}
+        customButtonOrder={settings.customButtonOrder}
+        chartCombinations={settings.chartCombinations}
       />
 
       {/* Add Entry Dialog/Drawer */}

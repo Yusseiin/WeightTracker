@@ -88,6 +88,27 @@
       "title": "Configuración de gráficos",
       "description": "Personaliza qué gráficos aparecen en la página de inicio y combina gráficos compatibles"
     },
+    "buttonBar": {
+      "title": "Botones de acción",
+      "description": "Elige el orden de los botones flotantes de añadir en la parte inferior del panel",
+      "modeLabel": "Orden de botones",
+      "modes": {
+        "default": "Predeterminado (peso centrado)",
+        "chart": "Igual que el orden de los gráficos",
+        "custom": "Orden personalizado"
+      },
+      "customHint": "Reordena con las flechas. Los botones de funciones desactivadas se mantienen en la lista pero no se mostrarán.",
+      "disabledHint": "desactivado",
+      "buttons": {
+        "water": "Agua",
+        "weight": "Peso",
+        "steps": "Pasos",
+        "pressure": "Presión arterial",
+        "medication": "Medicación",
+        "injections": "Inyecciones",
+        "bodyMeasurements": "Medidas corporales"
+      }
+    },
     "features": {
       "title": "Funciones opcionales",
       "description": "Activa botones de seguimiento adicionales",

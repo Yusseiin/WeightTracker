@@ -87,6 +87,27 @@
       "title": "Chart Configuration",
       "description": "Customize which charts appear on the homepage and combine compatible charts together"
     },
+    "buttonBar": {
+      "title": "Action Buttons",
+      "description": "Choose the order of the floating add buttons at the bottom of the dashboard",
+      "modeLabel": "Button order",
+      "modes": {
+        "default": "Default (weight centered)",
+        "chart": "Match chart order",
+        "custom": "Custom order"
+      },
+      "customHint": "Reorder with the arrows. Buttons for disabled features stay in the list but won't be shown.",
+      "disabledHint": "disabled",
+      "buttons": {
+        "water": "Water",
+        "weight": "Weight",
+        "steps": "Steps",
+        "pressure": "Blood Pressure",
+        "medication": "Medication",
+        "injections": "Injections",
+        "bodyMeasurements": "Body Measurements"
+      }
+    },
     "features": {
       "title": "Optional Features",
       "description": "Enable additional tracking buttons",

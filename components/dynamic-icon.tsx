@@ -82,6 +82,7 @@ import {
   Sunset,
   AlarmClock,
   Percent,
+  Scale,
   // Fallback
   HelpCircle,
 } from 'lucide-react';
@@ -168,6 +169,7 @@ const iconMap: Record<string, ComponentType<LucideProps>> = {
   Sunset,
   AlarmClock,
   Percent,
+  Scale,
 };
 
 // Lab icons (IconNode data, rendered via <Icon>)

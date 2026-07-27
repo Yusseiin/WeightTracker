@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSettings, updateSettings } from '@/lib/data';
 import { getSession } from '@/lib/auth';
 import { getAvailableLanguages } from '@/lib/i18n';
-import { ApiResponse, UserSettings, DateFormatSettings, SingleDateFormat, CustomActivity, MAX_ACTIVITIES, GoalSettings, WaterPreset, MAX_WATER_PRESETS, FeatureToggles, MedicationPreset, MAX_MEDICATIONS, MedicationSchedule, MedicationScheduleType, MedicationTrackingMode, InjectionSettings, InjectableMedication, InjectionSitePreset, MAX_INJECTABLE_MEDICATIONS, MAX_INJECTION_SITES, ChartCombination, ChartView, ChartType, BodyMeasurementPreset, MAX_BODY_MEASUREMENT_PRESETS, MeasurementUnit } from '@/lib/types';
+import { ApiResponse, UserSettings, DateFormatSettings, SingleDateFormat, CustomActivity, MAX_ACTIVITIES, GoalSettings, WaterPreset, MAX_WATER_PRESETS, FeatureToggles, MedicationPreset, MAX_MEDICATIONS, MedicationSchedule, MedicationScheduleType, MedicationTrackingMode, InjectionSettings, InjectableMedication, InjectionSitePreset, MAX_INJECTABLE_MEDICATIONS, MAX_INJECTION_SITES, ChartCombination, ChartView, ChartType, BodyMeasurementPreset, MAX_BODY_MEASUREMENT_PRESETS, MeasurementUnit, ButtonBarOrderMode, ActionButtonKey, DEFAULT_ACTION_BUTTON_ORDER } from '@/lib/types';
 import { ALL_ACTIVITY_ICONS, WATER_ICONS, MEDICATION_ICONS } from '@/lib/icons';
 
 // Validation constants
@@ -379,7 +379,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { unit, waterUnit, targetWeight, chartColor, dateFormat, activities, waterPresets, medicationPresets, injectionSettings, goals, features, showQuotes, chartCombinations, bodyMeasurementPresets, measurementUnit, language } = body;
+    const { unit, waterUnit, targetWeight, chartColor, dateFormat, activities, waterPresets, medicationPresets, injectionSettings, goals, features, showQuotes, chartCombinations, bodyMeasurementPresets, measurementUnit, language, buttonBarOrder, customButtonOrder } = body;
 
     // Validate unit if provided
     if (unit !== undefined && !['kg', 'lb'].includes(unit)) {
@@ -515,6 +515,29 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // Validate buttonBarOrder if provided
+    if (buttonBarOrder !== undefined && !['default', 'chart', 'custom'].includes(buttonBarOrder)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid button bar order. Must be "default", "chart" or "custom".' },
+        { status: 400 }
+      );
+    }
+
+    // Validate customButtonOrder if provided (array of known button keys)
+    if (customButtonOrder !== undefined) {
+      const validKeys: ActionButtonKey[] = DEFAULT_ACTION_BUTTON_ORDER;
+      if (
+        !Array.isArray(customButtonOrder) ||
+        !customButtonOrder.every((k: unknown) => typeof k === 'string' && validKeys.includes(k as ActionButtonKey)) ||
+        new Set(customButtonOrder).size !== customButtonOrder.length
+      ) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid custom button order.' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Only include defined values to avoid overwriting with undefined
     const updateData: Partial<UserSettings> = {};
     if (unit !== undefined) updateData.unit = unit;
@@ -533,6 +556,8 @@ export async function PUT(request: NextRequest) {
     if (bodyMeasurementPresets !== undefined) updateData.bodyMeasurementPresets = bodyMeasurementPresets;
     if (measurementUnit !== undefined) updateData.measurementUnit = measurementUnit;
     if (language !== undefined) updateData.language = language;
+    if (buttonBarOrder !== undefined) updateData.buttonBarOrder = buttonBarOrder as ButtonBarOrderMode;
+    if (customButtonOrder !== undefined) updateData.customButtonOrder = customButtonOrder as ActionButtonKey[];
 
     const updated = await updateSettings(
       updateData,

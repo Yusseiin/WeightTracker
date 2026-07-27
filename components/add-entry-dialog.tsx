@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod/v4';
@@ -102,6 +102,14 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, note
 
   const training = watch('training');
   const sleep = watch('sleep');
+
+  // Refresh the timestamp to "now" each time the dialog opens, so it reflects
+  // when the user opened it — not when the page was first loaded (issue #10).
+  useEffect(() => {
+    if (open) {
+      setValue('timestamp', format(new Date(), "yyyy-MM-dd'T'HH:mm"));
+    }
+  }, [open, setValue]);
 
   const handleFormSubmit = async (data: FormValues) => {
     setIsSubmitting(true);

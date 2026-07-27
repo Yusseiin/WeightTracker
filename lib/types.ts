@@ -248,6 +248,8 @@ export interface UserSettings {
   bodyMeasurementPresets: BodyMeasurementPreset[]; // User's custom body measurement presets
   measurementUnit: MeasurementUnit;                // Display unit for body measurements (cm/in)
   language: string;                                // UI language code (matches a dictionary/*.json file)
+  buttonBarOrder: ButtonBarOrderMode;              // How the floating action buttons are ordered
+  customButtonOrder: ActionButtonKey[];            // Custom button order (used when buttonBarOrder === 'custom')
   createdAt: string;
   updatedAt: string;
 }
@@ -505,3 +507,31 @@ export const DEFAULT_CHART_COMBINATIONS: ChartCombination[] = [
   { id: 'injections', name: 'Injections', icon: 'Syringe', charts: ['injections'], chartType: 'line', enabled: true, order: 5 },
   { id: 'bodyfat', name: 'Body Fat %', icon: 'Percent', charts: ['bodyfat'], chartType: 'line', enabled: true, order: 6 },
 ];
+
+// ============ FLOATING ACTION BUTTONS ============
+
+// Keys identifying each floating "add entry" button
+export type ActionButtonKey = 'water' | 'weight' | 'steps' | 'pressure' | 'medication' | 'injections' | 'bodyMeasurements';
+
+// How the floating action buttons are ordered:
+// - 'default': fixed layout with the weight button centered (original behaviour)
+// - 'chart':   follow the Chart Configuration order (buttons match the charts)
+// - 'custom':  use the user-defined customButtonOrder
+export type ButtonBarOrderMode = 'default' | 'chart' | 'custom';
+
+// Original visual order of the floating action buttons (weight sits in the middle)
+export const DEFAULT_ACTION_BUTTON_ORDER: ActionButtonKey[] = [
+  'water', 'steps', 'weight', 'pressure', 'medication', 'injections', 'bodyMeasurements',
+];
+
+// Maps a floating button to the Chart Configuration id it corresponds to (used in 'chart' mode).
+// bodyMeasurements has no chart, so it falls back to the end of the list.
+export const ACTION_BUTTON_TO_CHART_ID: Record<ActionButtonKey, string | null> = {
+  water: 'water',
+  weight: 'weight',
+  steps: 'steps',
+  pressure: 'pressure',
+  medication: 'medication',
+  injections: 'injections',
+  bodyMeasurements: null,
+};

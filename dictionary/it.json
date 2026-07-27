@@ -87,6 +87,27 @@
       "title": "Configurazione grafici",
       "description": "Personalizza quali grafici appaiono nella homepage e combina insieme i grafici compatibili"
     },
+    "buttonBar": {
+      "title": "Pulsanti azione",
+      "description": "Scegli l'ordine dei pulsanti di aggiunta flottanti in fondo alla dashboard",
+      "modeLabel": "Ordine pulsanti",
+      "modes": {
+        "default": "Predefinito (peso al centro)",
+        "chart": "Come l'ordine dei grafici",
+        "custom": "Ordine personalizzato"
+      },
+      "customHint": "Riordina con le frecce. I pulsanti delle funzioni disattivate restano nell'elenco ma non verranno mostrati.",
+      "disabledHint": "disattivato",
+      "buttons": {
+        "water": "Acqua",
+        "weight": "Peso",
+        "steps": "Passi",
+        "pressure": "Pressione sanguigna",
+        "medication": "Farmaci",
+        "injections": "Iniezioni",
+        "bodyMeasurements": "Misure corporee"
+      }
+    },
     "features": {
       "title": "Funzioni facoltative",
       "description": "Attiva pulsanti di monitoraggio aggiuntivi",

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, LogOut, Key, Users, Save, Loader2, UserPen, AtSign } from 'lucide-react';
+import { ArrowLeft, LogOut, Key, Users, Save, Loader2, UserPen, AtSign, ChevronUp, ChevronDown } from 'lucide-react';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -28,8 +28,8 @@ import { MedicationManager } from '@/components/medication-manager';
 import { InjectionSettingsManager } from '@/components/injection-settings-manager';
 import { DateFormatEditor } from '@/components/date-format-editor';
 import { DEFAULT_DATE_FORMAT } from '@/lib/date-utils';
-import type { SessionUser, UserSettings, ChartColor, WaterUnit, DateFormatSettings, DateLocale, SingleDateFormat, CustomActivity, WeightEntry, GoalSettings, WeekStartsOn, WaterPreset, FeatureToggles, MedicationPreset, MedicationEntry, InjectionSettings, InjectionEntry, ChartCombination, BodyMeasurementPreset, MeasurementUnit } from '@/lib/types';
-import { DEFAULT_GOALS, WEEK_DAYS, DEFAULT_FEATURE_TOGGLES, DEFAULT_INJECTION_SETTINGS, DEFAULT_CHART_COMBINATIONS, DEFAULT_BODY_MEASUREMENT_PRESETS } from '@/lib/types';
+import type { SessionUser, UserSettings, ChartColor, WaterUnit, DateFormatSettings, DateLocale, SingleDateFormat, CustomActivity, WeightEntry, GoalSettings, WeekStartsOn, WaterPreset, FeatureToggles, MedicationPreset, MedicationEntry, InjectionSettings, InjectionEntry, ChartCombination, BodyMeasurementPreset, MeasurementUnit, ButtonBarOrderMode, ActionButtonKey } from '@/lib/types';
+import { DEFAULT_GOALS, WEEK_DAYS, DEFAULT_FEATURE_TOGGLES, DEFAULT_INJECTION_SETTINGS, DEFAULT_CHART_COMBINATIONS, DEFAULT_BODY_MEASUREMENT_PRESETS, DEFAULT_ACTION_BUTTON_ORDER } from '@/lib/types';
 import { mlToOz, ozToMl } from '@/lib/water-utils';
 import { ChartCombinationManager } from '@/components/chart-combination-manager';
 import { BodyMeasurementPresetManager } from '@/components/body-measurement-preset-manager';
@@ -128,6 +128,27 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
   const [localMeasurementUnit, setLocalMeasurementUnit] = useState<MeasurementUnit>(
     settings.measurementUnit || 'cm'
   );
+  const [localButtonBarOrder, setLocalButtonBarOrder] = useState<ButtonBarOrderMode>(
+    settings.buttonBarOrder || 'default'
+  );
+  const [localCustomButtonOrder, setLocalCustomButtonOrder] = useState<ActionButtonKey[]>(() => {
+    const saved = settings.customButtonOrder;
+    if (!Array.isArray(saved) || saved.length === 0) return [...DEFAULT_ACTION_BUTTON_ORDER];
+    // Ensure completeness: keep saved order, append any keys not present.
+    return [...saved.filter((k) => DEFAULT_ACTION_BUTTON_ORDER.includes(k)),
+            ...DEFAULT_ACTION_BUTTON_ORDER.filter((k) => !saved.includes(k))];
+  });
+
+  // Move a button up/down within the custom order list.
+  const moveButton = (index: number, dir: -1 | 1) => {
+    setLocalCustomButtonOrder((prev) => {
+      const j = index + dir;
+      if (j < 0 || j >= prev.length) return prev;
+      const arr = [...prev];
+      [arr[index], arr[j]] = [arr[j], arr[index]];
+      return arr;
+    });
+  };
 
   // Water goal input is displayed in the user's chosen unit; storage is always ml.
   // We keep the raw typed string separate so it isn't clobbered while typing.
@@ -255,7 +276,9 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
           goals: localGoals,
           features: localFeatures,
           showQuotes: localShowQuotes,
-          measurementUnit: localMeasurementUnit
+          measurementUnit: localMeasurementUnit,
+          buttonBarOrder: localButtonBarOrder,
+          customButtonOrder: localCustomButtonOrder
         })
       });
 
@@ -589,6 +612,83 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                   features={localFeatures}
                   injectionSettings={settings.injectionSettings}
                 />
+              </CardContent>
+            </Card>
+
+            {/* Action Buttons order Card */}
+            <Card className="py-4">
+              <CardContent className="space-y-4">
+                <h3 className="font-medium text-base">{t('settings.buttonBar.title')}</h3>
+                <p className="text-xs text-muted-foreground">{t('settings.buttonBar.description')}</p>
+
+                <div className="space-y-2">
+                  <Label>{t('settings.buttonBar.modeLabel')}</Label>
+                  <Select
+                    value={localButtonBarOrder}
+                    onValueChange={(v) => setLocalButtonBarOrder(v as ButtonBarOrderMode)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="default">{t('settings.buttonBar.modes.default')}</SelectItem>
+                      <SelectItem value="chart">{t('settings.buttonBar.modes.chart')}</SelectItem>
+                      <SelectItem value="custom">{t('settings.buttonBar.modes.custom')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {localButtonBarOrder === 'custom' && (() => {
+                  const buttonEnabled: Record<ActionButtonKey, boolean> = {
+                    water: localFeatures.waterEnabled,
+                    weight: true,
+                    steps: localFeatures.stepsEnabled,
+                    pressure: localFeatures.pressureEnabled,
+                    medication: localFeatures.medicationEnabled,
+                    injections: localFeatures.injectionsEnabled,
+                    bodyMeasurements: localFeatures.bodyMeasurementsEnabled,
+                  };
+                  return (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">{t('settings.buttonBar.customHint')}</p>
+                      <div className="rounded-md border divide-y">
+                        {localCustomButtonOrder.map((key, index) => (
+                          <div key={key} className="flex items-center gap-2 px-3 py-2">
+                            <span className="text-xs text-muted-foreground w-5 tabular-nums">{index + 1}</span>
+                            <span className="flex-1 text-sm">
+                              {t(`settings.buttonBar.buttons.${key}`)}
+                              {!buttonEnabled[key] && (
+                                <span className="ml-2 text-xs text-muted-foreground">
+                                  ({t('settings.buttonBar.disabledHint')})
+                                </span>
+                              )}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              disabled={index === 0}
+                              onClick={() => moveButton(index, -1)}
+                            >
+                              <ChevronUp className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              disabled={index === localCustomButtonOrder.length - 1}
+                              onClick={() => moveButton(index, 1)}
+                            >
+                              <ChevronDown className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
 

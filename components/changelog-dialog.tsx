@@ -26,6 +26,15 @@ interface ChangelogEntry {
 const changelog: ChangelogEntry[] = [
   {
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
+    date: "2026-07-27",
+    changes: [
+      { type: "added", description: "You can now choose how the floating add buttons at the bottom of the dashboard are ordered (Settings → Action Buttons): keep the default layout with the weight button centered, follow your Chart Configuration order so buttons and charts line up, or set a fully custom order." },
+      { type: "fixed", description: "The weight entry dialog's date/time now refreshes to the current moment each time you open it, instead of keeping the time from when the page was first loaded." },
+      { type: "fixed", description: "The Weight option in the chart selector showed a generic question-mark icon instead of the scale icon." },
+    ],
+  },
+  {
+    version: "v0.0.28",
     date: "2026-07-07",
     changes: [
       { type: "changed", description: "Completed translation coverage: goal-milestone and weekly/monthly achievement messages, the Change Username and Change Nickname dialogs, and all form validation messages now appear in your selected language." },

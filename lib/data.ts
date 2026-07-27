@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { WeightEntry, UserSettings, DEFAULT_USER_ID, DEFAULT_ACTIVITIES, DEFAULT_GOALS, DEFAULT_WATER_PRESETS, DEFAULT_FEATURE_TOGGLES, DEFAULT_MEDICATION_PRESETS, DEFAULT_INJECTION_SETTINGS, MedicationPreset } from './types';
+import { WeightEntry, UserSettings, DEFAULT_USER_ID, DEFAULT_ACTIVITIES, DEFAULT_GOALS, DEFAULT_WATER_PRESETS, DEFAULT_FEATURE_TOGGLES, DEFAULT_MEDICATION_PRESETS, DEFAULT_INJECTION_SETTINGS, DEFAULT_ACTION_BUTTON_ORDER, MedicationPreset } from './types';
 import { DEFAULT_DATE_FORMAT } from './date-utils';
 import { deletePhoto } from './photos';
 import { withFileLock, writeJsonAtomic } from './storage';
@@ -194,6 +194,8 @@ const defaultSettings = (userId: string): UserSettings => ({
   bodyMeasurementPresets: [],
   measurementUnit: 'cm',
   language: 'en',
+  buttonBarOrder: 'default',
+  customButtonOrder: DEFAULT_ACTION_BUTTON_ORDER,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString()
 });
@@ -315,6 +317,16 @@ export async function getSettings(userId: string = DEFAULT_USER_ID): Promise<Use
     // Add language if missing (backward compatibility)
     if (typeof settings.language !== 'string' || settings.language === '') {
       settings.language = 'en';
+      needsSave = true;
+    }
+    // Add buttonBarOrder if missing (backward compatibility)
+    if (settings.buttonBarOrder !== 'default' && settings.buttonBarOrder !== 'chart' && settings.buttonBarOrder !== 'custom') {
+      settings.buttonBarOrder = 'default';
+      needsSave = true;
+    }
+    // Add customButtonOrder if missing (backward compatibility)
+    if (!Array.isArray(settings.customButtonOrder) || settings.customButtonOrder.length === 0) {
+      settings.customButtonOrder = DEFAULT_ACTION_BUTTON_ORDER;
       needsSave = true;
     }
     // Add dailyStepsGoal to goals if missing (backward compatibility)
