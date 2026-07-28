@@ -40,7 +40,8 @@
   "nav": {
     "chart": "Grafico",
     "history": "Cronologia",
-    "changelog": "Novità"
+    "changelog": "Novità",
+    "reportBug": "Segnala un bug"
   },
   "settings": {
     "title": "Impostazioni",

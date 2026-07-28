@@ -40,7 +40,8 @@
   "nav": {
     "chart": "Chart",
     "history": "History",
-    "changelog": "Changelog"
+    "changelog": "Changelog",
+    "reportBug": "Report a bug"
   },
   "settings": {
     "title": "Settings",
