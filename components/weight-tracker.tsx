@@ -26,7 +26,7 @@ import { ChangelogDialog } from './changelog-dialog';
 import { MotivationalQuote } from './motivational-quote';
 import { MedicationReminderBanner } from './medication-reminder-banner';
 import { Button } from './ui/button';
-import { Info } from 'lucide-react';
+import { Info, Bug } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
 
 // localStorage key that remembers which version's changelog the user has already seen
@@ -205,16 +205,36 @@ export function WeightTracker({
               </span>
             )}
           </div>
-          {session && <div><Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setChangelogOpen(true)}
-            title={t('nav.changelog')}
-            className="cursor-pointer"
-          >
-            <Info className="h-5 w-5" />
-          </Button>
-          <SettingsButton /> </div>}
+          {session && (
+            <div className="flex items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                asChild
+                title={t('nav.reportBug')}
+                className="cursor-pointer"
+              >
+                <a
+                  href="https://github.com/Yusseiin/WeightTracker/issues/new"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={t('nav.reportBug')}
+                >
+                  <Bug className="h-5 w-5" />
+                </a>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setChangelogOpen(true)}
+                title={t('nav.changelog')}
+                className="cursor-pointer"
+              >
+                <Info className="h-5 w-5" />
+              </Button>
+              <SettingsButton />
+            </div>
+          )}
           
         </div>
       </header>

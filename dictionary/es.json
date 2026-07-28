@@ -41,7 +41,8 @@
   "nav": {
     "chart": "Gráfico",
     "history": "Historial",
-    "changelog": "Novedades"
+    "changelog": "Novedades",
+    "reportBug": "Reportar un error"
   },
   "settings": {
     "title": "Ajustes",
