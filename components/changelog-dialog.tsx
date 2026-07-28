@@ -28,6 +28,13 @@ const changelog: ChangelogEntry[] = [
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
     date: "2026-07-28",
     changes: [
+      { type: "fixed", description: "In water history mode, editing a water entry's date didn't move it to the correct day — the entry kept counting toward its original daily total (only the time changed). Editing the date now reassigns the entry to the right day. (#14)" },
+    ],
+  },
+  {
+    version: "v0.0.30",
+    date: "2026-07-28",
+    changes: [
       { type: "fixed", description: "The Save button in Settings stayed greyed out after changing the action-button order (Settings → Action Buttons), so the change couldn't be saved. Changing the order now enables Save as expected." },
     ],
   },

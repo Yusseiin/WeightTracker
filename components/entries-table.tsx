@@ -45,7 +45,7 @@ interface EntriesTableProps {
   dateFormat?: DateFormatSettings;
   activities: CustomActivity[];
   features?: FeatureToggles;
-  onUpdateWater?: (id: string, amount: number, timestamp?: string) => Promise<void>;
+  onUpdateWater?: (id: string, amount: number, timestamp?: string, date?: string) => Promise<void>;
   onDeleteWater?: (id: string) => Promise<void>;
   onUpdateSteps?: (id: string, steps: number, timestamp?: string, notes?: string) => Promise<void>;
   onDeleteSteps?: (id: string) => Promise<void>;

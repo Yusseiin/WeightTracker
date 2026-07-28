@@ -43,7 +43,7 @@ interface EditWaterDialogProps {
   entry: WaterEntry | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (id: string, amount: number, timestamp?: string) => Promise<void>;
+  onSave: (id: string, amount: number, timestamp?: string, date?: string) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
   waterUnit: WaterUnit;
 }
@@ -115,7 +115,9 @@ export function EditWaterDialog({
 
     setIsSubmitting(true);
     try {
-      await onSave(entry.id, amountMl, timestamp);
+      // Pass the picked calendar day so the entry moves to the correct daily
+      // total (the `date` field, not just the timestamp). See issue #14.
+      await onSave(entry.id, amountMl, timestamp, dateInput || undefined);
       onOpenChange(false);
     } finally {
       setIsSubmitting(false);

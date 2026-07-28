@@ -17,7 +17,7 @@ interface UseWaterReturn {
   refreshWater: () => Promise<void>;
   updateWater: (date: string, amount: number) => Promise<void>;
   createWaterEntry: (amount: number, date?: string, timestamp?: string) => Promise<void>;
-  updateWaterById: (id: string, amount: number, timestamp?: string) => Promise<void>;
+  updateWaterById: (id: string, amount: number, timestamp?: string, date?: string) => Promise<void>;
   deleteWaterById: (id: string) => Promise<void>;
 }
 
@@ -300,12 +300,12 @@ export function useWater(
     }
   }, [waterInserts, todayWater, applyInserts, refreshWaterData, waterUnit, t]);
 
-  const updateWaterById = useCallback(async (id: string, amount: number, timestamp?: string) => {
+  const updateWaterById = useCallback(async (id: string, amount: number, timestamp?: string, date?: string) => {
     const previousInserts = waterInserts;
     const previousToday = todayWater;
     const optimistic = previousInserts.map(e =>
       e.id === id
-        ? { ...e, amount, ...(timestamp ? { timestamp } : {}), updatedAt: new Date().toISOString() }
+        ? { ...e, amount, ...(timestamp ? { timestamp } : {}), ...(date ? { date } : {}), updatedAt: new Date().toISOString() }
         : e
     );
     applyInserts(optimistic);
@@ -314,7 +314,7 @@ export function useWater(
       const response = await fetch('/api/water', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, amount, timestamp })
+        body: JSON.stringify({ id, amount, timestamp, date })
       });
       const result = await response.json();
       if (result.success) {
