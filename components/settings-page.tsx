@@ -68,6 +68,14 @@ function ensureValidDateFormat(settings?: Partial<DateFormatSettings>): DateForm
   };
 }
 
+// Normalize a stored custom button order into a complete, valid list (keeps the
+// saved order, appends any missing keys). Used for both initial state and the
+// dirty-check so they compare consistently.
+function normalizeButtonOrder(order?: ActionButtonKey[]): ActionButtonKey[] {
+  const base = (Array.isArray(order) ? order : []).filter((k) => DEFAULT_ACTION_BUTTON_ORDER.includes(k));
+  return [...base, ...DEFAULT_ACTION_BUTTON_ORDER.filter((k) => !base.includes(k))];
+}
+
 export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
   const router = useRouter();
   const { t, locale, languages } = useTranslation();
@@ -131,13 +139,9 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
   const [localButtonBarOrder, setLocalButtonBarOrder] = useState<ButtonBarOrderMode>(
     settings.buttonBarOrder || 'default'
   );
-  const [localCustomButtonOrder, setLocalCustomButtonOrder] = useState<ActionButtonKey[]>(() => {
-    const saved = settings.customButtonOrder;
-    if (!Array.isArray(saved) || saved.length === 0) return [...DEFAULT_ACTION_BUTTON_ORDER];
-    // Ensure completeness: keep saved order, append any keys not present.
-    return [...saved.filter((k) => DEFAULT_ACTION_BUTTON_ORDER.includes(k)),
-            ...DEFAULT_ACTION_BUTTON_ORDER.filter((k) => !saved.includes(k))];
-  });
+  const [localCustomButtonOrder, setLocalCustomButtonOrder] = useState<ActionButtonKey[]>(
+    () => normalizeButtonOrder(settings.customButtonOrder)
+  );
 
   // Move a button up/down within the custom order list.
   const moveButton = (index: number, dir: -1 | 1) => {
@@ -216,7 +220,9 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
     JSON.stringify(localGoals) !== JSON.stringify(settings.goals || DEFAULT_GOALS) ||
     JSON.stringify(localFeatures) !== JSON.stringify(settings.features || DEFAULT_FEATURE_TOGGLES) ||
     localShowQuotes !== (settings.showQuotes ?? true) ||
-    localMeasurementUnit !== (settings.measurementUnit || 'cm');
+    localMeasurementUnit !== (settings.measurementUnit || 'cm') ||
+    localButtonBarOrder !== (settings.buttonBarOrder || 'default') ||
+    JSON.stringify(localCustomButtonOrder) !== JSON.stringify(normalizeButtonOrder(settings.customButtonOrder));
 
   // Reset local state when settings change externally
   useEffect(() => {
@@ -229,6 +235,8 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
     setLocalFeatures(settings.features || DEFAULT_FEATURE_TOGGLES);
     setLocalShowQuotes(settings.showQuotes ?? true);
     setLocalMeasurementUnit(settings.measurementUnit || 'cm');
+    setLocalButtonBarOrder(settings.buttonBarOrder || 'default');
+    setLocalCustomButtonOrder(normalizeButtonOrder(settings.customButtonOrder));
     // Re-derive the water goal input from the saved value + saved unit
     setWaterGoalInput(
       goalMlToInput(settings.goals?.dailyWaterGoal, settings.waterUnit || 'ml')

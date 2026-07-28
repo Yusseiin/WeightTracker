@@ -26,6 +26,13 @@ interface ChangelogEntry {
 const changelog: ChangelogEntry[] = [
   {
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
+    date: "2026-07-28",
+    changes: [
+      { type: "fixed", description: "The Save button in Settings stayed greyed out after changing the action-button order (Settings → Action Buttons), so the change couldn't be saved. Changing the order now enables Save as expected." },
+    ],
+  },
+  {
+    version: "v0.0.29",
     date: "2026-07-27",
     changes: [
       { type: "added", description: "You can now choose how the floating add buttons at the bottom of the dashboard are ordered (Settings → Action Buttons): keep the default layout with the weight button centered, follow your Chart Configuration order so buttons and charts line up, or set a fully custom order." },
