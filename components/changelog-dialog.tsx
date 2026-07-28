@@ -28,6 +28,13 @@ const changelog: ChangelogEntry[] = [
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
     date: "2026-07-28",
     changes: [
+      { type: "added", description: "Added a \"Report a bug\" button in the header that opens the project's GitHub issue tracker in a new tab. Thanks to @nfischer. (#15)" },
+    ],
+  },
+  {
+    version: "v0.0.31",
+    date: "2026-07-28",
+    changes: [
       { type: "fixed", description: "In water history mode, editing a water entry's date didn't move it to the correct day — the entry kept counting toward its original daily total (only the time changed). Editing the date now reassigns the entry to the right day. (#14)" },
     ],
   },
