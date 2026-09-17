@@ -457,12 +457,16 @@ nextjserision/
 
 ### Water
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/water` | Get today's water (or ?date=YYYY-MM-DD or ?all=true for all entries) |
-| POST | `/api/water` | Add water to today's total |
-| PATCH | `/api/water` | Set water amount for specific date |
-| DELETE | `/api/water` | Reset today's water to 0 |
+**Note:** water APIs use units of milliliters (ml) even if the user's preference
+is ounces (oz). If you want to log values in ounces, make sure to convert first
+by multiplying by 29.574 (example: 16.9 oz × 29.574 = 500 ml).
+
+| Method | Endpoint | Description | Example usage |
+|--------|----------|-------------|---------------|
+| GET | `/api/water` | Get today's water (or ?date=YYYY-MM-DD or ?all=true for all entries). | N/A |
+| POST | `/api/water` | Add water to today's total, in milliliters. | `{ "amount": 500 }` |
+| PATCH | `/api/water` | Set water amount for specific date, in milliliters. | TODO |
+| DELETE | `/api/water` | Reset today's water to 0 milliliters. | TODO |
 
 ### Users (Admin Only)
 
