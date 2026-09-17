@@ -122,4 +122,22 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /*
+   * iOS Safari/WebKit gives date, time and datetime-local inputs an intrinsic
+   * content width and refuses to shrink them below it, so in a two-column grid
+   * they overflow their track, overlap the next field and run off-screen
+   * (GitHub issue #16). Resetting the native appearance makes them honour the
+   * track width like every other browser does.
+   *
+   * Verified on the iOS 27 simulator: 203px -> 177px, overlap gone. Chromium is
+   * unaffected and keeps its calendar/clock picker indicators, and tapping the
+   * field still opens the native iOS picker.
+   */
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"] {
+    -webkit-appearance: none;
+    appearance: none;
+  }
 }
