@@ -457,16 +457,34 @@ nextjserision/
 
 ### Water
 
-**Note:** water APIs use units of milliliters (ml) even if the user's preference
-is ounces (oz). If you want to log values in ounces, make sure to convert first
-by multiplying by 29.574 (example: 16.9 oz × 29.574 = 500 ml).
+**Units:** water is always *stored* in milliliters (ml), but the API accepts an
+optional `unit` of `"ml"` or `"oz"`. **If you omit it, `ml` is used**, so existing
+integrations keep working unchanged.
+
+- **Writes** (`POST`/`PATCH`): pass `unit` in the JSON body. With `"unit": "oz"`
+  the `amount` you send is interpreted as ounces and converted to ml for you.
+- **Reads** (`GET`): pass `?unit=oz` to get amounts back in ounces (rounded to 2
+  decimals). Without it, amounts are returned in ml.
+- An invalid unit returns `400` with `Unit must be "ml" or "oz"`.
 
 | Method | Endpoint | Description | Example usage |
 |--------|----------|-------------|---------------|
-| GET | `/api/water` | Get today's water (or ?date=YYYY-MM-DD or ?all=true for all entries). | N/A |
-| POST | `/api/water` | Add water to today's total, in milliliters. | `{ "amount": 500 }` |
-| PATCH | `/api/water` | Set water amount for specific date, in milliliters. | TODO |
-| DELETE | `/api/water` | Reset today's water to 0 milliliters. | TODO |
+| GET | `/api/water` | Get today's water (or `?date=YYYY-MM-DD`, `?all=true` for daily totals, `?entries=true` for individual entries). Add `?unit=oz` for ounces. | `/api/water?unit=oz` |
+| POST | `/api/water` | Add water to today's total. Optional `date`/`timestamp` logs it as a past entry. | `{ "amount": 500 }` or `{ "amount": 16.9, "unit": "oz" }` |
+| PATCH | `/api/water` | Set a date's total (`date` + `amount`), or update one entry by `id`. | `{ "date": "2026-09-17", "amount": 64, "unit": "oz" }` |
+| DELETE | `/api/water` | Reset today's water to 0, or delete one entry with `?id=...`. | `/api/water?id=water-123-abc` |
+
+Both of these log the same amount:
+
+```bash
+curl -X POST http://localhost:3000/api/water \
+  -H "Content-Type: application/json" -H "X-API-Key: YOUR_KEY" \
+  -d '{ "amount": 500 }'
+
+curl -X POST http://localhost:3000/api/water \
+  -H "Content-Type: application/json" -H "X-API-Key: YOUR_KEY" \
+  -d '{ "amount": 16.9, "unit": "oz" }'
+```
 
 ### Users (Admin Only)
 
@@ -503,6 +521,55 @@ by multiplying by 29.574 (example: 16.9 oz × 29.574 = 500 ml).
 | POST | `/api/medications` | Create new medication entry |
 | PATCH | `/api/medications` | Update medication entry by ID |
 | DELETE | `/api/medications` | Delete medication entry by ID |
+
+### Injections
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/injections` | Get today's injections (or `?date=YYYY-MM-DD`, `?all=true` for every entry, `?last=true` for the most recent one) |
+| POST | `/api/injections` | Create new injection entry |
+| PATCH | `/api/injections` | Update injection entry by ID (`id` in the body) |
+| DELETE | `/api/injections?id=...` | Delete injection entry by ID |
+
+Body fields: `medicationId`, `dose`, `siteId`, plus optional `date`, `timestamp` and `notes`.
+`dose` is expressed in that medication's own unit (e.g. `mg`, `units`), configured per
+medication under Settings -> Injection Settings, so there is no global unit conversion here.
+
+### Body Measurements
+
+**Units:** measurements are always *stored* in centimeters (cm), but the API accepts an
+optional `unit` of `"cm"` or `"in"`. **If you omit it, `cm` is used**, so existing
+integrations keep working unchanged.
+
+- **Writes** (`POST`/`PATCH`): pass `unit` in the JSON body. With `"unit": "in"` the values
+  you send are interpreted as inches and converted to cm for you.
+- **Reads** (`GET`): pass `?unit=in` to get values back in inches (rounded to 2 decimals).
+- An invalid unit returns `400` with `Unit must be "cm" or "in"`.
+- Values are capped at 500 cm *after* conversion, so the limit is identical in either unit.
+
+| Method | Endpoint | Description | Example usage |
+|--------|----------|-------------|---------------|
+| GET | `/api/body-measurements` | List all entries. Add `?unit=in` for inches. | `/api/body-measurements?unit=in` |
+| POST | `/api/body-measurements` | Create an entry (`timestamp` + `measurements` required, `notes` optional). | `{ "timestamp": "2026-09-17T09:00:00.000Z", "measurements": { "chest": 101.6 } }` |
+| PATCH | `/api/body-measurements` | Update an entry by `id` (in the body). | `{ "id": "bm-...", "measurements": { "chest": 40 }, "unit": "in" }` |
+| DELETE | `/api/body-measurements?id=...` | Delete an entry by ID. | `/api/body-measurements?id=bm-...` |
+
+The keys inside `measurements` are body-measurement **preset IDs**, which you configure under
+Settings -> Body Measurements. The defaults are `neck`, `shoulders`, `chest`, `bicep_l`,
+`bicep_r`, `waist`, `thigh_l`, `thigh_r`, `calf_l`, `calf_r`. Sending an unknown key returns
+`400`.
+
+Both of these record the same chest measurement:
+
+```bash
+curl -X POST http://localhost:3000/api/body-measurements \
+  -H "Content-Type: application/json" -H "X-API-Key: YOUR_KEY" \
+  -d '{ "timestamp": "2026-09-17T09:00:00.000Z", "measurements": { "chest": 101.6 } }'
+
+curl -X POST http://localhost:3000/api/body-measurements \
+  -H "Content-Type: application/json" -H "X-API-Key: YOUR_KEY" \
+  -d '{ "timestamp": "2026-09-17T09:00:00.000Z", "measurements": { "chest": 40 }, "unit": "in" }'
+```
 
 ## Home Assistant Integration
 
