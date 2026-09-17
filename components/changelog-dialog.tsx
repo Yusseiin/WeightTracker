@@ -26,6 +26,14 @@ interface ChangelogEntry {
 const changelog: ChangelogEntry[] = [
   {
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
+    date: "2026-09-17",
+    changes: [
+      { type: "added", description: "The water and body measurement APIs now accept an optional unit, so integrations (Home Assistant, scripts) can send and read values in their own unit instead of converting by hand: ml or oz for water, cm or in for body measurements. Leaving it out keeps the previous behaviour (ml and cm), so existing setups are unaffected. Thanks to @nfischer. (#18)" },
+      { type: "added", description: "Documented the injections and body measurement endpoints in the README, which were previously missing, and expanded the water API documentation with request examples." },
+    ],
+  },
+  {
+    version: "v0.0.32",
     date: "2026-07-28",
     changes: [
       { type: "added", description: "Added a \"Report a bug\" button in the header that opens the project's GitHub issue tracker in a new tab. Thanks to @nfischer. (#15)" },
