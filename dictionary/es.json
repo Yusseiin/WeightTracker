@@ -89,6 +89,28 @@
       "title": "Configuración de gráficos",
       "description": "Personaliza qué gráficos aparecen en la página de inicio y combina gráficos compatibles"
     },
+    "export": {
+      "title": "Exportar datos",
+      "description": "Descarga tus datos como archivos CSV, un archivo por cada tipo de dato. Deja las fechas vacías para exportar todo.",
+      "dataLabel": "Datos a exportar",
+      "from": "Desde",
+      "to": "Hasta",
+      "rangeHint": "Ambas fechas son opcionales e inclusivas.",
+      "button": "Exportar CSV",
+      "exporting": "Exportando...",
+      "success": "{count} archivo(s) exportado(s)",
+      "error": "No se pudieron exportar los datos",
+      "invalidRange": "La fecha inicial no puede ser posterior a la final",
+      "types": {
+        "weight": "Peso",
+        "water": "Agua",
+        "steps": "Pasos",
+        "pressure": "Presión arterial",
+        "medications": "Medicación",
+        "injections": "Inyecciones",
+        "body-measurements": "Medidas corporales"
+      }
+    },
     "buttonBar": {
       "title": "Botones de acción",
       "description": "Elige el orden de los botones flotantes de añadir en la parte inferior del panel",

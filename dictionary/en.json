@@ -88,6 +88,28 @@
       "title": "Chart Configuration",
       "description": "Customize which charts appear on the homepage and combine compatible charts together"
     },
+    "export": {
+      "title": "Export Data",
+      "description": "Download your tracked data as CSV files, one file per data set. Leave the dates empty to export everything.",
+      "dataLabel": "Data to export",
+      "from": "From",
+      "to": "To",
+      "rangeHint": "Both dates are optional and inclusive.",
+      "button": "Export CSV",
+      "exporting": "Exporting...",
+      "success": "Exported {count} file(s)",
+      "error": "Failed to export data",
+      "invalidRange": "The start date must not be after the end date",
+      "types": {
+        "weight": "Weight",
+        "water": "Water",
+        "steps": "Steps",
+        "pressure": "Blood Pressure",
+        "medications": "Medications",
+        "injections": "Injections",
+        "body-measurements": "Body Measurements"
+      }
+    },
     "buttonBar": {
       "title": "Action Buttons",
       "description": "Choose the order of the floating add buttons at the bottom of the dashboard",

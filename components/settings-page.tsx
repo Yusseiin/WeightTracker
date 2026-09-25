@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, LogOut, Key, Users, Save, Loader2, UserPen, AtSign, ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowLeft, LogOut, Key, Users, Save, Loader2, UserPen, AtSign, ChevronUp, ChevronDown, Download } from 'lucide-react';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -35,6 +35,7 @@ import { ChartCombinationManager } from '@/components/chart-combination-manager'
 import { BodyMeasurementPresetManager } from '@/components/body-measurement-preset-manager';
 import { useTranslation } from '@/hooks/use-translation';
 import { getLanguageName } from '@/lib/i18n-shared';
+import type { ExportType } from '@/lib/csv-export';
 
 interface SettingsPageProps {
   session: SessionUser;
@@ -302,6 +303,70 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
       showErrorToast(t('settings.toasts.saveError'));
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // ---- CSV export (issue #19) ----
+  const [exportTypes, setExportTypes] = useState<ExportType[]>([]);
+  const [exportFrom, setExportFrom] = useState('');
+  const [exportTo, setExportTo] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
+
+  // Only offer data sets the user actually tracks.
+  const availableExportTypes: ExportType[] = [
+    'weight',
+    ...(localFeatures.waterEnabled ? ['water' as const] : []),
+    ...(localFeatures.stepsEnabled ? ['steps' as const] : []),
+    ...(localFeatures.pressureEnabled ? ['pressure' as const] : []),
+    ...(localFeatures.medicationEnabled ? ['medications' as const] : []),
+    ...(localFeatures.injectionsEnabled ? ['injections' as const] : []),
+    ...(localFeatures.bodyMeasurementsEnabled ? ['body-measurements' as const] : []),
+  ];
+
+  const toggleExportType = (type: ExportType, checked: boolean) => {
+    setExportTypes((prev) => (checked ? [...prev, type] : prev.filter((t) => t !== type)));
+  };
+
+  // Each selected data set downloads as its own CSV file.
+  const handleExport = async () => {
+    if (exportTypes.length === 0) return;
+    if (exportFrom && exportTo && exportFrom > exportTo) {
+      showErrorToast(t('settings.export.invalidRange'));
+      return;
+    }
+    setIsExporting(true);
+    try {
+      for (const type of exportTypes) {
+        const params = new URLSearchParams({ type });
+        if (exportFrom) params.set('from', exportFrom);
+        if (exportTo) params.set('to', exportTo);
+
+        const res = await fetch(`/api/export?${params.toString()}`);
+        if (!res.ok) {
+          const err = await res.json().catch(() => null);
+          showErrorToast(err?.error || t('settings.export.error'));
+          return;
+        }
+
+        const blob = await res.blob();
+        const match = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') || '');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = match ? match[1] : `weighttracker_${type}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+
+        // Small stagger so browsers don't drop rapid successive downloads.
+        if (exportTypes.length > 1) await new Promise((r) => setTimeout(r, 400));
+      }
+      showSuccessToast(t('settings.export.success', { count: String(exportTypes.length) }));
+    } catch {
+      showErrorToast(t('settings.export.error'));
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -1183,6 +1248,67 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
 
           {/* Third Column - Account */}
           <div className="space-y-2">
+            {/* Export Data Card */}
+            <Card className="py-4">
+              <CardContent className="space-y-4">
+                <h3 className="font-medium text-base">{t('settings.export.title')}</h3>
+                <p className="text-xs text-muted-foreground">{t('settings.export.description')}</p>
+
+                <div className="space-y-2">
+                  <Label>{t('settings.export.dataLabel')}</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {availableExportTypes.map((type) => (
+                      <div key={type} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`export-${type}`}
+                          checked={exportTypes.includes(type)}
+                          onCheckedChange={(checked) => toggleExportType(type, checked === true)}
+                        />
+                        <Label htmlFor={`export-${type}`} className="cursor-pointer text-sm font-normal">
+                          {t(`settings.export.types.${type}`)}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="export-from">{t('settings.export.from')}</Label>
+                    <Input
+                      id="export-from"
+                      type="date"
+                      value={exportFrom}
+                      onChange={(e) => setExportFrom(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="export-to">{t('settings.export.to')}</Label>
+                    <Input
+                      id="export-to"
+                      type="date"
+                      value={exportTo}
+                      onChange={(e) => setExportTo(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">{t('settings.export.rangeHint')}</p>
+
+                <Button
+                  onClick={handleExport}
+                  disabled={isExporting || exportTypes.length === 0}
+                  className="w-full"
+                >
+                  {isExporting ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4 mr-2" />
+                  )}
+                  {isExporting ? t('settings.export.exporting') : t('settings.export.button')}
+                </Button>
+              </CardContent>
+            </Card>
+
             {/* Account Card */}
             <Card className="py-4">
               <CardContent className="space-y-3">

@@ -88,6 +88,28 @@
       "title": "Configurazione grafici",
       "description": "Personalizza quali grafici appaiono nella homepage e combina insieme i grafici compatibili"
     },
+    "export": {
+      "title": "Esporta dati",
+      "description": "Scarica i tuoi dati come file CSV, un file per ogni tipo di dato. Lascia vuote le date per esportare tutto.",
+      "dataLabel": "Dati da esportare",
+      "from": "Dal",
+      "to": "Al",
+      "rangeHint": "Entrambe le date sono facoltative e incluse.",
+      "button": "Esporta CSV",
+      "exporting": "Esportazione...",
+      "success": "Esportati {count} file",
+      "error": "Impossibile esportare i dati",
+      "invalidRange": "La data iniziale non può essere successiva a quella finale",
+      "types": {
+        "weight": "Peso",
+        "water": "Acqua",
+        "steps": "Passi",
+        "pressure": "Pressione sanguigna",
+        "medications": "Farmaci",
+        "injections": "Iniezioni",
+        "body-measurements": "Misure corporee"
+      }
+    },
     "buttonBar": {
       "title": "Pulsanti azione",
       "description": "Scegli l'ordine dei pulsanti di aggiunta flottanti in fondo alla dashboard",

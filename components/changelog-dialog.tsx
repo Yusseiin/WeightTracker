@@ -26,6 +26,13 @@ interface ChangelogEntry {
 const changelog: ChangelogEntry[] = [
   {
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
+    date: "2026-09-25",
+    changes: [
+      { type: "added", description: "CSV export. In Settings → Export Data you can pick which data sets to export (weight, water, steps, blood pressure, medications, injections, body measurements) and an optional date range, and each one downloads as its own CSV file. Values use your configured units and show proper names instead of internal IDs, and the files open correctly in Excel. Thanks to @petersrinivasan for the request. (#19)" },
+    ],
+  },
+  {
+    version: "v0.0.34",
     date: "2026-09-17",
     changes: [
       { type: "fixed", description: "On iPhone and iPad, the Date and Time boxes shown side by side in the entry dialogs (Add Water and others) were too wide: they overlapped each other and ran off the right edge of the screen. They now fit their columns correctly. This only affected Safari and other browsers on iOS. Thanks to @nfischer for the detailed report. (#16)" },

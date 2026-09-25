@@ -535,6 +535,34 @@ Body fields: `medicationId`, `dose`, `siteId`, plus optional `date`, `timestamp`
 `dose` is expressed in that medication's own unit (e.g. `mg`, `units`), configured per
 medication under Settings -> Injection Settings, so there is no global unit conversion here.
 
+### Export (CSV)
+
+| Method | Endpoint | Description | Example usage |
+|--------|----------|-------------|---------------|
+| GET | `/api/export` | Download one data set as a CSV file. | `/api/export?type=pressure&from=2026-01-01&to=2026-01-31` |
+
+Query parameters:
+
+- `type` (**required**) — one of `weight`, `water`, `steps`, `pressure`, `medications`,
+  `injections`, `body-measurements`. Each type is its own CSV.
+- `from` / `to` (optional) — `YYYY-MM-DD`, **inclusive**. Omit either one for an open-ended
+  range, or both to export everything.
+
+The response is `text/csv` with a `Content-Disposition` filename such as
+`weighttracker_pressure_2026-01-01_2026-01-31.csv`. IDs are resolved to their labels
+(activity, medication, injection site, measurement preset) and values use your configured
+units, so the header reads e.g. `weight_kg`, `amount_oz` or `Chest (cm)`. Files include a
+UTF-8 BOM and CRLF line endings so Excel opens them correctly.
+
+The same export is available in the app under **Settings -> Export Data**, where you can tick
+several data sets and download them together.
+
+```bash
+curl -L -H "X-API-Key: YOUR_KEY" \
+  "http://localhost:3000/api/export?type=pressure&from=2026-01-01&to=2026-01-31" \
+  -o pressure.csv
+```
+
 ### Body Measurements
 
 **Units:** measurements are always *stored* in centimeters (cm), but the API accepts an
