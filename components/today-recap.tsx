@@ -9,7 +9,7 @@ import type { WeightEntry, WaterDayTotal, WaterUnit, GoalSettings, StepsEntry, P
 import { formatWaterAmount } from '@/lib/water-utils';
 import { formatDateForRecap } from '@/lib/date-utils';
 import { calculateWaterStreak, calculateProgress, getCurrentWeekWeightChange, getCurrentMonthWeightChange } from '@/lib/goals';
-import { getPressureCategory } from '@/lib/pressure-utils';
+import { getPressureCategory, estimateMap } from '@/lib/pressure-utils';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/use-translation';
 
@@ -185,6 +185,7 @@ export function TodayRecap({
   const waterEnabled = features?.waterEnabled ?? true;
   const stepsEnabled = features?.stepsEnabled ?? false;
   const pressureEnabled = features?.pressureEnabled ?? false;
+  const pressureMapEnabled = features?.pressureMapEnabled ?? false;
   const medicationEnabled = features?.medicationEnabled ?? false;
   const injectionsEnabled = features?.injectionsEnabled ?? false;
 
@@ -411,6 +412,12 @@ export function TodayRecap({
                       <>
                         <div className="text-lg font-semibold">
                           {latestPressure.systolic}/{latestPressure.diastolic}
+                          {pressureMapEnabled && (
+                            <span className="ml-2 text-xs font-normal text-muted-foreground">
+                              {t('pressure.map')}{' '}
+                              {latestPressure.map ?? estimateMap(latestPressure.systolic, latestPressure.diastolic)}
+                            </span>
+                          )}
                         </div>
                         {pressureCategory && (
                           <div className={cn("text-xs", pressureCategory.color)}>

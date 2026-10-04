@@ -513,6 +513,13 @@ curl -X POST http://localhost:3000/api/water \
 | PATCH | `/api/pressure` | Update pressure entry by ID |
 | DELETE | `/api/pressure` | Delete pressure entry by ID |
 
+Body fields: `systolic`, `diastolic`, plus optional `date`, `timestamp`, `notes` and `map`.
+
+**MAP (mean arterial pressure):** when *Settings → Optional Features → Show estimated MAP* is
+on, each reading carries a `map` value. If you omit `map`, the server estimates it as
+`(systolic + 2 × diastolic) / 3`, rounded to a whole mmHg; send `map` yourself (30–300) to
+store a measured value instead. Turning the setting on fills in `map` for existing readings.
+
 ### Medications
 
 | Method | Endpoint | Description |
@@ -551,7 +558,8 @@ Query parameters:
 The response is `text/csv` with a `Content-Disposition` filename such as
 `weighttracker_pressure_2026-01-01_2026-01-31.csv`. IDs are resolved to their labels
 (activity, medication, injection site, measurement preset) and values use your configured
-units, so the header reads e.g. `weight_kg`, `amount_oz` or `Chest (cm)`. Files include a
+units, so the header reads e.g. `weight_kg`, `amount_oz` or `Chest (cm)`. The `pressure` file
+also has a `map` column when *Show estimated MAP* is on. Files include a
 UTF-8 BOM and CRLF line endings so Excel opens them correctly.
 
 The same export is available in the app under **Settings -> Export Data**, where you can tick

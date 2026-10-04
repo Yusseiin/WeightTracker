@@ -9,8 +9,8 @@ interface UsePressureReturn {
   todayPressure: PressureEntry[];
   pressureEntries: PressureEntry[];
   isLoading: boolean;
-  createPressure: (systolic: number, diastolic: number, date?: string, timestamp?: string, notes?: string) => Promise<PressureEntry | undefined>;
-  updatePressureById: (id: string, systolic: number, diastolic: number, timestamp?: string, notes?: string) => Promise<void>;
+  createPressure: (systolic: number, diastolic: number, date?: string, timestamp?: string, notes?: string, map?: number) => Promise<PressureEntry | undefined>;
+  updatePressureById: (id: string, systolic: number, diastolic: number, timestamp?: string, notes?: string, map?: number) => Promise<void>;
   deletePressure: (id: string) => Promise<void>;
   refreshPressure: () => Promise<void>;
 }
@@ -36,7 +36,7 @@ export function usePressure(
     }
   }, []);
 
-  const createPressure = useCallback(async (systolic: number, diastolic: number, date?: string, timestamp?: string, notes?: string) => {
+  const createPressure = useCallback(async (systolic: number, diastolic: number, date?: string, timestamp?: string, notes?: string, map?: number) => {
     setIsLoading(true);
 
     const now = new Date().toISOString();
@@ -50,6 +50,7 @@ export function usePressure(
       date: entryDate,
       systolic,
       diastolic,
+      ...(map !== undefined ? { map } : {}),
       timestamp: timestamp || now,
       updatedAt: now
     };
@@ -67,7 +68,7 @@ export function usePressure(
       const response = await fetch('/api/pressure', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ systolic, diastolic, date, timestamp, notes })
+        body: JSON.stringify({ systolic, diastolic, date, timestamp, notes, map })
       });
 
       const result = await response.json();
@@ -102,7 +103,7 @@ export function usePressure(
     }
   }, [todayPressure, pressureEntries, t]);
 
-  const updatePressureById = useCallback(async (id: string, systolic: number, diastolic: number, timestamp?: string, notes?: string) => {
+  const updatePressureById = useCallback(async (id: string, systolic: number, diastolic: number, timestamp?: string, notes?: string, map?: number) => {
     setIsLoading(true);
 
     const now = new Date().toISOString();
@@ -113,7 +114,7 @@ export function usePressure(
 
     const updateEntry = (entries: PressureEntry[]) =>
       entries.map(e => e.id === id
-        ? { ...e, systolic, diastolic, timestamp: timestamp || e.timestamp, updatedAt: now }
+        ? { ...e, systolic, diastolic, ...(map !== undefined ? { map } : {}), timestamp: timestamp || e.timestamp, updatedAt: now }
         : e
       );
 
@@ -124,7 +125,7 @@ export function usePressure(
       const response = await fetch('/api/pressure', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, systolic, diastolic, timestamp, notes })
+        body: JSON.stringify({ id, systolic, diastolic, timestamp, notes, map })
       });
 
       const result = await response.json();

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSettings, updateSettings } from '@/lib/data';
 import { getSession } from '@/lib/auth';
 import { getAvailableLanguages } from '@/lib/i18n';
+import { backfillPressureMap } from '@/lib/pressure';
 import { ApiResponse, UserSettings, DateFormatSettings, SingleDateFormat, CustomActivity, MAX_ACTIVITIES, GoalSettings, WaterPreset, MAX_WATER_PRESETS, FeatureToggles, MedicationPreset, MAX_MEDICATIONS, MedicationSchedule, MedicationScheduleType, MedicationTrackingMode, InjectionSettings, InjectableMedication, InjectionSitePreset, MAX_INJECTABLE_MEDICATIONS, MAX_INJECTION_SITES, ChartCombination, ChartView, ChartType, BodyMeasurementPreset, MAX_BODY_MEASUREMENT_PRESETS, MeasurementUnit, ButtonBarOrderMode, ActionButtonKey, DEFAULT_ACTION_BUTTON_ORDER } from '@/lib/types';
 import { ALL_ACTIVITY_ICONS, WATER_ICONS, MEDICATION_ICONS } from '@/lib/icons';
 
@@ -130,6 +131,7 @@ function isValidFeatureToggles(features: unknown): features is FeatureToggles {
   // All fields are optional - if present, they must be boolean
   if (f.stepsEnabled !== undefined && typeof f.stepsEnabled !== 'boolean') return false;
   if (f.pressureEnabled !== undefined && typeof f.pressureEnabled !== 'boolean') return false;
+  if (f.pressureMapEnabled !== undefined && typeof f.pressureMapEnabled !== 'boolean') return false;
   if (f.medicationEnabled !== undefined && typeof f.medicationEnabled !== 'boolean') return false;
   if (f.injectionsEnabled !== undefined && typeof f.injectionsEnabled !== 'boolean') return false;
   if (f.waterEnabled !== undefined && typeof f.waterEnabled !== 'boolean') return false;
@@ -559,10 +561,20 @@ export async function PUT(request: NextRequest) {
     if (buttonBarOrder !== undefined) updateData.buttonBarOrder = buttonBarOrder as ButtonBarOrderMode;
     if (customButtonOrder !== undefined) updateData.customButtonOrder = customButtonOrder as ActionButtonKey[];
 
+    // Remember whether MAP was on before this save, to detect it being switched on.
+    const mapWasEnabled = features !== undefined
+      ? ((await getSettings(session.username)).features?.pressureMapEnabled ?? false)
+      : true;
+
     const updated = await updateSettings(
       updateData,
       session.username
     );
+
+    // MAP just switched on: estimate it for existing readings that don't have one.
+    if (!mapWasEnabled && updated.features?.pressureMapEnabled) {
+      await backfillPressureMap(session.username);
+    }
 
     const response: ApiResponse<UserSettings> = {
       success: true,

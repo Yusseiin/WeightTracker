@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, getApiKeyUser } from '@/lib/auth';
 import { getTodayPressure, getPressureEntriesForDate, getPressureEntries, createPressureEntry, updatePressureById, deletePressureById } from '@/lib/pressure';
+import { getSettings } from '@/lib/data';
+import { isValidMap, MAP_MIN, MAP_MAX } from '@/lib/pressure-utils';
 import { ApiResponse, PressureEntry } from '@/lib/types';
+
+const INVALID_MAP = `MAP must be a number between ${MAP_MIN} and ${MAP_MAX}`;
+
+// Whether this user has MAP tracking switched on.
+async function isMapEnabled(username: string): Promise<boolean> {
+  const settings = await getSettings(username);
+  return settings.features?.pressureMapEnabled ?? false;
+}
 
 // GET /api/pressure - Get pressure entry (today or specific date)
 export async function GET(request: NextRequest) {
@@ -62,7 +72,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { systolic, diastolic, date, timestamp, notes } = body;
+    const { systolic, diastolic, date, timestamp, notes, map } = body;
 
     // Validate systolic
     if (typeof systolic !== 'number' || systolic < 50 || systolic > 300) {
@@ -96,7 +106,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const entry = await createPressureEntry(user.username, systolic, diastolic, date, timestamp, notes);
+    // Validate MAP (optional - estimated from SYS/DIA when omitted and MAP is on)
+    if (map !== undefined && !isValidMap(map)) {
+      return NextResponse.json({ success: false, error: INVALID_MAP }, { status: 400 });
+    }
+
+    const entry = await createPressureEntry(user.username, systolic, diastolic, date, timestamp, notes, {
+      map,
+      mapEnabled: await isMapEnabled(user.username),
+    });
 
     const response: ApiResponse<PressureEntry> = {
       success: true,
@@ -128,7 +146,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, systolic, diastolic, timestamp, notes } = body;
+    const { id, systolic, diastolic, timestamp, notes, map } = body;
 
     // Validate id
     if (!id || typeof id !== 'string') {
@@ -162,7 +180,15 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const entry = await updatePressureById(user.username, id, systolic, diastolic, timestamp, notes);
+    // Validate MAP (optional - see updatePressureById for how an omitted MAP is handled)
+    if (map !== undefined && !isValidMap(map)) {
+      return NextResponse.json({ success: false, error: INVALID_MAP }, { status: 400 });
+    }
+
+    const entry = await updatePressureById(user.username, id, systolic, diastolic, timestamp, notes, {
+      map,
+      mapEnabled: await isMapEnabled(user.username),
+    });
 
     if (!entry) {
       return NextResponse.json(

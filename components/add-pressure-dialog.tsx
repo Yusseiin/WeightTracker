@@ -31,14 +31,17 @@ import { useTranslation } from '@/hooks/use-translation';
 import { getPressureCategory } from '@/lib/pressure-utils';
 import { cn } from '@/lib/utils';
 import { PhotoCapture } from './photo-capture';
+import { MapInputCell, MapHint } from './pressure-map-field';
+import { useMapInput } from '@/hooks/use-map-input';
 
 interface AddPressureDialogProps {
-  onAddPressure: (systolic: number, diastolic: number, date?: string, timestamp?: string, notes?: string) => Promise<any>;
+  onAddPressure: (systolic: number, diastolic: number, date?: string, timestamp?: string, notes?: string, map?: number) => Promise<any>;
   isLoading?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   photosEnabled?: boolean;
   notesEnabled?: boolean;
+  mapEnabled?: boolean;
 }
 
 export function AddPressureDialog({
@@ -47,7 +50,8 @@ export function AddPressureDialog({
   open: controlledOpen,
   onOpenChange,
   photosEnabled,
-  notesEnabled
+  notesEnabled,
+  mapEnabled = false
 }: AddPressureDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
 
@@ -65,6 +69,15 @@ export function AddPressureDialog({
   const isMobile = useIsMobile();
   const { t } = useTranslation();
 
+  const systolicValue = parseInt(systolicInput) || 0;
+  const diastolicValue = parseInt(diastolicInput) || 0;
+  const readingInRange =
+    systolicValue >= 50 && systolicValue <= 300 && diastolicValue >= 30 && diastolicValue <= 200;
+
+  // MAP follows the (SYS + 2 x DIA) / 3 estimate until the user overrides it
+  const mapField = useMapInput(systolicValue, diastolicValue, readingInRange);
+  const resetMap = mapField.reset;
+
   // Initialize inputs when dialog opens
   useEffect(() => {
     if (open) {
@@ -74,8 +87,9 @@ export function AddPressureDialog({
       setTimeInput(format(new Date(), 'HH:mm'));
       setNotesInput('');
       setPendingPhotos([]);
+      resetMap();
     }
-  }, [open]);
+  }, [open, resetMap]);
 
   // Handle dialog open/close
   const handleOpenChange = (newOpen: boolean) => {
@@ -99,7 +113,10 @@ export function AddPressureDialog({
 
     setIsSubmitting(true);
     try {
-      const entry = await onAddPressure(systolic, diastolic, dateInput, timestamp, notesInput || undefined);
+      const entry = await onAddPressure(
+        systolic, diastolic, dateInput, timestamp, notesInput || undefined,
+        mapEnabled ? mapField.valueForSave : undefined
+      );
       if (pendingPhotos.length > 0 && entry?.id) {
         for (const photo of pendingPhotos) {
           const formData = new FormData();
@@ -114,16 +131,12 @@ export function AddPressureDialog({
     }
   };
 
-  const systolicValue = parseInt(systolicInput) || 0;
-  const diastolicValue = parseInt(diastolicInput) || 0;
   const canSave =
     systolicInput !== '' &&
     diastolicInput !== '' &&
     dateInput !== '' &&
-    systolicValue >= 50 &&
-    systolicValue <= 300 &&
-    diastolicValue >= 30 &&
-    diastolicValue <= 200;
+    readingInRange &&
+    (!mapEnabled || mapField.isValid);
 
   // Get category for preview
   const previewCategory = canSave ? getPressureCategory(systolicValue, diastolicValue) : null;
@@ -132,7 +145,7 @@ export function AddPressureDialog({
     <div className="space-y-6">
       {/* Pressure inputs */}
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className={cn("grid items-end gap-4", mapEnabled ? "grid-cols-3" : "grid-cols-2")}>
           <div className="space-y-2">
             <Label htmlFor="systolic">{t('pressure.systolic')}</Label>
             <Input
@@ -160,7 +173,10 @@ export function AddPressureDialog({
               max={200}
             />
           </div>
+          {mapEnabled && <MapInputCell field={mapField} id="map" />}
         </div>
+
+        {mapEnabled && <MapHint field={mapField} />}
 
         {/* Preview category */}
         {previewCategory && (

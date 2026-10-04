@@ -833,6 +833,23 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                   </Label>
                 </div>
 
+                {/* Estimated MAP - only when blood pressure is enabled */}
+                {localFeatures.pressureEnabled && (
+                  <div className="flex items-center space-x-2 ml-6">
+                    <Checkbox
+                      id="pressureMapEnabled"
+                      checked={localFeatures.pressureMapEnabled}
+                      onCheckedChange={(checked) => setLocalFeatures(prev => ({
+                        ...prev,
+                        pressureMapEnabled: checked === true
+                      }))}
+                    />
+                    <Label htmlFor="pressureMapEnabled" className="cursor-pointer">
+                      {t('settings.features.pressureMap')}
+                    </Label>
+                  </div>
+                )}
+
                 {/* Medication Tracking */}
                 <div className="flex items-center space-x-2">
                   <Checkbox

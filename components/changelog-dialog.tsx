@@ -26,6 +26,13 @@ interface ChangelogEntry {
 const changelog: ChangelogEntry[] = [
   {
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
+    date: "2026-10-04",
+    changes: [
+      { type: "added", description: "Estimated MAP (mean arterial pressure) for blood pressure readings. Turn it on in Settings → Optional Features under blood pressure tracking: the add and edit dialogs get a third MAP field that fills in automatically from (SYS + 2 × DIA) / 3 and can still be edited, and MAP appears in the history table, the chart, today's recap and the CSV export. Existing readings get a MAP value when you turn it on. Thanks to @petersrinivasan for the suggestion. (#20)" },
+    ],
+  },
+  {
+    version: "v0.0.35",
     date: "2026-09-25",
     changes: [
       { type: "added", description: "CSV export. In Settings → Export Data you can pick which data sets to export (weight, water, steps, blood pressure, medications, injections, body measurements) and an optional date range, and each one downloads as its own CSV file. Values use your configured units and show proper names instead of internal IDs, and the files open correctly in Excel. Thanks to @petersrinivasan for the request. (#19)" },

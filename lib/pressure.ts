@@ -3,6 +3,14 @@ import path from 'path';
 import { format } from 'date-fns';
 import { PressureEntry } from './types';
 import { withFileLock, writeJsonAtomic } from './storage';
+import { estimateMap } from './pressure-utils';
+
+// How a write should treat MAP. `map` is an explicit value from the caller;
+// `mapEnabled` says whether MAP tracking is on for this user.
+export interface MapOptions {
+  map?: number;
+  mapEnabled: boolean;
+}
 
 // Config directory - configurable via env for Docker/Unraid
 const CONFIG_PATH = process.env.CONFIG_PATH || '/config';
@@ -73,7 +81,8 @@ export async function createPressureEntry(
   diastolic: number,
   date?: string,
   timestamp?: string,
-  notes?: string
+  notes?: string,
+  mapOptions?: MapOptions
 ): Promise<PressureEntry> {
   return withFileLock(getPressurePath(userId), async () => {
     const entries = await getPressureEntries(userId);
@@ -91,6 +100,12 @@ export async function createPressureEntry(
       updatedAt: now
     };
     if (notes) { newEntry.notes = notes; }
+    // Explicit MAP wins; otherwise estimate it when MAP tracking is on.
+    if (mapOptions?.map !== undefined) {
+      newEntry.map = mapOptions.map;
+    } else if (mapOptions?.mapEnabled) {
+      newEntry.map = estimateMap(systolic, diastolic);
+    }
     entries.push(newEntry);
     await savePressureEntries(userId, entries);
     return newEntry;
@@ -104,7 +119,8 @@ export async function updatePressureById(
   systolic: number,
   diastolic: number,
   timestamp?: string,
-  notes?: string
+  notes?: string,
+  mapOptions?: MapOptions
 ): Promise<PressureEntry | null> {
   return withFileLock(getPressurePath(userId), async () => {
     const entries = await getPressureEntries(userId);
@@ -115,18 +131,56 @@ export async function updatePressureById(
       return null; // Entry not found
     }
 
+    const entry = entries[existingIndex];
+    const readingChanged = entry.systolic !== systolic || entry.diastolic !== diastolic;
+
     // Update existing entry
-    entries[existingIndex].systolic = systolic;
-    entries[existingIndex].diastolic = diastolic;
+    entry.systolic = systolic;
+    entry.diastolic = diastolic;
+
+    // MAP: an explicit value always wins. Otherwise, with MAP tracking on,
+    // re-estimate when the reading changed (or none is stored yet). With it
+    // off, drop a MAP that no longer matches the reading so it can't go stale -
+    // the backfill recomputes it if MAP is switched back on.
+    if (mapOptions?.map !== undefined) {
+      entry.map = mapOptions.map;
+    } else if (mapOptions?.mapEnabled) {
+      if (readingChanged || entry.map === undefined) {
+        entry.map = estimateMap(systolic, diastolic);
+      }
+    } else if (readingChanged) {
+      delete entry.map;
+    }
+
     if (timestamp) {
-      entries[existingIndex].timestamp = timestamp;
+      entry.timestamp = timestamp;
     }
     if (notes !== undefined) {
-      entries[existingIndex].notes = notes || undefined;
+      entry.notes = notes || undefined;
     }
-    entries[existingIndex].updatedAt = now;
+    entry.updatedAt = now;
     await savePressureEntries(userId, entries);
-    return entries[existingIndex];
+    return entry;
+  });
+}
+
+// Estimate MAP for every reading that doesn't have one yet. Run when MAP
+// tracking is switched on so existing history gets values. Returns how many
+// readings were filled in; user-entered values are never overwritten.
+export async function backfillPressureMap(userId: string): Promise<number> {
+  return withFileLock(getPressurePath(userId), async () => {
+    const entries = await getPressureEntries(userId);
+    let filled = 0;
+    for (const entry of entries) {
+      if (entry.map === undefined) {
+        entry.map = estimateMap(entry.systolic, entry.diastolic);
+        filled++;
+      }
+    }
+    if (filled > 0) {
+      await savePressureEntries(userId, entries);
+    }
+    return filled;
   });
 }
 
@@ -150,4 +204,4 @@ export async function deletePressureById(userId: string, id: string): Promise<bo
 }
 
 // Re-export client-safe functions from pressure-utils
-export { formatPressure, getPressureCategory } from './pressure-utils';
+export { formatPressure, getPressureCategory, estimateMap } from './pressure-utils';

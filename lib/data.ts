@@ -303,6 +303,10 @@ export async function getSettings(userId: string = DEFAULT_USER_ID): Promise<Use
         settings.features.bodyMeasurementsEnabled = false;
         needsSave = true;
       }
+      if (settings.features.pressureMapEnabled === undefined) {
+        settings.features.pressureMapEnabled = false;
+        needsSave = true;
+      }
     }
     // Add bodyMeasurementPresets if missing (backward compatibility)
     if (!Array.isArray(settings.bodyMeasurementPresets)) {

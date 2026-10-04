@@ -15,7 +15,7 @@ import {
 import { DynamicIcon } from '@/components/dynamic-icon';
 import { formatWaterAmount } from '@/lib/water-utils';
 import { formatDateForTable, formatDateForRecap } from '@/lib/date-utils';
-import { getPressureCategory } from '@/lib/pressure-utils';
+import { getPressureCategory, estimateMap } from '@/lib/pressure-utils';
 import type { WeightEntry, WaterDayTotal, WaterEntry, WaterUnit, DateFormatSettings, CustomActivity, StepsEntry, PressureEntry, FeatureToggles, MedicationEntry, MedicationPreset, InjectionEntry, InjectionSettings } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/use-translation';
@@ -49,7 +49,7 @@ interface EntriesTableProps {
   onDeleteWater?: (id: string) => Promise<void>;
   onUpdateSteps?: (id: string, steps: number, timestamp?: string, notes?: string) => Promise<void>;
   onDeleteSteps?: (id: string) => Promise<void>;
-  onUpdatePressure?: (id: string, systolic: number, diastolic: number, timestamp?: string, notes?: string) => Promise<void>;
+  onUpdatePressure?: (id: string, systolic: number, diastolic: number, timestamp?: string, notes?: string, map?: number) => Promise<void>;
   onDeletePressure?: (id: string) => Promise<void>;
   onUpdateMedication?: (id: string, taken: boolean, timestamp?: string, date?: string, dose?: number | null, notes?: string) => Promise<void>;
   onDeleteMedication?: (id: string) => Promise<void>;
@@ -244,6 +244,7 @@ export function EntriesTable({
   const waterHistoryEnabled = (features?.waterEnabled ?? true) && (features?.waterHistoryEnabled ?? false);
   const stepsEnabled = features?.stepsEnabled ?? false;
   const pressureEnabled = features?.pressureEnabled ?? false;
+  const pressureMapEnabled = features?.pressureMapEnabled ?? false;
   const medicationEnabled = features?.medicationEnabled ?? false;
   const injectionsEnabled = features?.injectionsEnabled ?? false;
   const showViewSwitcher = waterHistoryEnabled || stepsEnabled || pressureEnabled || medicationEnabled || injectionsEnabled;
@@ -614,6 +615,9 @@ export function EntriesTable({
             <th className="text-center py-2 px-1 font-medium w-8"><span className="sr-only">{t('table.info')}</span></th>
             <th className="text-left py-2 px-1 font-medium">{t('common.date')}</th>
             <th className="text-right py-2 px-1 font-medium">{t('table.pressure')}</th>
+            {pressureMapEnabled && (
+              <th className="text-right py-2 px-1 font-medium">{t('table.map')}</th>
+            )}
             <th className="text-left py-2 px-1 font-medium">{t('table.category')}</th>
           </tr>
         </thead>
@@ -646,6 +650,11 @@ export function EntriesTable({
                 <td className="py-2 px-1 text-right whitespace-nowrap text-red-500">
                   {entry.systolic}/{entry.diastolic}
                 </td>
+                {pressureMapEnabled && (
+                  <td className="py-2 px-1 text-right whitespace-nowrap tabular-nums">
+                    {entry.map ?? estimateMap(entry.systolic, entry.diastolic)}
+                  </td>
+                )}
                 <td className={cn("py-2 px-1 whitespace-nowrap", category.color)}>
                   {category.label}
                 </td>
@@ -914,6 +923,7 @@ export function EntriesTable({
           onDelete={onDeletePressure}
           photosEnabled={photosEnabled}
           notesEnabled={features?.pressureNotesEnabled}
+          mapEnabled={features?.pressureMapEnabled}
         />
       )}
 

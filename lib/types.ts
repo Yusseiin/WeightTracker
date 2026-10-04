@@ -150,6 +150,7 @@ export interface GoalSettings {
 export interface FeatureToggles {
   stepsEnabled: boolean;            // Show steps tracking button
   pressureEnabled: boolean;         // Show blood pressure tracking button
+  pressureMapEnabled: boolean;      // Show/record estimated MAP (mean arterial pressure) on blood pressure readings
   medicationEnabled: boolean;       // Show medication tracking button
   injectionsEnabled: boolean;       // Show injections tracking button
   waterEnabled: boolean;            // Show water tracking button
@@ -215,6 +216,7 @@ export const DEFAULT_GOALS: GoalSettings = {
 export const DEFAULT_FEATURE_TOGGLES: FeatureToggles = {
   stepsEnabled: false,
   pressureEnabled: false,
+  pressureMapEnabled: false,
   medicationEnabled: false,
   injectionsEnabled: false,
   waterEnabled: true,  // Default to true for backwards compatibility
@@ -382,6 +384,7 @@ export interface PressureEntry {
   date: string;        // YYYY-MM-DD format
   systolic: number;    // Upper value (e.g., 120)
   diastolic: number;   // Lower value (e.g., 80)
+  map?: number;        // Mean arterial pressure - estimated from SYS/DIA, user-editable (pressureMapEnabled)
   timestamp: string;   // ISO 8601 - time of measurement (can be edited independently)
   updatedAt: string;   // ISO 8601
   notes?: string;      // Optional notes

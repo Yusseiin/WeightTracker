@@ -11,6 +11,7 @@ import type {
 } from './types';
 import { CM_PER_INCH } from './types';
 import { mlToOz } from './water-utils';
+import { estimateMap } from './pressure-utils';
 
 // The data sets a user can export. Each one becomes its own CSV file.
 export const EXPORT_TYPES = [
@@ -128,10 +129,24 @@ export function buildStepsCsv(entries: StepsEntry[]): CsvDocument {
   };
 }
 
-export function buildPressureCsv(entries: PressureEntry[]): CsvDocument {
+export function buildPressureCsv(entries: PressureEntry[], s: UserSettings): CsvDocument {
+  // MAP is only included when the user tracks it.
+  if (!s.features?.pressureMapEnabled) {
+    return {
+      headers: ['date', 'time', 'systolic', 'diastolic', 'notes'],
+      rows: entries.map((e) => [e.date, localTime(e.timestamp), e.systolic, e.diastolic, e.notes ?? '']),
+    };
+  }
   return {
-    headers: ['date', 'time', 'systolic', 'diastolic', 'notes'],
-    rows: entries.map((e) => [e.date, localTime(e.timestamp), e.systolic, e.diastolic, e.notes ?? '']),
+    headers: ['date', 'time', 'systolic', 'diastolic', 'map', 'notes'],
+    rows: entries.map((e) => [
+      e.date,
+      localTime(e.timestamp),
+      e.systolic,
+      e.diastolic,
+      e.map ?? estimateMap(e.systolic, e.diastolic),
+      e.notes ?? '',
+    ]),
   };
 }
 

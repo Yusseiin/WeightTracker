@@ -36,6 +36,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PhotoCapture } from './photo-capture';
+import { MapInputCell, MapHint } from './pressure-map-field';
+import { useMapInput } from '@/hooks/use-map-input';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from '@/hooks/use-translation';
 import { type PressureEntry } from '@/lib/types';
@@ -46,10 +48,11 @@ interface EditPressureDialogProps {
   entry: PressureEntry | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (id: string, systolic: number, diastolic: number, timestamp?: string, notes?: string) => Promise<void>;
+  onSave: (id: string, systolic: number, diastolic: number, timestamp?: string, notes?: string, map?: number) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
   photosEnabled?: boolean;
   notesEnabled?: boolean;
+  mapEnabled?: boolean;
 }
 
 export function EditPressureDialog({
@@ -59,7 +62,8 @@ export function EditPressureDialog({
   onSave,
   onDelete,
   photosEnabled,
-  notesEnabled
+  notesEnabled,
+  mapEnabled = false
 }: EditPressureDialogProps) {
   const [systolicInput, setSystolicInput] = useState<string>('');
   const [diastolicInput, setDiastolicInput] = useState<string>('');
@@ -70,6 +74,15 @@ export function EditPressureDialog({
   const router = useRouter();
   const isMobile = useIsMobile();
   const { t } = useTranslation();
+
+  const systolicValue = parseInt(systolicInput) || 0;
+  const diastolicValue = parseInt(diastolicInput) || 0;
+  const readingInRange =
+    systolicValue >= 50 && systolicValue <= 300 && diastolicValue >= 30 && diastolicValue <= 200;
+
+  // MAP follows the (SYS + 2 x DIA) / 3 estimate until the user overrides it
+  const mapField = useMapInput(systolicValue, diastolicValue, readingInRange);
+  const initMap = mapField.init;
 
   // Format time from ISO timestamp for display
   const formatTimeFromTimestamp = (timestamp: string | undefined): string => {
@@ -88,8 +101,9 @@ export function EditPressureDialog({
       setDiastolicInput(entry.diastolic.toString());
       setTimeInput(formatTimeFromTimestamp(entry.timestamp) || format(new Date(), 'HH:mm'));
       setNotesInput(entry.notes || '');
+      initMap(entry.map, entry.systolic, entry.diastolic);
     }
-  }, [entry, open]);
+  }, [entry, open, initMap]);
 
   const handleSave = async () => {
     if (!entry) return;
@@ -110,7 +124,10 @@ export function EditPressureDialog({
 
     setIsSubmitting(true);
     try {
-      await onSave(entry.id, systolic, diastolic, timestamp, notesInput || undefined);
+      await onSave(
+        entry.id, systolic, diastolic, timestamp, notesInput || undefined,
+        mapEnabled ? mapField.valueForSave : undefined
+      );
       onOpenChange(false);
     } finally {
       setIsSubmitting(false);
@@ -130,15 +147,11 @@ export function EditPressureDialog({
     }
   };
 
-  const systolicValue = parseInt(systolicInput) || 0;
-  const diastolicValue = parseInt(diastolicInput) || 0;
   const canSave =
     systolicInput !== '' &&
     diastolicInput !== '' &&
-    systolicValue >= 50 &&
-    systolicValue <= 300 &&
-    diastolicValue >= 30 &&
-    diastolicValue <= 200;
+    readingInRange &&
+    (!mapEnabled || mapField.isValid);
 
   // Get category for preview
   const previewCategory = canSave ? getPressureCategory(systolicValue, diastolicValue) : null;
@@ -147,7 +160,7 @@ export function EditPressureDialog({
     <div className="space-y-6">
       {/* Pressure inputs */}
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className={cn("grid items-end gap-4", mapEnabled ? "grid-cols-3" : "grid-cols-2")}>
           <div className="space-y-2">
             <Label htmlFor="edit-systolic">{t('pressure.systolic')}</Label>
             <Input
@@ -175,7 +188,10 @@ export function EditPressureDialog({
               max={200}
             />
           </div>
+          {mapEnabled && <MapInputCell field={mapField} id="edit-map" />}
         </div>
+
+        {mapEnabled && <MapHint field={mapField} />}
 
         {/* Preview category */}
         {previewCategory && (

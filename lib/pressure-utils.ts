@@ -1,5 +1,20 @@
 // Client-safe pressure utility functions
 
+// Plausible bounds for a MAP value entered by hand (mmHg).
+export const MAP_MIN = 30;
+export const MAP_MAX = 300;
+
+// Estimated mean arterial pressure: MAP = (SYS + 2 x DIA) / 3, rounded to a
+// whole mmHg like the readings it is derived from. Home cuffs don't report MAP,
+// so this is the standard estimate rather than a measured value.
+export function estimateMap(systolic: number, diastolic: number): number {
+  return Math.round((systolic + 2 * diastolic) / 3);
+}
+
+export function isValidMap(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= MAP_MIN && value <= MAP_MAX;
+}
+
 // Format pressure for display
 export function formatPressure(systolic: number, diastolic: number): string {
   return `${systolic}/${diastolic}`;

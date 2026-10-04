@@ -46,7 +46,7 @@ async function buildCsv(
     case 'steps':
       return buildStepsCsv(inRange(await getStepsEntries(userId)));
     case 'pressure':
-      return buildPressureCsv(inRange(await getPressureEntries(userId)));
+      return buildPressureCsv(inRange(await getPressureEntries(userId)), settings);
     case 'medications':
       return buildMedicationsCsv(inRange(await getMedicationEntries(userId)), settings);
     case 'injections':

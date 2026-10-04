@@ -30,7 +30,7 @@ import {
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { formatDateForAxis, formatDateForTooltip } from '@/lib/date-utils';
 import { formatWaterAmount } from '@/lib/water-utils';
-import { getPressureCategory } from '@/lib/pressure-utils';
+import { getPressureCategory, estimateMap } from '@/lib/pressure-utils';
 import { ML_PER_OZ } from '@/lib/types';
 import type {
   WeightEntry,
@@ -96,6 +96,7 @@ const SYSTOLIC_COLOR = 'hsl(0, 84%, 60%)';
 const DIASTOLIC_COLOR = 'hsl(210, 100%, 50%)';
 const INJECTION_COLOR = 'hsl(174, 72%, 40%)'; // teal
 const BODY_FAT_COLOR = 'hsl(330, 81%, 60%)';
+const MAP_COLOR = 'hsl(38, 92%, 50%)'; // amber - sits between systolic red and diastolic blue
 
 // Mapping from Tailwind color classes to HSL for injection medications
 const MEDICATION_COLOR_MAP: Record<string, string> = {
@@ -158,6 +159,7 @@ export function WeightChart({
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [medTimeFilter, setMedTimeFilter] = useState<MedicationTimeFilter>('30d');
   const lineColor = CHART_COLORS[chartColor];
+  const pressureMapEnabled = features?.pressureMapEnabled ?? false;
 
   // Get active chart combinations (enabled and sorted by order)
   const activeCombinations = useMemo(() => {
@@ -334,6 +336,7 @@ export function WeightChart({
       date: entry.timestamp,
       systolic: entry.systolic,
       diastolic: entry.diastolic,
+      map: entry.map ?? estimateMap(entry.systolic, entry.diastolic),
       formattedDate: formatDateForAxis(entry.timestamp, dateFormat)
     }));
   }, [pressureEntries, timeFilter, dateFormat]);
@@ -466,6 +469,7 @@ export function WeightChart({
         weight: null,
         systolic: null,
         diastolic: null,
+        map: null,
         bodyFat: null,
       });
     });
@@ -491,7 +495,8 @@ export function WeightChart({
         date: (existing.formattedDate ? existing.date : entry.date),
         formattedDate: existing.formattedDate || entry.formattedDate,
         systolic: entry.systolic,
-        diastolic: entry.diastolic
+        diastolic: entry.diastolic,
+        map: entry.map
       });
     });
 
@@ -570,6 +575,7 @@ export function WeightChart({
     steps: { label: t('chart.steps'), color: STEPS_COLOR },
     systolic: { label: t('chart.systolic'), color: SYSTOLIC_COLOR },
     diastolic: { label: t('chart.diastolic'), color: DIASTOLIC_COLOR },
+    map: { label: t('chart.map'), color: MAP_COLOR },
     adherence: { label: t('chart.adherencePercent'), color: 'hsl(270, 76%, 55%)' },
     dose: { label: t('chart.dose'), color: INJECTION_COLOR },
     bodyFat: { label: t('chart.bodyFatPercent'), color: BODY_FAT_COLOR },
@@ -877,6 +883,11 @@ export function WeightChart({
                   <span className="text-blue-500">{data.diastolic}</span>
                   <span className="text-muted-foreground ml-1">mmHg</span>
                 </div>
+                {pressureMapEnabled && data.map != null && (
+                  <div className="text-xs mt-0.5" style={{ color: MAP_COLOR }}>
+                    {t('chart.map')}: {data.map} mmHg
+                  </div>
+                )}
                 <div className={`text-xs mt-1 ${category.color}`}>
                   {category.label}
                 </div>
@@ -889,7 +900,11 @@ export function WeightChart({
       <Legend
         verticalAlign="top"
         height={24}
-        formatter={(value) => <span className="text-xs">{value === 'systolic' ? t('chart.systolic') : t('chart.diastolic')}</span>}
+        formatter={(value) => (
+          <span className="text-xs">
+            {value === 'systolic' ? t('chart.systolic') : value === 'map' ? t('chart.map') : t('chart.diastolic')}
+          </span>
+        )}
       />
       <Line
         type="monotone"
@@ -907,6 +922,16 @@ export function WeightChart({
         dot={{ r: 0, fill: DIASTOLIC_COLOR }}
         activeDot={{ r: 4, fill: DIASTOLIC_COLOR, stroke: 'hsl(var(--background))', strokeWidth: 2 }}
       />
+      {pressureMapEnabled && (
+        <Line
+          type="monotone"
+          dataKey="map"
+          stroke={MAP_COLOR}
+          strokeWidth={2}
+          dot={{ r: 0, fill: MAP_COLOR }}
+          activeDot={{ r: 4, fill: MAP_COLOR, stroke: 'hsl(var(--background))', strokeWidth: 2 }}
+        />
+      )}
       <ReferenceLine y={120} stroke="hsl(142, 76%, 36%)" strokeDasharray="3 3" strokeOpacity={0.5} />
       <ReferenceLine y={80} stroke="hsl(142, 76%, 36%)" strokeDasharray="3 3" strokeOpacity={0.5} />
     </LineChart>
@@ -1230,6 +1255,11 @@ export function WeightChart({
                       <span className="text-muted-foreground ml-1">mmHg</span>
                     </div>
                   )}
+                  {hasPressure && pressureMapEnabled && data.map != null && (
+                    <div className="text-xs" style={{ color: MAP_COLOR }}>
+                      {t('chart.map')}: {data.map} mmHg
+                    </div>
+                  )}
                   {/* Injection data in tooltip */}
                   {hasInjections && uniqueMedications.map(med => {
                     const dose = data[`dose_${med.id}`];
@@ -1295,6 +1325,19 @@ export function WeightChart({
               activeDot={{ r: 4 }}
               connectNulls
             />
+            {pressureMapEnabled && (
+              <Line
+                yAxisId="pressure"
+                type="monotone"
+                dataKey="map"
+                name={t('chart.map')}
+                stroke={MAP_COLOR}
+                strokeWidth={2}
+                dot={{ r: 0 }}
+                activeDot={{ r: 4 }}
+                connectNulls
+              />
+            )}
           </>
         )}
         {/* Injection lines - one per medication */}

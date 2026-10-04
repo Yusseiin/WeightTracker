@@ -416,6 +416,7 @@ export function WeightTracker({
           isLoading={isPressureLoading}
           photosEnabled={features.photosEnabled}
           notesEnabled={features.pressureNotesEnabled}
+          mapEnabled={features.pressureMapEnabled}
           open={pressureDialogOpen}
           onOpenChange={(open) => { setPressureDialogOpen(open); if (!open) setPhotoRefreshKey(k => k + 1); }}
         />
