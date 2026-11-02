@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import { renameTokenOwner } from './api-tokens';
 
 // Config directory - configurable via env for Docker/Unraid
 const CONFIG_PATH = process.env.CONFIG_PATH || '/config';
@@ -141,4 +142,7 @@ export async function renameUserData(oldUsername: string, newUsername: string): 
   );
 
   await migratePhotosDir(oldUsername, newUsername);
+
+  // Scoped API tokens follow the user to the new name.
+  await renameTokenOwner(oldUsername, newUsername);
 }

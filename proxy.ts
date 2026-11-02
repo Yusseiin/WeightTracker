@@ -1,31 +1,40 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createHash, timingSafeEqual } from 'crypto';
 import { SESSION_COOKIE_NAME } from '@/lib/types';
+import { verifyToken, TOKEN_PREFIX } from '@/lib/api-tokens';
 
 // Routes that don't require authentication
 const publicPaths = ['/login', '/api/auth/login', '/api/auth/logout', '/api/auth/me'];
 
-// Check if request has valid API key
-function hasValidApiKey(request: NextRequest): boolean {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) return false;
-
-  // Check Authorization: Bearer <key>
+// The key a client presented, from "Authorization: Bearer <key>" or "X-API-Key: <key>"
+function providedKey(request: NextRequest): string | null {
   const authHeader = request.headers.get('authorization');
-  if (authHeader?.startsWith('Bearer ') && authHeader.slice(7) === apiKey) {
-    return true;
-  }
-
-  // Check X-API-Key header
-  const xApiKey = request.headers.get('x-api-key');
-  if (xApiKey === apiKey) {
-    return true;
-  }
-
-  return false;
+  if (authHeader?.startsWith('Bearer ')) return authHeader.slice(7);
+  return request.headers.get('x-api-key');
 }
 
-export function proxy(request: NextRequest) {
+// Constant-time comparison (hashing first makes the lengths equal)
+function safeEqual(a: string, b: string): boolean {
+  return timingSafeEqual(createHash('sha256').update(a).digest(), createHash('sha256').update(b).digest());
+}
+
+// Check if request has the valid legacy global API key
+function hasValidApiKey(request: NextRequest): boolean {
+  const apiKey = process.env.API_KEY;
+  const key = providedKey(request);
+  return !!apiKey && !!key && safeEqual(key, apiKey);
+}
+
+// Check if request has a valid, enabled scoped API token. Scope is enforced by
+// each route; this only decides whether the request may reach the API at all.
+async function hasValidScopedToken(request: NextRequest): Promise<boolean> {
+  const key = providedKey(request);
+  if (!key?.startsWith(TOKEN_PREFIX)) return false;
+  return (await verifyToken(key, { touch: false })) !== null;
+}
+
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public paths
@@ -42,8 +51,8 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // For API routes, also allow API key authentication
-  if (pathname.startsWith('/api/') && hasValidApiKey(request)) {
+  // For API routes, also allow API key / scoped token authentication
+  if (pathname.startsWith('/api/') && (hasValidApiKey(request) || await hasValidScopedToken(request))) {
     return NextResponse.next();
   }
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, getApiKeyUser } from '@/lib/auth';
+import { authorize } from '@/lib/api-auth';
 import { getEntries, getSettings } from '@/lib/data';
 import { getWaterInserts } from '@/lib/water';
 import { getStepsEntries } from '@/lib/steps';
@@ -60,12 +60,6 @@ async function buildCsv(
 // Returns a single CSV file. from/to are optional and inclusive.
 export async function GET(request: NextRequest) {
   try {
-    const session = await getSession();
-    const user = session || (await getApiKeyUser(request));
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const from = searchParams.get('from') || undefined;
@@ -77,6 +71,10 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const auth = await authorize(request, type, 'read');
+    if (auth.error) return auth.error;
+    const user = auth.user;
     for (const [name, value] of [['from', from], ['to', to]] as const) {
       if (value !== undefined && !DATE_RE.test(value)) {
         return NextResponse.json(

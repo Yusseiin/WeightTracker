@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, LogOut, Key, Users, Save, Loader2, UserPen, AtSign, ChevronUp, ChevronDown, Download } from 'lucide-react';
+import { ArrowLeft, LogOut, Key, Users, Save, Loader2, UserPen, AtSign, ChevronUp, ChevronDown, Download, KeyRound } from 'lucide-react';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -1388,6 +1388,14 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
                     >
                       <Users className="mr-2 h-4 w-4" />
                       {t('settings.manageUsers')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start mt-2"
+                      onClick={() => router.push('/settings/api-tokens')}
+                    >
+                      <KeyRound className="mr-2 h-4 w-4" />
+                      {t('settings.apiTokens')}
                     </Button>
                   </>
                 )}

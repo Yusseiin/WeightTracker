@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, getApiKeyUser } from '@/lib/auth';
+import { authorize } from '@/lib/api-auth';
 import { getSettings } from '@/lib/data';
 import {
   getBodyMeasurements,
@@ -74,14 +74,9 @@ function validateMeasurements(
 // GET /api/body-measurements — list all entries for current user
 export async function GET(request: NextRequest) {
   try {
-    const session = await getSession();
-    const user = session || (await getApiKeyUser(request));
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize(request, 'body-measurements', 'read');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const { searchParams } = new URL(request.url);
     const unit = resolveUnit(searchParams.get('unit') ?? undefined);
@@ -107,14 +102,9 @@ export async function GET(request: NextRequest) {
 // POST /api/body-measurements — create new entry
 export async function POST(request: NextRequest) {
   try {
-    const session = await getSession();
-    const user = session || (await getApiKeyUser(request));
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize(request, 'body-measurements', 'write');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const body = await request.json();
     const { timestamp, measurements, notes, unit } = body as {
@@ -173,14 +163,9 @@ export async function POST(request: NextRequest) {
 // PATCH /api/body-measurements — update entry by ID (id in body)
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getSession();
-    const user = session || (await getApiKeyUser(request));
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize(request, 'body-measurements', 'write');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const body = await request.json();
     const { id, timestamp, measurements, notes, unit } = body as {
@@ -260,14 +245,9 @@ export async function PATCH(request: NextRequest) {
 // DELETE /api/body-measurements?id=... — delete entry by ID
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getSession();
-    const user = session || (await getApiKeyUser(request));
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize(request, 'body-measurements', 'write');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

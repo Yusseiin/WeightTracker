@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, getApiKeyUser } from '@/lib/auth';
+import { authorize } from '@/lib/api-auth';
 import { getTodayInjections, getInjectionEntriesForDate, getInjectionEntries, createInjectionEntry, updateInjectionById, deleteInjectionById, getLastInjection } from '@/lib/injections';
 import { ApiResponse, InjectionEntry } from '@/lib/types';
 
 // GET /api/injections - Get injection entries (today, specific date, all, or last)
 export async function GET(request: NextRequest) {
   try {
-    const session = await getSession();
-    const user = session || await getApiKeyUser(request);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize(request, 'injections', 'read');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
@@ -63,14 +58,9 @@ export async function GET(request: NextRequest) {
 // POST /api/injections - Create new injection entry
 export async function POST(request: NextRequest) {
   try {
-    const session = await getSession();
-    const user = session || await getApiKeyUser(request);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize(request, 'injections', 'write');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const body = await request.json();
     const { medicationId, dose, siteId, date, timestamp, notes } = body;
@@ -145,14 +135,9 @@ export async function POST(request: NextRequest) {
 // PATCH /api/injections - Update injection entry by ID
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getSession();
-    const user = session || await getApiKeyUser(request);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize(request, 'injections', 'write');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const body = await request.json();
     const { id, dose, siteId, timestamp, date, notes } = body;
@@ -234,14 +219,9 @@ export async function PATCH(request: NextRequest) {
 // DELETE /api/injections - Delete injection entry by ID
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getSession();
-    const user = session || await getApiKeyUser(request);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize(request, 'injections', 'write');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

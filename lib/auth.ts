@@ -1,11 +1,13 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import { createHash, timingSafeEqual } from 'crypto';
 import { cookies } from 'next/headers';
 import bcrypt from 'bcryptjs';
 import { NextRequest } from 'next/server';
 import { User, SessionUser, SESSION_COOKIE_NAME, CreateUserRequest, UserRole } from './types';
 import { renameUserData } from './user-rename';
 import { withFileLock, writeJsonAtomic } from './storage';
+import { deleteTokensForUser } from './api-tokens';
 
 // Bcrypt salt rounds (10 is recommended - good balance of security and performance)
 const SALT_ROUNDS = 10;
@@ -345,6 +347,8 @@ export async function deleteUser(username: string): Promise<void> {
     users.splice(userIndex, 1);
     await saveUsers(users);
   });
+  // Their scoped API tokens must not outlive the account.
+  await deleteTokensForUser(username);
 }
 
 // Get all users without passwords (for admin listing)
@@ -354,6 +358,24 @@ export async function getUsersWithoutPasswords(): Promise<Omit<User, 'password'>
 }
 
 // Validate API key from request headers and return session user
+// The key a client presented, from "Authorization: Bearer <key>" or "X-API-Key: <key>".
+// Used for both the legacy API_KEY and scoped API tokens.
+export function getProvidedApiKey(request: NextRequest): string | null {
+  const authHeader = request.headers.get('authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.slice(7);
+  }
+  return request.headers.get('x-api-key');
+}
+
+// Constant-time string comparison (hashing first makes the lengths equal).
+function safeEqual(a: string, b: string): boolean {
+  const ha = createHash('sha256').update(a).digest();
+  const hb = createHash('sha256').update(b).digest();
+  return timingSafeEqual(ha, hb);
+}
+
+// Legacy global API_KEY authentication. Unscoped: it reaches every user's data.
 // Supports both "Authorization: Bearer <key>" and "X-API-Key: <key>" headers
 // Optionally supports "X-API-User: <username>" header to specify which user's data to access
 export async function getApiKeyUser(request: NextRequest): Promise<SessionUser | null> {
@@ -364,26 +386,10 @@ export async function getApiKeyUser(request: NextRequest): Promise<SessionUser |
     return null;
   }
 
-  // Check Authorization header (Bearer token)
-  const authHeader = request.headers.get('authorization');
-  let providedKey: string | null = null;
+  const providedKey = getProvidedApiKey(request);
 
-  if (authHeader?.startsWith('Bearer ')) {
-    providedKey = authHeader.slice(7);
-  }
-
-  // Fallback to X-API-Key header
-  if (!providedKey) {
-    providedKey = request.headers.get('x-api-key');
-  }
-
-  // No key provided
-  if (!providedKey) {
-    return null;
-  }
-
-  // Validate key
-  if (providedKey !== apiKey) {
+  // No key provided, or it doesn't match
+  if (!providedKey || !safeEqual(providedKey, apiKey)) {
     return null;
   }
 

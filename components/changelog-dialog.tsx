@@ -26,6 +26,13 @@ interface ChangelogEntry {
 const changelog: ChangelogEntry[] = [
   {
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
+    date: "2026-11-02",
+    changes: [
+      { type: "added", description: "API tokens. Admins can create tokens in Settings → Administration → API Tokens, each tied to one user and limited to the data you choose: read or write access per weight, water, steps, blood pressure, medications, injections and body measurements. You can have several tokens, and rename, re-scope, reassign, switch off, regenerate or delete them; the secret is shown only once. Tokens can't reach user management or settings. The existing API_KEY keeps working but gives access to every user's data, so moving to tokens is recommended. Thanks to @nfischer for the suggestion. (#22)" },
+    ],
+  },
+  {
+    version: "v0.0.36",
     date: "2026-10-04",
     changes: [
       { type: "added", description: "Estimated MAP (mean arterial pressure) for blood pressure readings. Turn it on in Settings → Optional Features under blood pressure tracking: the add and edit dialogs get a third MAP field that fills in automatically from (SYS + 2 × DIA) / 3 and can still be edited, and MAP appears in the history table, the chart, today's recap and the CSV export. Existing readings get a MAP value when you turn it on. Thanks to @petersrinivasan for the suggestion. (#20)" },

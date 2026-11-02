@@ -609,9 +609,51 @@ curl -X POST http://localhost:3000/api/body-measurements \
 
 ## Home Assistant Integration
 
-Weight Tracker supports API key authentication for integration with Home Assistant REST sensors and automations.
+Weight Tracker supports two ways to authenticate API requests, for Home Assistant
+REST sensors, automations, iOS Shortcuts or scripts:
 
-### Setup
+- **Scoped API tokens (recommended)** — created in the app, each bound to one user and
+  limited to the data sets you choose.
+- **Legacy API key** — a single `API_KEY` environment variable with access to every
+  user's data.
+
+### API Tokens (recommended)
+
+Admins create tokens in **Settings → Administration → API Tokens**. For each token you choose:
+
+- **User** — the token can only read or change this user's data, so `X-API-User` isn't
+  needed. Sending a different user returns `403`.
+- **Access per data set** — *None*, *Read* or *Write* (write includes read) for weight,
+  water, steps, blood pressure, medications, injections and body measurements. `GET`
+  requests need read access; `POST`, `PATCH` and `DELETE` need write access. Photos and
+  the CSV export follow the data set they belong to.
+
+You can create several tokens with the same access (for example one per device), rename,
+re-scope or reassign them, switch them off, regenerate the secret or delete them. The
+secret (`wt_…`) is shown **only once**, when the token is created or regenerated — only a
+hash is stored. Tokens never reach user management, settings or token management, which
+always require a logged-in session. A token follows its user through a username change and
+is deleted together with the user.
+
+Send it like any API key:
+
+```bash
+curl -H "Authorization: Bearer wt_your_token" http://YOUR_SERVER:3000/api/water
+```
+
+| Status | Meaning |
+|--------|---------|
+| `401` | Missing, unknown or switched-off token |
+| `403` | The token has no access to that data set, or `X-API-User` names another user |
+
+The Home Assistant examples below work the same way with a token — use it in place of
+`YOUR_API_KEY` and leave out `X-API-User`.
+
+### Legacy API key setup
+
+> **Note:** the legacy key is not scoped — anyone who has it can read and change every
+> user's data. Prefer API tokens, and once your integrations use them, remove `API_KEY`.
+> The API Tokens page warns you while it is still set.
 
 1. Generate a secure API key (e.g., using `openssl rand -hex 32`)
 2. Add environment variables to your Docker configuration:

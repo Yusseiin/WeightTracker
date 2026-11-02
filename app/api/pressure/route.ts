@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, getApiKeyUser } from '@/lib/auth';
+import { authorize } from '@/lib/api-auth';
 import { getTodayPressure, getPressureEntriesForDate, getPressureEntries, createPressureEntry, updatePressureById, deletePressureById } from '@/lib/pressure';
 import { getSettings } from '@/lib/data';
 import { isValidMap, MAP_MIN, MAP_MAX } from '@/lib/pressure-utils';
@@ -16,14 +16,9 @@ async function isMapEnabled(username: string): Promise<boolean> {
 // GET /api/pressure - Get pressure entry (today or specific date)
 export async function GET(request: NextRequest) {
   try {
-    const session = await getSession();
-    const user = session || await getApiKeyUser(request);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize(request, 'pressure', 'read');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
@@ -62,14 +57,9 @@ export async function GET(request: NextRequest) {
 // POST /api/pressure - Create new pressure entry (always creates new)
 export async function POST(request: NextRequest) {
   try {
-    const session = await getSession();
-    const user = session || await getApiKeyUser(request);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize(request, 'pressure', 'write');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const body = await request.json();
     const { systolic, diastolic, date, timestamp, notes, map } = body;
@@ -136,14 +126,9 @@ export async function POST(request: NextRequest) {
 // PATCH /api/pressure - Update pressure entry by ID
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getSession();
-    const user = session || await getApiKeyUser(request);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize(request, 'pressure', 'write');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const body = await request.json();
     const { id, systolic, diastolic, timestamp, notes, map } = body;
@@ -217,14 +202,9 @@ export async function PATCH(request: NextRequest) {
 // DELETE /api/pressure - Delete pressure entry by ID
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getSession();
-    const user = session || await getApiKeyUser(request);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize(request, 'pressure', 'write');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

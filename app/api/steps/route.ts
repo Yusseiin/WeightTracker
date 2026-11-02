@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, getApiKeyUser } from '@/lib/auth';
+import { authorize } from '@/lib/api-auth';
 import { getTodaySteps, getStepsEntriesForDate, getStepsEntries, createStepsEntry, updateStepsById, deleteStepsById } from '@/lib/steps';
 import { ApiResponse, StepsEntry } from '@/lib/types';
 
 // GET /api/steps - Get steps entry (today or specific date)
 export async function GET(request: NextRequest) {
   try {
-    const session = await getSession();
-    const user = session || await getApiKeyUser(request);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize(request, 'steps', 'read');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
@@ -52,14 +47,9 @@ export async function GET(request: NextRequest) {
 // POST /api/steps - Create new steps entry (always creates new)
 export async function POST(request: NextRequest) {
   try {
-    const session = await getSession();
-    const user = session || await getApiKeyUser(request);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize(request, 'steps', 'write');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const body = await request.json();
     const { steps, date, timestamp, notes } = body;
@@ -110,14 +100,9 @@ export async function POST(request: NextRequest) {
 // PATCH /api/steps - Update steps entry by ID
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getSession();
-    const user = session || await getApiKeyUser(request);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize(request, 'steps', 'write');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const body = await request.json();
     const { id, steps, timestamp, notes } = body;
@@ -175,14 +160,9 @@ export async function PATCH(request: NextRequest) {
 // DELETE /api/steps - Delete steps entry by ID
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getSession();
-    const user = session || await getApiKeyUser(request);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize(request, 'steps', 'write');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

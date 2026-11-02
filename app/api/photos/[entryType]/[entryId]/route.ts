@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, getApiKeyUser } from '@/lib/auth';
+import { authorize } from '@/lib/api-auth';
+import { photoResource } from '@/lib/api-tokens';
 import { savePhoto, getPhoto, deletePhotoByIndex, deletePhotos, listPhotosForEntry, isValidEntryType } from '@/lib/photos';
 import type { PhotoEntryType } from '@/lib/photos';
 
@@ -13,16 +14,14 @@ type RouteContext = {
 // GET /api/photos/[entryType]/[entryId]?list=true -- List photo indices
 export async function GET(request: NextRequest, context: RouteContext) {
   try {
-    const session = await getSession();
-    const user = session || await getApiKeyUser(request);
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
-    }
-
     const { entryType, entryId } = await context.params;
     if (!isValidEntryType(entryType)) {
       return NextResponse.json({ success: false, error: 'Invalid entry type' }, { status: 400 });
     }
+
+    const auth = await authorize(request, photoResource(entryType), 'read');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const { searchParams } = new URL(request.url);
 
@@ -56,16 +55,14 @@ export async function GET(request: NextRequest, context: RouteContext) {
 // POST /api/photos/[entryType]/[entryId] -- Upload photo (appends at next index)
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
-    const session = await getSession();
-    const user = session || await getApiKeyUser(request);
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
-    }
-
     const { entryType, entryId } = await context.params;
     if (!isValidEntryType(entryType)) {
       return NextResponse.json({ success: false, error: 'Invalid entry type' }, { status: 400 });
     }
+
+    const auth = await authorize(request, photoResource(entryType), 'write');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const formData = await request.formData();
     const file = formData.get('photo') as File | null;
@@ -93,16 +90,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
 // DELETE /api/photos/[entryType]/[entryId] -- Delete all photos for entry
 export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
-    const session = await getSession();
-    const user = session || await getApiKeyUser(request);
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 });
-    }
-
     const { entryType, entryId } = await context.params;
     if (!isValidEntryType(entryType)) {
       return NextResponse.json({ success: false, error: 'Invalid entry type' }, { status: 400 });
     }
+
+    const auth = await authorize(request, photoResource(entryType), 'write');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const { searchParams } = new URL(request.url);
     const indexParam = searchParams.get('index');

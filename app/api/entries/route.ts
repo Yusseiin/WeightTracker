@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getEntries, addEntry } from '@/lib/data';
-import { getSession, getApiKeyUser } from '@/lib/auth';
+import { authorize } from '@/lib/api-auth';
 import { ApiResponse, WeightEntry } from '@/lib/types';
 
 // GET /api/entries - List all entries
 export async function GET(request: NextRequest) {
   try {
-    const session = await getSession();
-    const user = session || await getApiKeyUser(request);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize(request, 'weight', 'read');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const entries = await getEntries(user.username);
 
@@ -37,14 +32,9 @@ export async function GET(request: NextRequest) {
 // POST /api/entries - Create new entry
 export async function POST(request: NextRequest) {
   try {
-    const session = await getSession();
-    const user = session || await getApiKeyUser(request);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize(request, 'weight', 'write');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const body = await request.json();
     const { weight, training, sleep, timestamp, notes, bodyFat } = body;

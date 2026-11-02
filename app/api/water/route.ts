@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, getApiKeyUser } from '@/lib/auth';
+import { authorize } from '@/lib/api-auth';
 import { getTodayWater, getWaterEntry, getWaterDailyTotals, getWaterInserts, addWater, addWaterEntry, updateWaterEntry, deleteWaterEntry, resetTodayWater, setWaterAmount } from '@/lib/water';
 import { ApiResponse, WaterDayTotal, WaterEntry, WaterUnit } from '@/lib/types';
 import { ozToMl, mlToOz } from '@/lib/water-utils';
@@ -30,14 +30,9 @@ function fromMl(amountMl: number, unit: WaterUnit): number {
 // GET /api/water - Get water entry (today or specific date)
 export async function GET(request: NextRequest) {
   try {
-    const session = await getSession();
-    const user = session || await getApiKeyUser(request);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize(request, 'water', 'read');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
@@ -95,14 +90,9 @@ export async function GET(request: NextRequest) {
 // POST /api/water - Add water to today's total
 export async function POST(request: NextRequest) {
   try {
-    const session = await getSession();
-    const user = session || await getApiKeyUser(request);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize(request, 'water', 'write');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const body = await request.json();
     const { amount, date, timestamp, unit } = body;
@@ -151,14 +141,9 @@ export async function POST(request: NextRequest) {
 // DELETE /api/water - Delete a single insert (?id=...) or reset today's water to 0
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getSession();
-    const user = session || await getApiKeyUser(request);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize(request, 'water', 'write');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -198,14 +183,9 @@ export async function DELETE(request: NextRequest) {
 // PATCH /api/water - Update a single insert ({id,...}) or set a day's total ({date, amount})
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getSession();
-    const user = session || await getApiKeyUser(request);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
+    const auth = await authorize(request, 'water', 'write');
+    if (auth.error) return auth.error;
+    const user = auth.user;
 
     const body = await request.json();
     const { id, date, amount, timestamp, unit } = body;
