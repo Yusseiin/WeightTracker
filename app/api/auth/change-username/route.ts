@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     // Re-issue the session cookie so the new username is used for every
     // subsequent request (otherwise the session would point at data that has moved).
     const cookieStore = await cookies();
-    cookieStore.set(SESSION_COOKIE_NAME, createSessionValue(updatedUser), {
+    cookieStore.set(SESSION_COOKIE_NAME, await createSessionValue(updatedUser), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

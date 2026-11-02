@@ -8,6 +8,7 @@ import { User, SessionUser, SESSION_COOKIE_NAME, CreateUserRequest, UserRole } f
 import { renameUserData } from './user-rename';
 import { withFileLock, writeJsonAtomic } from './storage';
 import { deleteTokensForUser } from './api-tokens';
+import { signSession, verifySession } from './session-token';
 
 // Bcrypt salt rounds (10 is recommended - good balance of security and performance)
 const SALT_ROUNDS = 10;
@@ -173,31 +174,34 @@ export async function getUserByUsername(username: string): Promise<SessionUser |
   };
 }
 
-// Get current session from cookie
+// Get current session from the signed cookie. Forged, tampered, expired or
+// old unsigned cookies are rejected. The account is re-read so a deleted user
+// is logged out and role/nickname changes apply immediately.
 export async function getSession(): Promise<SessionUser | null> {
   try {
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME);
-
-    if (!sessionCookie?.value) {
+    const value = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+    if (!value) {
       return null;
     }
 
-    const session: SessionUser = JSON.parse(sessionCookie.value);
-    return session;
+    const signed = await verifySession(value);
+    if (!signed) {
+      return null;
+    }
+    return await getUserByUsername(signed.username);
   } catch {
     return null;
   }
 }
 
-// Create session cookie value
-export function createSessionValue(user: User): string {
-  const sessionUser: SessionUser = {
+// Create the signed session cookie value
+export async function createSessionValue(user: User): Promise<string> {
+  return signSession({
     username: user.username,
     nickname: user.nickname,
     role: user.role
-  };
-  return JSON.stringify(sessionUser);
+  });
 }
 
 // Create a new user (admin only)

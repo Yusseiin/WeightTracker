@@ -243,6 +243,8 @@ Each user gets their own data files in separate folders inside the config direct
 
 ```
 /config/                        # Default path (configurable via CONFIG_PATH)
+├── .session-secret             # Signs login cookies (created automatically)
+├── api-tokens.json             # Scoped API tokens (hashes only, never the secrets)
 ├── users/
 │   └── users.json              # User credentials and roles
 ├── entries/
@@ -269,7 +271,8 @@ Each user gets their own data files in separate folders inside the config direct
 | `TZ` | Timezone used to decide the current day for daily totals (water, steps, pressure, medications). Use an [IANA name](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), e.g. `America/Los_Angeles`. Leave as `UTC` and your daily totals reset at midnight UTC. | `UTC` |
 | `PUID` | User ID for file permissions (Unraid) | `1000` |
 | `PGID` | Group ID for file permissions (Unraid) | `1000` |
-| `API_KEY` | Secret key for API authentication (enables HA integration) | (disabled) |
+| `API_KEY` | Legacy global API key. Not scoped - prefer API tokens (see [Home Assistant Integration](#home-assistant-integration)) | (disabled) |
+| `SESSION_SECRET` | Secret used to sign login cookies. Optional: if unset, a random one is generated on first start and stored in `CONFIG_PATH/.session-secret`. Changing it logs everyone out. | (generated) |
 
 > **Set `TZ` to your local timezone.** Daily metrics (water, steps, blood pressure, medications, injections) are bucketed by calendar day using the container's clock. Without `TZ`, the container runs on UTC, so — for example — in California (UTC-7/8) your daily water total appears to "reset" at 4–5 PM. Setting `TZ=America/Los_Angeles` makes the day roll over at your local midnight instead.
 

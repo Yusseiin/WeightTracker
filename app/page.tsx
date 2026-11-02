@@ -1,4 +1,5 @@
-import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { getSession } from '@/lib/auth';
 import { WeightTracker } from '@/components/weight-tracker';
 import { getEntries, getSettings } from '@/lib/data';
 import { getTodayWater, getWaterDailyTotals, getWaterInserts } from '@/lib/water';
@@ -6,24 +7,16 @@ import { getTodaySteps, getStepsEntries } from '@/lib/steps';
 import { getTodayPressure, getPressureEntries } from '@/lib/pressure';
 import { getTodayMedications, getMedicationEntries } from '@/lib/medication';
 import { getInjectionEntries, getLastInjection } from '@/lib/injections';
-import { SESSION_COOKIE_NAME, SessionUser } from '@/lib/types';
 
 export default async function Home() {
-  // Get session from cookie
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME);
-
-  let session: SessionUser | null = null;
-  try {
-    if (sessionCookie?.value) {
-      session = JSON.parse(sessionCookie.value);
-    }
-  } catch {
-    session = null;
+  // Verified session only - never trust the raw cookie
+  const session = await getSession();
+  if (!session) {
+    redirect('/login');
   }
 
   // Use username as userId for data fetching
-  const userId = session?.username || 'default';
+  const userId = session.username;
 
   // Server-side data fetching
   const entries = await getEntries(userId);

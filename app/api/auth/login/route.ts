@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     // secure: false to support HTTP access on local networks (Unraid, Docker)
     // For HTTPS deployments behind a reverse proxy, set SECURE_COOKIES=true
     const cookieStore = await cookies();
-    cookieStore.set(SESSION_COOKIE_NAME, createSessionValue(user), {
+    cookieStore.set(SESSION_COOKIE_NAME, await createSessionValue(user), {
       httpOnly: true,
       secure: process.env.SECURE_COOKIES === 'true',
       sameSite: 'lax',

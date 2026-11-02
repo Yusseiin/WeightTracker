@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { cookies } from "next/headers";
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { ServiceWorkerRegister } from "@/components/service-worker-register"
 import { I18nProvider } from "@/components/i18n-provider"
 import { getAvailableLanguages, getDictionary, DEFAULT_LANGUAGE } from "@/lib/i18n"
 import { getSettings } from "@/lib/data"
-import { SESSION_COOKIE_NAME, type SessionUser } from "@/lib/types"
+import { getSession } from "@/lib/auth";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -58,14 +57,11 @@ export default async function RootLayout({
   const languages = await getAvailableLanguages();
   let language = DEFAULT_LANGUAGE;
   try {
-    const sessionCookie = (await cookies()).get(SESSION_COOKIE_NAME);
-    if (sessionCookie?.value) {
-      const session = JSON.parse(sessionCookie.value) as SessionUser;
-      if (session?.username) {
-        const settings = await getSettings(session.username);
-        if (settings.language && languages.includes(settings.language)) {
-          language = settings.language;
-        }
+    const session = await getSession();
+    if (session) {
+      const settings = await getSettings(session.username);
+      if (settings.language && languages.includes(settings.language)) {
+        language = settings.language;
       }
     }
   } catch {

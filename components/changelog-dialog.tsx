@@ -29,6 +29,7 @@ const changelog: ChangelogEntry[] = [
     date: "2026-11-02",
     changes: [
       { type: "added", description: "API tokens. Admins can create tokens in Settings → Administration → API Tokens, each tied to one user and limited to the data you choose: read or write access per weight, water, steps, blood pressure, medications, injections and body measurements. You can have several tokens, and rename, re-scope, reassign, switch off, regenerate or delete them; the secret is shown only once. Tokens can't reach user management or settings. The existing API_KEY keeps working but gives access to every user's data, so moving to tokens is recommended. Thanks to @nfischer for the suggestion. (#22)" },
+      { type: "fixed", description: "Security: login sessions are now signed, so they can't be forged or edited. Before, a hand-made login cookie was enough to act as any user, including an admin, without a password. A deleted user's session now ends immediately and role changes apply right away. Because of this fix, everyone needs to log in again once after updating." },
     ],
   },
   {

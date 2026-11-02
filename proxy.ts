@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { createHash, timingSafeEqual } from 'crypto';
 import { SESSION_COOKIE_NAME } from '@/lib/types';
 import { verifyToken, TOKEN_PREFIX } from '@/lib/api-tokens';
+import { verifySession } from '@/lib/session-token';
 
 // Routes that don't require authentication
 const publicPaths = ['/login', '/api/auth/login', '/api/auth/logout', '/api/auth/me'];
@@ -56,34 +57,21 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check for session cookie
-  const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME);
-
-  if (!sessionCookie?.value) {
-    // For API routes without session, return 401 instead of redirect
-    if (pathname.startsWith('/api/')) {
-      return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
-    // Redirect to login if no session
-    const loginUrl = new URL('/login', request.url);
-    return NextResponse.redirect(loginUrl);
+  // Require a valid signed session cookie
+  const sessionValue = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+  if (sessionValue && (await verifySession(sessionValue))) {
+    return NextResponse.next();
   }
 
-  // Validate cookie is valid JSON
-  try {
-    JSON.parse(sessionCookie.value);
-  } catch {
-    // Invalid cookie, redirect to login
-    const loginUrl = new URL('/login', request.url);
-    const response = NextResponse.redirect(loginUrl);
+  // Missing, forged, tampered, expired or old unsigned cookie: API calls get
+  // 401, pages go to login, and a rejected cookie is cleared.
+  const response = pathname.startsWith('/api/')
+    ? NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 })
+    : NextResponse.redirect(new URL('/login', request.url));
+  if (sessionValue) {
     response.cookies.delete(SESSION_COOKIE_NAME);
-    return response;
   }
-
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {

@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     // Update session cookie with new nickname
     const cookieStore = await cookies();
-    cookieStore.set(SESSION_COOKIE_NAME, createSessionValue(fullUser), {
+    cookieStore.set(SESSION_COOKIE_NAME, await createSessionValue(fullUser), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
