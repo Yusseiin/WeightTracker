@@ -29,6 +29,7 @@ const changelog: ChangelogEntry[] = [
     date: "2026-11-14",
     changes: [
       { type: "fixed", description: "On iPhone and iPad, buttons in the pop-up panels did nothing when the panel was opened from a scrolled page (for example Settings → Chart Configuration: the arrows, edit, delete and Cancel), and the page behind jumped while you tapped. They work again. To close a panel by swiping, drag the bar at its top. Thanks to @nfischer for the report. (#23)" },
+      { type: "changed", description: "Updated the app's libraries to their latest versions (Next.js 16.4, React 19.3, the icon set, form validation and more) for bug fixes and security patches. Nothing changes in how you use the app." },
     ],
   },
   {
