@@ -5,10 +5,17 @@ import { Drawer as DrawerPrimitive } from "vaul"
 
 import { cn } from "@/lib/utils"
 
+// Drags start only from the handle. When a drag starts anywhere in the content,
+// vaul switches its scroll lock off for the duration of the press, and on iOS
+// Safari that scrolls the page underneath. If the page was scrolled when the
+// drawer opened (e.g. Settings), Safari sees the content move during the tap and
+// drops the click, so no button in the drawer works (GitHub issue #23).
+// Swiping the handle still dismisses the drawer.
 function Drawer({
+  handleOnly = true,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
-  return <DrawerPrimitive.Root data-slot="drawer" {...props} />
+  return <DrawerPrimitive.Root data-slot="drawer" handleOnly={handleOnly} {...props} />
 }
 
 function DrawerTrigger({
@@ -65,7 +72,13 @@ function DrawerContent({
         )}
         {...props}
       >
-        <div className="bg-muted mx-auto mt-4 hidden h-2 w-25 shrink-0 rounded-full group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
+        {/* vaul's own handle, so it can be dragged to dismiss. vaul injects
+            unlayered CSS for it that beats Tailwind's utilities, so the size
+            and colour are set inline to keep the original look. */}
+        <DrawerPrimitive.Handle
+          className="mt-4 shrink-0 rounded-full"
+          style={{ width: '100px', height: '0.5rem', background: 'var(--muted)', opacity: 1 }}
+        />
         {children}
       </DrawerPrimitive.Content>
     </DrawerPortal>

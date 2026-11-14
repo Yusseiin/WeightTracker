@@ -26,6 +26,13 @@ interface ChangelogEntry {
 const changelog: ChangelogEntry[] = [
   {
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
+    date: "2026-11-14",
+    changes: [
+      { type: "fixed", description: "On iPhone and iPad, buttons in the pop-up panels did nothing when the panel was opened from a scrolled page (for example Settings → Chart Configuration: the arrows, edit, delete and Cancel), and the page behind jumped while you tapped. They work again. To close a panel by swiping, drag the bar at its top. Thanks to @nfischer for the report. (#23)" },
+    ],
+  },
+  {
+    version: "v0.0.37",
     date: "2026-11-02",
     changes: [
       { type: "added", description: "API tokens. Admins can create tokens in Settings → Administration → API Tokens, each tied to one user and limited to the data you choose: read or write access per weight, water, steps, blood pressure, medications, injections and body measurements. You can have several tokens, and rename, re-scope, reassign, switch off, regenerate or delete them; the secret is shown only once. Tokens can't reach user management or settings. The existing API_KEY keeps working but gives access to every user's data, so moving to tokens is recommended. Thanks to @nfischer for the suggestion. (#22)" },
