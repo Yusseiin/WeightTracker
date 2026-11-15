@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
 import { Ruler, FileText } from 'lucide-react';
 import {
@@ -35,6 +35,7 @@ import {
   CM_PER_INCH,
   MeasurementUnit,
 } from '@/lib/types';
+import { useDepsChanged } from '@/hooks/use-deps-changed';
 
 interface AddBodyMeasurementDialogProps {
   presets: BodyMeasurementPreset[];
@@ -78,17 +79,15 @@ export function AddBodyMeasurementDialog({
     [presets]
   );
 
-  useEffect(() => {
-    if (open) {
-      setDateInput(format(new Date(), 'yyyy-MM-dd'));
-      setTimeInput(format(new Date(), 'HH:mm'));
-      setValues({});
-      setNotesInput('');
-      setPendingPhotos([]);
-      setFieldErrors({});
-      setFormError(null);
-    }
-  }, [open]);
+  if (useDepsChanged([open]) && open) {
+    setDateInput(format(new Date(), 'yyyy-MM-dd'));
+    setTimeInput(format(new Date(), 'HH:mm'));
+    setValues({});
+    setNotesInput('');
+    setPendingPhotos([]);
+    setFieldErrors({});
+    setFormError(null);
+  }
 
   const filledCount = Object.values(values).filter((v) => v.trim() !== '').length;
   const canSave = filledCount > 0 && dateInput !== '';

@@ -448,7 +448,7 @@ export function WeightChart({
     });
 
     return { injectionChartData: chartData, uniqueMedications: uniqueMeds };
-  }, [injectionEntries, injectionSettings, timeFilter, dateFormat, currentMedicationFilter]);
+  }, [injectionEntries, injectionSettings, timeFilter, dateFormat, currentMedicationFilter, t]);
 
   // Pre-compute merged line chart data (for combined weight + pressure + injections charts)
   const mergedLineChartData = useMemo(() => {

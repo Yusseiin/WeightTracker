@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ChevronUp, ChevronDown, Pencil, Trash2, Plus, X, Check, Loader2, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +48,7 @@ import { CHART_TYPE_MAP, DEFAULT_CHART_COMBINATIONS } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
 import { useTranslation } from '@/hooks/use-translation';
+import { useDepsChanged } from '@/hooks/use-deps-changed';
 
 interface ChartCombinationManagerProps {
   combinations: ChartCombination[];
@@ -97,15 +98,13 @@ export function ChartCombinationManager({ combinations = [], onSave, features, i
   const chartViewName = (chart: ChartView): string => t(`managers.chart.views.${chart}`);
 
   // Reset local state when dialog opens
-  useEffect(() => {
-    if (open) {
-      setLocalCombinations(combinations);
-      setEditingId(null);
-      setEditingCombination(null);
-      setIsAdding(false);
-      setNewCombination({ name: '', icon: 'LineChart', charts: [], chartType: 'line', enabled: true, injectionMedicationIds: [] });
-    }
-  }, [open, combinations]);
+  if (useDepsChanged([open, combinations]) && open) {
+    setLocalCombinations(combinations);
+    setEditingId(null);
+    setEditingCombination(null);
+    setIsAdding(false);
+    setNewCombination({ name: '', icon: 'LineChart', charts: [], chartType: 'line', enabled: true, injectionMedicationIds: [] });
+  }
 
   const hasChanges = JSON.stringify(localCombinations) !== JSON.stringify(combinations);
 

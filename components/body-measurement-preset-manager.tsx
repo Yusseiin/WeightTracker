@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Plus, Trash2, ArrowUp, ArrowDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +35,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
 import { useTranslation } from '@/hooks/use-translation';
 import { BodyMeasurementPreset, MAX_BODY_MEASUREMENT_PRESETS } from '@/lib/types';
+import { useDepsChanged } from '@/hooks/use-deps-changed';
 
 const COLOR_OPTIONS: { value: string; labelKey: string; dot: string }[] = [
   { value: 'text-slate-500',    labelKey: 'managers.bodyMeasurement.colors.slate',    dot: 'bg-slate-500' },
@@ -71,11 +72,9 @@ export function BodyMeasurementPresetManager({
   const [isSaving, setIsSaving] = useState(false);
 
   // Reset local state when the dialog opens, mirroring ActivityManager
-  useEffect(() => {
-    if (open) {
-      setLocal([...presets].sort((a, b) => a.order - b.order));
-    }
-  }, [open, presets]);
+  if (useDepsChanged([open, presets]) && open) {
+    setLocal([...presets].sort((a, b) => a.order - b.order));
+  }
 
   const sortedPresets = [...presets].sort((a, b) => a.order - b.order);
   const dirty = JSON.stringify(local) !== JSON.stringify(sortedPresets);

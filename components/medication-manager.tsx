@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ChevronUp, ChevronDown, Pencil, Trash2, Plus, X, Check, Loader2, Pill, Calendar } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronUp, ChevronDown, Pencil, Trash2, Plus, X, Check, Loader2, Pill } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,11 +44,12 @@ import {
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DynamicIcon } from './dynamic-icon';
 import { IconPicker } from './icon-picker';
-import { MedicationPreset, MAX_MEDICATIONS, MedicationEntry, MedicationSchedule, MedicationScheduleType, MedicationTrackingMode } from '@/lib/types';
+import { MedicationPreset, MAX_MEDICATIONS, MedicationEntry, MedicationScheduleType, MedicationTrackingMode } from '@/lib/types';
 import { ACTIVITY_COLORS } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
 import { useTranslation } from '@/hooks/use-translation';
+import { useDepsChanged } from '@/hooks/use-deps-changed';
 
 // Days of week for schedule picker
 const DAYS_OF_WEEK = [
@@ -85,15 +86,13 @@ export function MedicationManager({ medications = [], onSave, medicationEntries 
   const { t } = useTranslation();
 
   // Reset local state when dialog opens
-  useEffect(() => {
-    if (open) {
-      setLocalMedications(medications || []);
-      setEditingId(null);
-      setEditingMedication(null);
-      setIsAdding(false);
-      setNewMedication({ label: '', icon: 'Pill', color: 'text-purple-500', trackingMode: 'boolean' });
-    }
-  }, [open, medications]);
+  if (useDepsChanged([open, medications]) && open) {
+    setLocalMedications(medications || []);
+    setEditingId(null);
+    setEditingMedication(null);
+    setIsAdding(false);
+    setNewMedication({ label: '', icon: 'Pill', color: 'text-purple-500', trackingMode: 'boolean' });
+  }
 
   const hasChanges = JSON.stringify(localMedications) !== JSON.stringify(medications || []);
 

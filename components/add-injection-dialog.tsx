@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { Syringe, MapPin, FileText, AlertCircle, RotateCw } from 'lucide-react';
 import {
@@ -32,16 +32,16 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { cn } from '@/lib/utils';
 import { PhotoCapture } from './photo-capture';
 import type { InjectableMedication, InjectionSitePreset, InjectionEntry } from '@/lib/types';
 import { useTranslation } from '@/hooks/use-translation';
+import { useDepsChanged } from '@/hooks/use-deps-changed';
 
 interface AddInjectionDialogProps {
   medications: InjectableMedication[];
   injectionSites: InjectionSitePreset[];
   injectionEntries: InjectionEntry[];
-  onAddInjection: (medicationId: string, dose: number, siteId: string, date?: string, timestamp?: string, notes?: string) => Promise<any>;
+  onAddInjection: (medicationId: string, dose: number, siteId: string, date?: string, timestamp?: string, notes?: string) => Promise<{ id: string } | undefined>;
   isLoading?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -122,32 +122,28 @@ export function AddInjectionDialog({
   }, [injectionSites, selectedMedicationId, nextRotationOverrides]);
 
   // Initialize inputs when dialog opens
-  useEffect(() => {
-    if (open) {
-      // Set default medication if only one exists
-      if (medications.length === 1) {
-        setSelectedMedicationId(medications[0].id);
-      } else {
-        setSelectedMedicationId('');
-      }
-      setSelectedDose(null);
-      setSelectedSiteId('');
-      setSelectedNextSiteId('');
-      setDateInput(format(new Date(), 'yyyy-MM-dd'));
-      setTimeInput(format(new Date(), 'HH:mm'));
-      setNotesInput('');
-      setPendingPhotos([]);
+  if (useDepsChanged([open, medications]) && open) {
+    // Set default medication if only one exists
+    if (medications.length === 1) {
+      setSelectedMedicationId(medications[0].id);
+    } else {
+      setSelectedMedicationId('');
     }
-  }, [open, medications]);
+    setSelectedDose(null);
+    setSelectedSiteId('');
+    setSelectedNextSiteId('');
+    setDateInput(format(new Date(), 'yyyy-MM-dd'));
+    setTimeInput(format(new Date(), 'HH:mm'));
+    setNotesInput('');
+    setPendingPhotos([]);
+  }
 
   // Update site when medication changes (auto-suggest based on medication's last injection)
-  useEffect(() => {
-    if (selectedMedicationId && suggestedSiteId) {
-      setSelectedSiteId(suggestedSiteId);
-      // Leave next rotation empty - user must manually select
-      setSelectedNextSiteId('');
-    }
-  }, [selectedMedicationId, suggestedSiteId]);
+  if (useDepsChanged([selectedMedicationId, suggestedSiteId]) && selectedMedicationId && suggestedSiteId) {
+    setSelectedSiteId(suggestedSiteId);
+    // Leave next rotation empty - user must manually select
+    setSelectedNextSiteId('');
+  }
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);

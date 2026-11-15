@@ -105,7 +105,6 @@ export function useSteps(
     setIsLoading(true);
 
     const now = new Date().toISOString();
-    const today = new Date().toISOString().split('T')[0];
 
     // Optimistic update
     const previousTodaySteps = todaySteps;

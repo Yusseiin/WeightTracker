@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ChevronUp, ChevronDown, Pencil, Trash2, Plus, X, Check, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +39,7 @@ import { cn } from '@/lib/utils';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
 import { formatWaterAmount, ozToMl, mlToOz, validateWaterAmountInput } from '@/lib/water-utils';
 import { useTranslation } from '@/hooks/use-translation';
+import { useDepsChanged } from '@/hooks/use-deps-changed';
 
 interface WaterPresetManagerProps {
   presets: WaterPreset[];
@@ -65,17 +66,15 @@ export function WaterPresetManager({ presets = [], onSave, waterUnit }: WaterPre
   const { t } = useTranslation();
 
   // Reset local state when dialog opens
-  useEffect(() => {
-    if (open) {
-      setLocalPresets(presets || []);
-      setEditingId(null);
-      setEditingPreset(null);
-      setEditingAmount('');
-      setIsAdding(false);
-      setNewPreset({ label: '', icon: 'Droplets', amount: 250 });
-      setNewPresetAmount(waterUnit === 'oz' ? '8' : '250');
-    }
-  }, [open, presets, waterUnit]);
+  if (useDepsChanged([open, presets, waterUnit]) && open) {
+    setLocalPresets(presets || []);
+    setEditingId(null);
+    setEditingPreset(null);
+    setEditingAmount('');
+    setIsAdding(false);
+    setNewPreset({ label: '', icon: 'Droplets', amount: 250 });
+    setNewPresetAmount(waterUnit === 'oz' ? '8' : '250');
+  }
 
   const hasChanges = JSON.stringify(localPresets) !== JSON.stringify(presets || []);
 

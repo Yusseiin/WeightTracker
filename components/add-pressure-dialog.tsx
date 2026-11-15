@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { HeartPulse, FileText } from 'lucide-react';
 import {
@@ -33,9 +33,10 @@ import { cn } from '@/lib/utils';
 import { PhotoCapture } from './photo-capture';
 import { MapInputCell, MapHint } from './pressure-map-field';
 import { useMapInput } from '@/hooks/use-map-input';
+import { useDepsChanged } from '@/hooks/use-deps-changed';
 
 interface AddPressureDialogProps {
-  onAddPressure: (systolic: number, diastolic: number, date?: string, timestamp?: string, notes?: string, map?: number) => Promise<any>;
+  onAddPressure: (systolic: number, diastolic: number, date?: string, timestamp?: string, notes?: string, map?: number) => Promise<{ id: string } | undefined>;
   isLoading?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -79,17 +80,15 @@ export function AddPressureDialog({
   const resetMap = mapField.reset;
 
   // Initialize inputs when dialog opens
-  useEffect(() => {
-    if (open) {
-      setSystolicInput('');
-      setDiastolicInput('');
-      setDateInput(format(new Date(), 'yyyy-MM-dd'));
-      setTimeInput(format(new Date(), 'HH:mm'));
-      setNotesInput('');
-      setPendingPhotos([]);
-      resetMap();
-    }
-  }, [open, resetMap]);
+  if (useDepsChanged([open, resetMap]) && open) {
+    setSystolicInput('');
+    setDiastolicInput('');
+    setDateInput(format(new Date(), 'yyyy-MM-dd'));
+    setTimeInput(format(new Date(), 'HH:mm'));
+    setNotesInput('');
+    setPendingPhotos([]);
+    resetMap();
+  }
 
   // Handle dialog open/close
   const handleOpenChange = (newOpen: boolean) => {

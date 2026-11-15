@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { parseISO, differenceInDays, format } from 'date-fns';
-import { AlertCircle, Check, Pill } from 'lucide-react';
+import { AlertCircle, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DynamicIcon } from './dynamic-icon';
 import { cn } from '@/lib/utils';

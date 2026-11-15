@@ -29,39 +29,36 @@ export function MotivationalQuote() {
       }
     });
 
-    // Check localStorage for cached quote
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) {
+    // Use today's cached quote if there is one, otherwise fetch it from our
+    // API (which caches server-side) and cache it for the rest of the day
+    const readCache = (): QuoteData | null => {
+      const cached = localStorage.getItem(cacheKey);
+      if (!cached) return null;
       try {
-        setQuote(JSON.parse(cached));
-        setLoading(false);
-        return;
+        return JSON.parse(cached);
       } catch {
         // Invalid cache, remove it
         localStorage.removeItem(cacheKey);
-      }
-    }
-
-    // Fetch quote from our API (which caches server-side)
-    const fetchQuote = async () => {
-      try {
-        // Add cache-busting to ensure fresh quote
-        const response = await fetch(`/api/quote?date=${today}`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.quoteText) {
-            setQuote(data);
-            localStorage.setItem(cacheKey, JSON.stringify(data));
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch quote:", error);
-      } finally {
-        setLoading(false);
+        return null;
       }
     };
 
-    fetchQuote();
+    const fetchQuote = (): Promise<QuoteData | null> =>
+      fetch(`/api/quote?date=${today}`)
+        .then((response) => (response.ok ? response.json() : null))
+        .then((data) => {
+          if (!data?.quoteText) return null;
+          localStorage.setItem(cacheKey, JSON.stringify(data));
+          return data;
+        });
+
+    const cached = readCache();
+    (cached ? Promise.resolve(cached) : fetchQuote())
+      .then((data) => {
+        if (data) setQuote(data);
+      })
+      .catch((error) => console.error("Failed to fetch quote:", error))
+      .finally(() => setLoading(false));
   }, []);
 
   // Collapsed state - just show toggle button

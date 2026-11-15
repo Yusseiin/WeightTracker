@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useEffectEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -40,8 +40,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Pencil, Trash2, X } from 'lucide-react';
-import type { User, UserRole } from '@/lib/types';
+import type { User } from '@/lib/types';
 import { useTranslation } from '@/hooks/use-translation';
+import { useDepsChanged } from '@/hooks/use-deps-changed';
 
 type UserWithoutPassword = Omit<User, 'password'>;
 
@@ -103,28 +104,35 @@ export function UserManagementDialog({ open, onOpenChange, currentUsername }: Us
     },
   });
 
-  const fetchUsers = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/users');
-      const result = await response.json();
-      if (result.success) {
-        setUsers(result.data);
-      } else {
-        showErrorToast(result.error || t('users.fetchError'));
-      }
-    } catch {
-      showErrorToast(t('users.fetchError'));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  // Fetch the user list; the caller turns the loading state on first.
+  const loadUsers = () =>
+    fetch('/api/users')
+      .then((response) => response.json())
+      .then((result) => {
+        if (result.success) {
+          setUsers(result.data);
+        } else {
+          showErrorToast(result.error || t('users.fetchError'));
+        }
+      })
+      .catch(() => showErrorToast(t('users.fetchError')))
+      .finally(() => setIsLoading(false));
 
+  const fetchUsers = () => {
+    setIsLoading(true);
+    loadUsers();
+  };
+
+  // Show the loading state as soon as the dialog opens, then fetch
+  if (useDepsChanged([open]) && open) {
+    setIsLoading(true);
+  }
+  const loadUsersOnOpen = useEffectEvent(loadUsers);
   useEffect(() => {
     if (open) {
-      fetchUsers();
+      loadUsersOnOpen();
     }
-  }, [open, fetchUsers]);
+  }, [open]);
 
   const handleCreateUser = async (data: CreateUserFormData) => {
     setIsLoading(true);

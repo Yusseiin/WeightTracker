@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Pencil, Trash2, Plus, X, Check, Loader2, Syringe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +39,7 @@ import { ACTIVITY_COLORS } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
 import { useTranslation } from '@/hooks/use-translation';
+import { useDepsChanged } from '@/hooks/use-deps-changed';
 
 interface InjectionSettingsManagerProps {
   settings: InjectionSettings;
@@ -77,21 +78,19 @@ export function InjectionSettingsManager({ settings, onSave, injectionEntries = 
   const { t } = useTranslation();
 
   // Reset local state when dialog opens
-  useEffect(() => {
-    if (open) {
-      setLocalSettings(settings);
-      setEditingMedicationId(null);
-      setEditingMedication(null);
-      setIsAddingMedication(false);
-      setNewMedication({ name: '', color: 'text-teal-500', unit: 'mg', availableDoses: [] });
-      setNewDoseInput('');
-      // Reset site state
-      setEditingSiteId(null);
-      setEditingSite(null);
-      setIsAddingSite(false);
-      setNewSite({ label: '', icon: 'Syringe' });
-    }
-  }, [open, settings]);
+  if (useDepsChanged([open, settings]) && open) {
+    setLocalSettings(settings);
+    setEditingMedicationId(null);
+    setEditingMedication(null);
+    setIsAddingMedication(false);
+    setNewMedication({ name: '', color: 'text-teal-500', unit: 'mg', availableDoses: [] });
+    setNewDoseInput('');
+    // Reset site state
+    setEditingSiteId(null);
+    setEditingSite(null);
+    setIsAddingSite(false);
+    setNewSite({ label: '', icon: 'Syringe' });
+  }
 
   const hasChanges = JSON.stringify(localSettings) !== JSON.stringify(settings);
 

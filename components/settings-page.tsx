@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, LogOut, Key, Users, Save, Loader2, UserPen, AtSign, ChevronUp, ChevronDown, Download, KeyRound } from 'lucide-react';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
@@ -34,6 +34,7 @@ import { mlToOz, ozToMl } from '@/lib/water-utils';
 import { ChartCombinationManager } from '@/components/chart-combination-manager';
 import { BodyMeasurementPresetManager } from '@/components/body-measurement-preset-manager';
 import { useTranslation } from '@/hooks/use-translation';
+import { useDepsChanged } from '@/hooks/use-deps-changed';
 import { getLanguageName } from '@/lib/i18n-shared';
 import type { ExportType } from '@/lib/csv-export';
 
@@ -166,50 +167,21 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
     goalMlToInput(settings.goals?.dailyWaterGoal, settings.waterUnit || 'ml')
   );
 
-  // Fetch entries for activity usage check
-  const fetchEntries = useCallback(async () => {
-    try {
-      const response = await fetch('/api/entries');
-      const result = await response.json();
-      if (result.success) {
-        setEntries(result.data);
-      }
-    } catch {
-      // Silently fail - entries are only needed for activity deletion check
-    }
-  }, []);
-
-  // Fetch medication entries for medication usage check
-  const fetchMedicationEntries = useCallback(async () => {
-    try {
-      const response = await fetch('/api/medications?all=true');
-      const result = await response.json();
-      if (result.success) {
-        setMedicationEntries(result.data);
-      }
-    } catch {
-      // Silently fail - entries are only needed for medication deletion check
-    }
-  }, []);
-
-  // Fetch injection entries for injection usage check
-  const fetchInjectionEntries = useCallback(async () => {
-    try {
-      const response = await fetch('/api/injections?all=true');
-      const result = await response.json();
-      if (result.success) {
-        setInjectionEntries(result.data);
-      }
-    } catch {
-      // Silently fail - entries are only needed for injection deletion check
-    }
-  }, []);
-
+  // Load the entry lists used to warn before deleting an activity, medication
+  // or injection that is still in use. Failures are ignored: the lists are only
+  // needed for those checks.
   useEffect(() => {
-    fetchEntries();
-    fetchMedicationEntries();
-    fetchInjectionEntries();
-  }, [fetchEntries, fetchMedicationEntries, fetchInjectionEntries]);
+    const load = <T,>(url: string, onData: (data: T[]) => void) =>
+      fetch(url)
+        .then((response) => response.json())
+        .then((result: { success: boolean; data: T[] }) => {
+          if (result.success) onData(result.data);
+        })
+        .catch(() => {});
+    load('/api/entries', setEntries);
+    load('/api/medications?all=true', setMedicationEntries);
+    load('/api/injections?all=true', setInjectionEntries);
+  }, []);
 
   // Check if there are unsaved changes
   const hasChanges =
@@ -226,7 +198,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
     JSON.stringify(localCustomButtonOrder) !== JSON.stringify(normalizeButtonOrder(settings.customButtonOrder));
 
   // Reset local state when settings change externally
-  useEffect(() => {
+  if (useDepsChanged([settings])) {
     setLocalUnit(settings.unit);
     setLocalWaterUnit(settings.waterUnit || 'ml');
     setLocalTargetWeight(settings.targetWeight?.toString() ?? '');
@@ -242,7 +214,7 @@ export function SettingsPage({ session, initialSettings }: SettingsPageProps) {
     setWaterGoalInput(
       goalMlToInput(settings.goals?.dailyWaterGoal, settings.waterUnit || 'ml')
     );
-  }, [settings]);
+  }
 
   const handleGoBack = () => {
     router.push('/');

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { Footprints, FileText } from 'lucide-react';
 import {
@@ -29,9 +29,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from '@/hooks/use-translation';
 import { PhotoCapture } from './photo-capture';
+import { useDepsChanged } from '@/hooks/use-deps-changed';
 
 interface AddStepsDialogProps {
-  onAddSteps: (steps: number, date?: string, timestamp?: string, notes?: string) => Promise<any>;
+  onAddSteps: (steps: number, date?: string, timestamp?: string, notes?: string) => Promise<{ id: string } | undefined>;
   isLoading?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -63,15 +64,13 @@ export function AddStepsDialog({
   const { t } = useTranslation();
 
   // Initialize inputs when dialog opens
-  useEffect(() => {
-    if (open) {
-      setStepsInput('');
-      setDateInput(format(new Date(), 'yyyy-MM-dd'));
-      setTimeInput(format(new Date(), 'HH:mm'));
-      setNotesInput('');
-      setPendingPhotos([]);
-    }
-  }, [open]);
+  if (useDepsChanged([open]) && open) {
+    setStepsInput('');
+    setDateInput(format(new Date(), 'yyyy-MM-dd'));
+    setTimeInput(format(new Date(), 'HH:mm'));
+    setNotesInput('');
+    setPendingPhotos([]);
+  }
 
   // Handle dialog open/close
   const handleOpenChange = (newOpen: boolean) => {

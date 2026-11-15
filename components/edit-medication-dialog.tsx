@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { Pill, Clock, Calendar, Trash2, Check, X, AlertTriangle, ArrowLeftRight, FileText } from 'lucide-react';
@@ -41,6 +41,7 @@ import { DynamicIcon } from './dynamic-icon';
 import { type MedicationEntry, type MedicationPreset } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/use-translation';
+import { useDepsChanged } from '@/hooks/use-deps-changed';
 
 interface EditMedicationDialogProps {
   entry: MedicationEntry | null;
@@ -88,15 +89,13 @@ export function EditMedicationDialog({
   };
 
   // Reset inputs when entry changes
-  useEffect(() => {
-    if (entry && open) {
-      setTakenInput(entry.taken);
-      setDateInput(entry.date);
-      setTimeInput(formatTimeFromTimestamp(entry.timestamp) || format(new Date(), 'HH:mm'));
-      setDoseInput(entry.dose);
-      setNotesInput(entry.notes || '');
-    }
-  }, [entry, open]);
+  if (useDepsChanged([entry, open]) && entry && open) {
+    setTakenInput(entry.taken);
+    setDateInput(entry.date);
+    setTimeInput(formatTimeFromTimestamp(entry.timestamp) || format(new Date(), 'HH:mm'));
+    setDoseInput(entry.dose);
+    setNotesInput(entry.notes || '');
+  }
 
   const handleSave = async () => {
     if (!entry) return;

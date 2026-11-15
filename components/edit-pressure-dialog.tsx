@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { HeartPulse, Trash2, ArrowLeftRight, FileText } from 'lucide-react';
@@ -43,6 +43,7 @@ import { useTranslation } from '@/hooks/use-translation';
 import { type PressureEntry } from '@/lib/types';
 import { getPressureCategory } from '@/lib/pressure-utils';
 import { cn } from '@/lib/utils';
+import { useDepsChanged } from '@/hooks/use-deps-changed';
 
 interface EditPressureDialogProps {
   entry: PressureEntry | null;
@@ -95,15 +96,13 @@ export function EditPressureDialog({
   };
 
   // Reset inputs when entry changes
-  useEffect(() => {
-    if (entry && open) {
-      setSystolicInput(entry.systolic.toString());
-      setDiastolicInput(entry.diastolic.toString());
-      setTimeInput(formatTimeFromTimestamp(entry.timestamp) || format(new Date(), 'HH:mm'));
-      setNotesInput(entry.notes || '');
-      initMap(entry.map, entry.systolic, entry.diastolic);
-    }
-  }, [entry, open, initMap]);
+  if (useDepsChanged([entry, open, initMap]) && entry && open) {
+    setSystolicInput(entry.systolic.toString());
+    setDiastolicInput(entry.diastolic.toString());
+    setTimeInput(formatTimeFromTimestamp(entry.timestamp) || format(new Date(), 'HH:mm'));
+    setNotesInput(entry.notes || '');
+    initMap(entry.map, entry.systolic, entry.diastolic);
+  }
 
   const handleSave = async () => {
     if (!entry) return;

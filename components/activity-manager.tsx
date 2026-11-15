@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ChevronUp, ChevronDown, Pencil, Trash2, Plus, X, Check, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -40,6 +39,7 @@ import { ACTIVITY_COLORS } from '@/lib/icons';
 import { cn } from '@/lib/utils';
 import { showSuccessToast, showErrorToast } from '@/components/ui/toast';
 import { useTranslation } from '@/hooks/use-translation';
+import { useDepsChanged } from '@/hooks/use-deps-changed';
 
 interface ActivityManagerProps {
   activities: CustomActivity[];
@@ -64,15 +64,13 @@ export function ActivityManager({ activities = [], onSave, entries }: ActivityMa
   const { t } = useTranslation();
 
   // Reset local state when dialog opens
-  useEffect(() => {
-    if (open) {
-      setLocalActivities(activities || []);
-      setEditingId(null);
-      setEditingActivity(null);
-      setIsAdding(false);
-      setNewActivity({ label: '', icon: 'Star', color: 'text-muted-foreground' });
-    }
-  }, [open, activities]);
+  if (useDepsChanged([open, activities]) && open) {
+    setLocalActivities(activities || []);
+    setEditingId(null);
+    setEditingActivity(null);
+    setIsAdding(false);
+    setNewActivity({ label: '', icon: 'Star', color: 'text-muted-foreground' });
+  }
 
   const hasChanges = JSON.stringify(localActivities) !== JSON.stringify(activities || []);
 

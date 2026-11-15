@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/carousel';
 import { compressImage } from '@/lib/image-utils';
 import { useTranslation } from '@/hooks/use-translation';
+import { useDepsChanged } from '@/hooks/use-deps-changed';
 
 export type PhotoEntryType = 'weight' | 'medication' | 'injection' | 'steps' | 'pressure' | 'body-measurement';
 
@@ -53,13 +54,16 @@ export function PhotoCapture({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  // Load existing photos when in edit mode
-  useEffect(() => {
-    if (!entryId) {
+  // Load existing photos when in edit mode (clear them when there's no entry)
+  if (useDepsChanged([entryType, entryId])) {
+    if (entryId) {
+      setIsLoading(true);
+    } else {
       setPhotos([]);
-      return;
     }
-    setIsLoading(true);
+  }
+  useEffect(() => {
+    if (!entryId) return;
     fetch(`/api/photos/${entryType}/${entryId}?list=true`)
       .then(r => r.json())
       .then(result => {

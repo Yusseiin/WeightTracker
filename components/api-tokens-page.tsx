@@ -89,26 +89,23 @@ export function ApiTokensPage({ dateFormat }: { dateFormat?: DateFormatSettings 
   const [reveal, setReveal] = useState<{ name: string; secret: string; scopes: TokenScopes } | null>(null);
   const [copied, setCopied] = useState(false);
   const secretInputRef = useRef<HTMLInputElement>(null);
-  const [origin, setOrigin] = useState('');
 
   const [confirm, setConfirm] = useState<{ kind: 'delete' | 'regenerate'; token: ApiTokenInfo } | null>(null);
 
-  useEffect(() => setOrigin(window.location.origin), []);
-
-  const load = useCallback(async () => {
-    try {
-      const data = await api<{ tokens: ApiTokenInfo[]; users: TokenUser[]; legacyKeyConfigured: boolean }>(
-        '/api/tokens'
-      );
-      setTokens(data.tokens);
-      setUsers(data.users);
-      setLegacyKeyConfigured(data.legacyKeyConfigured);
-    } catch (error) {
-      showErrorToast(error instanceof Error ? error.message : t('apiTokens.toasts.loadError'));
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
+  const load = useCallback(
+    () =>
+      api<{ tokens: ApiTokenInfo[]; users: TokenUser[]; legacyKeyConfigured: boolean }>('/api/tokens')
+        .then((data) => {
+          setTokens(data.tokens);
+          setUsers(data.users);
+          setLegacyKeyConfigured(data.legacyKeyConfigured);
+        })
+        .catch((error) => {
+          showErrorToast(error instanceof Error ? error.message : t('apiTokens.toasts.loadError'));
+        })
+        .finally(() => setLoading(false)),
+    [t]
+  );
 
   useEffect(() => {
     load();
@@ -240,7 +237,7 @@ export function ApiTokensPage({ dateFormat }: { dateFormat?: DateFormatSettings 
 
   const exampleResource = reveal ? (Object.keys(reveal.scopes)[0] as TokenResource | undefined) : undefined;
   const exampleCommand = reveal && exampleResource
-    ? `curl -H "Authorization: Bearer ${reveal.secret}" ${origin}${RESOURCE_ENDPOINT[exampleResource]}`
+    ? `curl -H "Authorization: Bearer ${reveal.secret}" ${window.location.origin}${RESOURCE_ENDPOINT[exampleResource]}`
     : '';
 
   return (

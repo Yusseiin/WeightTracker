@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { Syringe, MapPin, FileText, Trash2, ArrowLeftRight } from 'lucide-react';
@@ -46,6 +46,7 @@ import { PhotoCapture } from './photo-capture';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { InjectionEntry, InjectionSettings } from '@/lib/types';
 import { useTranslation } from '@/hooks/use-translation';
+import { useDepsChanged } from '@/hooks/use-deps-changed';
 
 interface EditInjectionDialogProps {
   entry: InjectionEntry | null;
@@ -86,24 +87,22 @@ export function EditInjectionDialog({
   }, [entry, injectionSettings.medications]);
 
   // Reset inputs when entry changes
-  useEffect(() => {
-    if (entry && open) {
-      setSelectedDose(entry.dose);
-      setSelectedSiteId(entry.siteId);
-      setDateInput(entry.date);
-      setNotesInput(entry.notes || '');
-      // Extract time from timestamp
-      if (entry.timestamp) {
-        try {
-          setTimeInput(format(parseISO(entry.timestamp), 'HH:mm'));
-        } catch {
-          setTimeInput(format(new Date(), 'HH:mm'));
-        }
-      } else {
+  if (useDepsChanged([entry, open]) && entry && open) {
+    setSelectedDose(entry.dose);
+    setSelectedSiteId(entry.siteId);
+    setDateInput(entry.date);
+    setNotesInput(entry.notes || '');
+    // Extract time from timestamp
+    if (entry.timestamp) {
+      try {
+        setTimeInput(format(parseISO(entry.timestamp), 'HH:mm'));
+      } catch {
         setTimeInput(format(new Date(), 'HH:mm'));
       }
+    } else {
+      setTimeInput(format(new Date(), 'HH:mm'));
     }
-  }, [entry, open]);
+  }
 
   const handleSave = async () => {
     if (!entry || selectedDose === null || !selectedSiteId || !dateInput) return;

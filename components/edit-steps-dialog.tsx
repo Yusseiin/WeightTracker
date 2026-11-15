@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { Footprints, Trash2, ArrowLeftRight, FileText } from 'lucide-react';
@@ -39,6 +39,7 @@ import { PhotoCapture } from './photo-capture';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from '@/hooks/use-translation';
 import { type StepsEntry } from '@/lib/types';
+import { useDepsChanged } from '@/hooks/use-deps-changed';
 
 interface EditStepsDialogProps {
   entry: StepsEntry | null;
@@ -79,13 +80,11 @@ export function EditStepsDialog({
   };
 
   // Reset inputs when entry changes
-  useEffect(() => {
-    if (entry && open) {
-      setStepsInput(entry.steps.toString());
-      setTimeInput(formatTimeFromTimestamp(entry.timestamp) || format(new Date(), 'HH:mm'));
-      setNotesInput(entry.notes || '');
-    }
-  }, [entry, open]);
+  if (useDepsChanged([entry, open]) && entry && open) {
+    setStepsInput(entry.steps.toString());
+    setTimeInput(formatTimeFromTimestamp(entry.timestamp) || format(new Date(), 'HH:mm'));
+    setNotesInput(entry.notes || '');
+  }
 
   const handleSave = async () => {
     if (!entry) return;

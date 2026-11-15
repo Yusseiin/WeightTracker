@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
 import { Pill, Check, X, Minus, Calendar, Clock, AlertTriangle, FileText } from 'lucide-react';
 import {
@@ -32,6 +32,7 @@ import { PhotoCapture } from './photo-capture';
 import type { MedicationPreset, MedicationEntry } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/use-translation';
+import { useDepsChanged } from '@/hooks/use-deps-changed';
 
 // Three states: 'unselected' (no entry), 'taken', 'not_taken'
 type MedicationState = 'unselected' | 'taken' | 'not_taken';
@@ -56,7 +57,7 @@ interface LocalMedicationState {
 interface AddMedicationDialogProps {
   medicationPresets: MedicationPreset[];
   todayMedications: MedicationEntry[];
-  onToggleMedication: (medicationId: string, taken: boolean, date?: string, timestamp?: string, dose?: number | null, notes?: string) => Promise<any>;
+  onToggleMedication: (medicationId: string, taken: boolean, date?: string, timestamp?: string, dose?: number | null, notes?: string) => Promise<{ id: string } | undefined>;
   onDeleteMedication?: (id: string) => Promise<void>;
   isLoading?: boolean;
   photosEnabled?: boolean;
@@ -94,62 +95,60 @@ export function AddMedicationDialog({
   const [pendingPhotos, setPendingPhotos] = useState<Record<string, File[]>>({});
 
   // Initialize local state when dialog opens
-  useEffect(() => {
-    if (open) {
-      setPendingPhotos({});
-      setNotesInputs({});
-      const now = new Date();
-      const todayDate = format(now, 'yyyy-MM-dd');
-      const currentTime = format(now, 'HH:mm');
+  if (useDepsChanged([open, medicationPresets, todayMedications]) && open) {
+    setPendingPhotos({});
+    setNotesInputs({});
+    const now = new Date();
+    const todayDate = format(now, 'yyyy-MM-dd');
+    const currentTime = format(now, 'HH:mm');
 
-      const initialStates: Record<string, LocalMedicationState> = {};
-      for (const preset of medicationPresets) {
-        // Check if there's an existing entry for this medication today
-        const existingEntry = todayMedications.find(e => e.medicationId === preset.id && e.date === todayDate);
+    const initialStates: Record<string, LocalMedicationState> = {};
+    for (const preset of medicationPresets) {
+      // Check if there's an existing entry for this medication today
+      const existingEntry = todayMedications.find(e => e.medicationId === preset.id && e.date === todayDate);
 
-        if (existingEntry) {
-          const entryTime = existingEntry.timestamp
-            ? format(parseISO(existingEntry.timestamp), 'HH:mm')
-            : currentTime;
-          const currentState: MedicationState = existingEntry.taken ? 'taken' : 'not_taken';
-          const expectedDose = preset.schedule?.expectedDose;
-          // Determine dose mode based on whether existing dose matches expected
-          const isCustomDose = existingEntry.dose !== undefined && existingEntry.dose !== expectedDose;
+      if (existingEntry) {
+        const entryTime = existingEntry.timestamp
+          ? format(parseISO(existingEntry.timestamp), 'HH:mm')
+          : currentTime;
+        const currentState: MedicationState = existingEntry.taken ? 'taken' : 'not_taken';
+        const expectedDose = preset.schedule?.expectedDose;
+        // Determine dose mode based on whether existing dose matches expected
+        const isCustomDose = existingEntry.dose !== undefined && existingEntry.dose !== expectedDose;
 
-          initialStates[preset.id] = {
-            state: currentState,
-            date: existingEntry.date,
-            time: entryTime,
-            dose: existingEntry.dose,
-            doseMode: isCustomDose ? 'custom' : 'preset',
-            expanded: true, // Existing entries start expanded
-            existingEntryId: existingEntry.id,
-            originalState: currentState,
-            originalDate: existingEntry.date,
-            originalTime: entryTime,
-            originalDose: existingEntry.dose
-          };
-        } else {
-          // For dosage mode medications, initialize with expected dose if available
-          const expectedDose = preset.schedule?.expectedDose;
-          initialStates[preset.id] = {
-            state: 'unselected',
-            date: todayDate,
-            time: currentTime,
-            dose: expectedDose, // Pre-select preset dose
-            doseMode: 'preset', // Default to preset mode
-            expanded: false, // Start collapsed
-            existingEntryId: undefined,
-            originalState: 'unselected',
-            originalDate: todayDate,
-            originalTime: currentTime,
-            originalDose: undefined
-          };
-        }
+        initialStates[preset.id] = {
+          state: currentState,
+          date: existingEntry.date,
+          time: entryTime,
+          dose: existingEntry.dose,
+          doseMode: isCustomDose ? 'custom' : 'preset',
+          expanded: true, // Existing entries start expanded
+          existingEntryId: existingEntry.id,
+          originalState: currentState,
+          originalDate: existingEntry.date,
+          originalTime: entryTime,
+          originalDose: existingEntry.dose
+        };
+      } else {
+        // For dosage mode medications, initialize with expected dose if available
+        const expectedDose = preset.schedule?.expectedDose;
+        initialStates[preset.id] = {
+          state: 'unselected',
+          date: todayDate,
+          time: currentTime,
+          dose: expectedDose, // Pre-select preset dose
+          doseMode: 'preset', // Default to preset mode
+          expanded: false, // Start collapsed
+          existingEntryId: undefined,
+          originalState: 'unselected',
+          originalDate: todayDate,
+          originalTime: currentTime,
+          originalDose: undefined
+        };
       }
-      setLocalStates(initialStates);
     }
-  }, [open, medicationPresets, todayMedications]);
+    setLocalStates(initialStates);
+  }
 
   // Update local state for a medication
   const handleSetState = (medicationId: string, newState: MedicationState) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
 import { Ruler, FileText, Trash2 } from 'lucide-react';
 import {
@@ -45,6 +45,7 @@ import {
   CM_PER_INCH,
   MeasurementUnit,
 } from '@/lib/types';
+import { useDepsChanged } from '@/hooks/use-deps-changed';
 
 interface EditBodyMeasurementDialogProps {
   entry: BodyMeasurementEntry | null;
@@ -89,24 +90,22 @@ export function EditBodyMeasurementDialog({
   // Max value in the user's current display unit (server caps at 500cm)
   const maxDisplayValue = unit === 'in' ? 500 / CM_PER_INCH : 500;
 
-  useEffect(() => {
-    if (open && entry) {
-      const ts = parseISO(entry.timestamp);
-      setDateInput(format(ts, 'yyyy-MM-dd'));
-      setTimeInput(format(ts, 'HH:mm'));
-      const initial: Record<string, string> = {};
-      for (const preset of presets) {
-        const cmValue = entry.measurements[preset.id];
-        if (cmValue == null) continue;
-        const display = unit === 'in' ? cmValue / CM_PER_INCH : cmValue;
-        initial[preset.id] = display.toFixed(1);
-      }
-      setValues(initial);
-      setNotesInput(entry.notes ?? '');
-      setFieldErrors({});
-      setFormError(null);
+  if (useDepsChanged([open, entry, presets, unit]) && open && entry) {
+    const ts = parseISO(entry.timestamp);
+    setDateInput(format(ts, 'yyyy-MM-dd'));
+    setTimeInput(format(ts, 'HH:mm'));
+    const initial: Record<string, string> = {};
+    for (const preset of presets) {
+      const cmValue = entry.measurements[preset.id];
+      if (cmValue == null) continue;
+      const display = unit === 'in' ? cmValue / CM_PER_INCH : cmValue;
+      initial[preset.id] = display.toFixed(1);
     }
-  }, [open, entry, presets, unit]);
+    setValues(initial);
+    setNotesInput(entry.notes ?? '');
+    setFieldErrors({});
+    setFormError(null);
+  }
 
   if (!entry) return null;
 

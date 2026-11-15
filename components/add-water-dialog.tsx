@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { Droplets, RotateCcw, Pencil } from 'lucide-react';
 import {
@@ -31,6 +31,7 @@ import { type WaterDayTotal, type WaterUnit, type WaterPreset } from '@/lib/type
 import { formatWaterAmount, ozToMl, validateWaterAmountInput } from '@/lib/water-utils';
 import { DynamicIcon } from './dynamic-icon';
 import { cn } from '@/lib/utils';
+import { useDepsChanged } from '@/hooks/use-deps-changed';
 
 interface AddWaterDialogProps {
   todayWater: WaterDayTotal | null;
@@ -75,12 +76,10 @@ export function AddWaterDialog({
   const { t } = useTranslation();
 
   // Initialize date/time to "now" whenever the dialog opens (history mode only)
-  useEffect(() => {
-    if (open && historyEnabled) {
-      setDateInput(format(new Date(), 'yyyy-MM-dd'));
-      setTimeInput(format(new Date(), 'HH:mm'));
-    }
-  }, [open, historyEnabled]);
+  if (useDepsChanged([open, historyEnabled]) && open && historyEnabled) {
+    setDateInput(format(new Date(), 'yyyy-MM-dd'));
+    setTimeInput(format(new Date(), 'HH:mm'));
+  }
 
   const currentAmount = todayWater?.amount || 0;
 

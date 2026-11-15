@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { Droplets, Trash2 } from 'lucide-react';
 import {
@@ -35,6 +35,7 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from '@/hooks/use-translation';
+import { useDepsChanged } from '@/hooks/use-deps-changed';
 import { type WaterEntry, type WaterUnit } from '@/lib/types';
 import { mlToOz, ozToMl, validateWaterAmountInput } from '@/lib/water-utils';
 import { cn } from '@/lib/utils';
@@ -82,17 +83,15 @@ export function EditWaterDialog({
   };
 
   // Reset inputs when entry changes
-  useEffect(() => {
-    if (entry && open) {
-      const displayAmount =
-        waterUnit === 'oz'
-          ? trimZeros(mlToOz(entry.amount).toFixed(2))
-          : entry.amount.toString();
-      setAmountInput(displayAmount);
-      setDateInput(entry.date);
-      setTimeInput(formatTimeFromTimestamp(entry.timestamp) || format(new Date(), 'HH:mm'));
-    }
-  }, [entry, open, waterUnit]);
+  if (useDepsChanged([entry, open, waterUnit]) && entry && open) {
+    const displayAmount =
+      waterUnit === 'oz'
+        ? trimZeros(mlToOz(entry.amount).toFixed(2))
+        : entry.amount.toString();
+    setAmountInput(displayAmount);
+    setDateInput(entry.date);
+    setTimeInput(formatTimeFromTimestamp(entry.timestamp) || format(new Date(), 'HH:mm'));
+  }
 
   const amountError = validateWaterAmountInput(amountInput);
   const amountValue = parseFloat(amountInput) || 0;

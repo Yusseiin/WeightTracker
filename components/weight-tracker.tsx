@@ -28,6 +28,7 @@ import { MedicationReminderBanner } from './medication-reminder-banner';
 import { Button } from './ui/button';
 import { Info, Bug } from 'lucide-react';
 import { useTranslation } from '@/hooks/use-translation';
+import { useIsClient } from '@/hooks/use-is-client';
 
 // localStorage key that remembers which version's changelog the user has already seen
 const CHANGELOG_SEEN_KEY = 'changelog-seen-version';
@@ -47,6 +48,15 @@ interface WeightTrackerProps {
   initialInjectionEntries: InjectionEntry[];
   initialLastInjection: InjectionEntry | null;
   session: SessionUser | null;
+}
+
+// True when a different version was seen on an earlier visit (fresh installs
+// have no stored version and don't get the popup)
+function isNewVersionSinceLastVisit(): boolean {
+  const currentVersion = process.env.NEXT_PUBLIC_VERSION;
+  if (!currentVersion) return false;
+  const seenVersion = window.localStorage.getItem(CHANGELOG_SEEN_KEY);
+  return seenVersion !== null && seenVersion !== currentVersion;
 }
 
 export function WeightTracker({
@@ -116,7 +126,6 @@ export function WeightTracker({
 
   const {
     injectionEntries,
-    lastInjection,
     isLoading: isInjectionLoading,
     createInjection,
     updateInjectionById,
@@ -135,19 +144,18 @@ export function WeightTracker({
     if (typeof window !== 'undefined' && window.location.hash === '#history') return 'history';
     return 'chart';
   });
-  const [changelogOpen, setChangelogOpen] = useState(false);
+  // Auto-open the changelog once after each version update: it opens when the
+  // last version seen (localStorage, read after hydration) differs from this one,
+  // until the user opens or closes it themselves
+  const isClient = useIsClient();
+  const [changelogChoice, setChangelogOpen] = useState<boolean | null>(null);
+  const changelogOpen = changelogChoice ?? (isClient && isNewVersionSinceLastVisit());
 
-  // Auto-open the changelog once after each version update
+  // Fresh install: record the current version without showing the popup
   useEffect(() => {
     const currentVersion = process.env.NEXT_PUBLIC_VERSION;
-    if (!currentVersion) return;
-    const seenVersion = window.localStorage.getItem(CHANGELOG_SEEN_KEY);
-    if (seenVersion === null) {
-      // Fresh install: record the current version without showing the popup
+    if (currentVersion && window.localStorage.getItem(CHANGELOG_SEEN_KEY) === null) {
       window.localStorage.setItem(CHANGELOG_SEEN_KEY, currentVersion);
-    } else if (seenVersion !== currentVersion) {
-      // Version changed since last visit: show the new changelog
-      setChangelogOpen(true);
     }
   }, []);
 

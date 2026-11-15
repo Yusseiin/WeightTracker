@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { Droplets, ArrowLeftRight, FileText } from 'lucide-react';
@@ -44,6 +44,7 @@ import type { WeightEntry, EntryFormData, WaterDayTotal, WaterUnit, CustomActivi
 import { mlToOz, ozToMl } from '@/lib/water-utils';
 import { formatDateForTooltip } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
+import { useDepsChanged } from '@/hooks/use-deps-changed';
 
 interface EditEntryDialogProps {
   entry: WeightEntry | null;
@@ -98,34 +99,32 @@ export function EditEntryDialog({
   const { t } = useTranslation();
 
   // Reset form when entry changes
-  useEffect(() => {
-    if (entry) {
-      setWeight(entry.weight.toString());
-      setTraining(entry.training);
-      setSleep(entry.sleep.toString() as '0' | '1' | '2');
-      const entryDate = new Date(entry.timestamp);
-      const entryDateStr = format(entryDate, 'yyyy-MM-dd');
-      setDate(entryDateStr);
-      setTime(format(entryDate, 'HH:mm'));
+  if (useDepsChanged([entry, waterEntries, waterUnit]) && entry) {
+    setWeight(entry.weight.toString());
+    setTraining(entry.training);
+    setSleep(entry.sleep.toString() as '0' | '1' | '2');
+    const entryDate = new Date(entry.timestamp);
+    const entryDateStr = format(entryDate, 'yyyy-MM-dd');
+    setDate(entryDateStr);
+    setTime(format(entryDate, 'HH:mm'));
 
-      setNotesInput(entry.notes || '');
-      setBodyFatInput(entry.bodyFat?.toString() || '');
+    setNotesInput(entry.notes || '');
+    setBodyFatInput(entry.bodyFat?.toString() || '');
 
-      // Get water for this date
-      const waterEntry = waterEntries.find(w => w.date === entryDateStr);
-      const waterMl = waterEntry?.amount || 0;
-      // Convert to display unit; preserve up to 2 decimals for oz and trim trailing zeros
-      if (waterUnit === 'oz') {
-        setWater(
-          waterMl > 0
-            ? mlToOz(waterMl).toFixed(2).replace(/\.?0+$/, '')
-            : ''
-        );
-      } else {
-        setWater(waterMl > 0 ? waterMl.toString() : '');
-      }
+    // Get water for this date
+    const waterEntry = waterEntries.find(w => w.date === entryDateStr);
+    const waterMl = waterEntry?.amount || 0;
+    // Convert to display unit; preserve up to 2 decimals for oz and trim trailing zeros
+    if (waterUnit === 'oz') {
+      setWater(
+        waterMl > 0
+          ? mlToOz(waterMl).toFixed(2).replace(/\.?0+$/, '')
+          : ''
+      );
+    } else {
+      setWater(waterMl > 0 ? waterMl.toString() : '');
     }
-  }, [entry, waterEntries, waterUnit]);
+  }
 
   const handleSave = async () => {
     if (!entry || !weight) return;

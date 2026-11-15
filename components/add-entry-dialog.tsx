@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useForm, Resolver } from 'react-hook-form';
+import { useForm, useWatch, Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod/v4';
 import { format } from 'date-fns';
@@ -46,7 +46,7 @@ type FormValues = {
 };
 
 interface AddEntryDialogProps {
-  onSubmit: (data: EntryFormData) => Promise<any>;
+  onSubmit: (data: EntryFormData) => Promise<{ id: string } | undefined>;
   unit: 'kg' | 'lb';
   activities: CustomActivity[];
   photosEnabled?: boolean;
@@ -86,7 +86,7 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, note
     handleSubmit,
     reset,
     setValue,
-    watch,
+    control,
     formState: { errors }
   } = useForm<FormValues>({
     resolver: zodResolver(entrySchema) as Resolver<FormValues>,
@@ -100,8 +100,8 @@ export function AddEntryDialog({ onSubmit, unit, activities, photosEnabled, note
     }
   });
 
-  const training = watch('training');
-  const sleep = watch('sleep');
+  const training = useWatch({ control, name: 'training' });
+  const sleep = useWatch({ control, name: 'sleep' });
 
   // Refresh the timestamp to "now" each time the dialog opens, so it reflects
   // when the user opened it — not when the page was first loaded (issue #10).

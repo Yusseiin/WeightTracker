@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { isToday, parseISO, differenceInDays, format } from 'date-fns';
 import { Scale, Droplets, Flame, Footprints, HeartPulse, Pill, Syringe, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { calculateWaterStreak, calculateProgress, getCurrentWeekWeightChange, ge
 import { getPressureCategory, estimateMap } from '@/lib/pressure-utils';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/use-translation';
+import { useIsClient } from '@/hooks/use-is-client';
 
 // Check if a medication is due today based on its schedule
 function isMedicationDueToday(schedule: MedicationSchedule | undefined, today: Date): boolean {
@@ -189,25 +190,17 @@ export function TodayRecap({
   const medicationEnabled = features?.medicationEnabled ?? false;
   const injectionsEnabled = features?.injectionsEnabled ?? false;
 
-  // Collapse state with localStorage persistence
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isHydrated, setIsHydrated] = useState(false);
-
-  // Read from localStorage after hydration to avoid SSR mismatch
-  useEffect(() => {
-    const stored = localStorage.getItem('todayRecapCollapsed');
-    if (stored === 'true') {
-      setIsCollapsed(true);
-    }
-    setIsHydrated(true);
-  }, []);
-
-  // Persist collapse state (only after hydration)
-  useEffect(() => {
-    if (isHydrated) {
-      localStorage.setItem('todayRecapCollapsed', String(isCollapsed));
-    }
-  }, [isCollapsed, isHydrated]);
+  // Collapse state, remembered in localStorage. The stored value is read only
+  // after hydration (isClient) to avoid an SSR mismatch.
+  const isClient = useIsClient();
+  const [collapsedChoice, setCollapsedChoice] = useState<boolean | null>(null);
+  const isCollapsed =
+    collapsedChoice ?? (isClient && localStorage.getItem('todayRecapCollapsed') === 'true');
+  const toggleCollapsed = () => {
+    const next = !isCollapsed;
+    setCollapsedChoice(next);
+    localStorage.setItem('todayRecapCollapsed', String(next));
+  };
 
   // Calculate medication status (only count medications due today)
   const medicationCount = useMemo(() => {
@@ -264,7 +257,7 @@ export function TodayRecap({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={toggleCollapsed}
             className="h-6 px-2 text-muted-foreground hover:text-foreground"
           >
             {isCollapsed ? (

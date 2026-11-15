@@ -222,23 +222,7 @@ export function EntriesTable({
     return map;
   }, [waterEntries]);
 
-  // Create a map of steps entries by date for quick lookup
-  const stepsByDate = useMemo(() => {
-    const map = new Map<string, StepsEntry>();
-    for (const entry of stepsEntries) {
-      map.set(entry.date, entry);
-    }
-    return map;
-  }, [stepsEntries]);
 
-  // Create a map of pressure entries by date for quick lookup
-  const pressureByDate = useMemo(() => {
-    const map = new Map<string, PressureEntry>();
-    for (const entry of pressureEntries) {
-      map.set(entry.date, entry);
-    }
-    return map;
-  }, [pressureEntries]);
 
   const waterEnabled = features?.waterEnabled ?? true;
   const waterHistoryEnabled = (features?.waterEnabled ?? true) && (features?.waterHistoryEnabled ?? false);
