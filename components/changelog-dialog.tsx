@@ -26,6 +26,13 @@ interface ChangelogEntry {
 const changelog: ChangelogEntry[] = [
   {
     version: "v" + process.env.NEXT_PUBLIC_VERSION || "",
+    date: "2026-11-16",
+    changes: [
+      { type: "fixed", description: "The History tab said \"No entries yet\" for users who had logged water but no weight, even with \"Log water as individual entries\" turned on. The water history now shows up for them. Thanks to @nfischer for the report. (#24)" },
+    ],
+  },
+  {
+    version: "v0.0.38",
     date: "2026-11-14",
     changes: [
       { type: "fixed", description: "On iPhone and iPad, buttons in the pop-up panels did nothing when the panel was opened from a scrolled page (for example Settings → Chart Configuration: the arrows, edit, delete and Cancel), and the page behind jumped while you tapped. They work again. To close a panel by swiping, drag the bar at its top. Thanks to @nfischer for the report. (#23)" },

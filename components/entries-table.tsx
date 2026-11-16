@@ -325,9 +325,11 @@ export function EntriesTable({
   const hasPressureData = pressureEntries.length > 0;
   const hasMedicationData = medicationEntries.length > 0;
   const hasInjectionData = injectionEntries.length > 0;
+  // Water only has its own view when individual-entry history is enabled
+  const hasWaterData = waterHistoryEnabled && waterInserts.length > 0;
 
   // If no data at all and no features enabled, show empty state
-  if (!hasWeightData && !hasStepsData && !hasPressureData && !hasMedicationData && !hasInjectionData) {
+  if (!hasWeightData && !hasWaterData && !hasStepsData && !hasPressureData && !hasMedicationData && !hasInjectionData) {
     return (
       <Card>
         <CardContent className="pt-4">
